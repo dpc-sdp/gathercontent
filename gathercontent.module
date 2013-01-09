@@ -1,0 +1,723 @@
+<?php
+
+
+/**
+ * @file
+ * @TODO docs.
+ */
+
+/**
+ * Implements hook_help().
+ */
+function gathercontent_help($path, $arg) {
+  // @TODO help. 
+}
+
+/**
+ * Implements hook_menu().
+ */
+function gathercontent_menu() {
+  $items = array(
+    'admin/config/content/gathercontent' => array(
+      'title' => t('GatherContent'),
+      'description' => t('Import your content from GatherContent'),
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('gathercontent_api_admin'),
+      'access arguments' => array('administer gathercontent'),
+      'file' => 'gathercontent_admin.inc',
+    ),
+    'admin/config/content/gathercontent/import' => array(
+      'title' => 'Import',
+      'page callback' => 'gathercontent_import_wizard',
+      'access callback' => TRUE,
+      'access arguments' => array('administer gathercontent'),
+      'type' => MENU_LOCAL_ACTION,
+    ),
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function gathercontent_permission(){
+  return array(
+    'administer gathercontent' => array(
+      'title' => t('Administer GatherContent'),
+      'description' => t('Change settings and import pages from GatherContent')
+    )
+  );
+}
+
+/**
+ * Import wizard, built with CTools multistep form wizard.
+ */
+function gathercontent_import_wizard($js = NULL, $step = NULL) {
+  if ($js) {
+    ctools_include('modal');
+    ctools_include('ajax');
+  }
+ 
+  // Define array for ctools multistep wizard.
+  $form_info = array(
+    'id' => 'gathercontent_import',
+    // 'path' => "admin/config/content/gathercontent/" . ($js ? 'ajax' : 'nojs') . "/import/%step",
+    'path' => 'admin/config/content/gathercontent/import/%step',
+    'show trail' => TRUE,
+    'show back' => TRUE,
+    'show cancel' => TRUE,
+    'show return' => TRUE,
+    'next callback' => 'gathercontent_import_next',
+    'finish callback' => 'gathercontent_import_finish',
+    'cancel callback' => 'gathercontent_import_cancel',
+ 
+    // Define forms order.
+    'order' => array(
+      'project' => t('Select the project you want to import pages from'),
+      'page_type' => t('Do you want to import all or only approved pages?'),
+      'pages' => t('Import pages'),
+    ),
+ 
+   // Define forms
+    'forms' => array(
+      'project' => array(
+        'form id' => 'gathercontent_import_project'
+      ),
+      'page_type' => array(
+        'form id' => 'gathercontent_import_page_type'
+      ),
+      'pages' => array(
+        'form id' => 'gathercontent_import_pages'
+      ),
+    ),
+  );
+ 
+  // We're not using any real storage here, so we're going to set our
+  // object_id to 1. When using wizard forms, id management turns
+  // out to be one of the hardest parts. Editing an object with an id
+  // is easy, but new objects don't usually have ids until somewhere
+  // in creation.
+  //
+  // We skip all this here by just using an id of 1.
+  // $object_id = 1;
+ 
+  // if (empty($step)) {
+ 
+  //   // We reset the form when $step is NULL because that means they have
+  //   // for whatever reason started over.
+  //   gathercontent_import_cache_clear($object_id);
+  //   $step = 'project';
+  // }
+ 
+  // // This automatically gets defaults if there wasn't anything saved.
+  // $object = gathercontent_import_cache_get($object_id);
+ 
+  // // live $form_state changes.
+  // $form_state = array(
+  //   'ajax' => $js,
+ 
+  //   // Put our object and ID into the form state cache so we can easily find it.
+  //   'object_id' => $object_id,
+  //   'object' => &$object,
+  // );
+ 
+  // Send this all off to our form. This is like drupal_get_form only wizardy.
+  ctools_include('wizard');
+  $form = ctools_wizard_multistep_form($form_info, $step, $form_state);
+  $output = drupal_render($form);
+  
+  return $output;
+
+  // if ($js) {
+  //   // If javascript is active, we have to use a render array.
+  //   $commands = array();
+  //   if ($output === FALSE || !empty($form_state['complete'])) {
+  //     // Dismiss the modal.
+  //     $commands[] = ajax_command_html('#ctools-sample', render(gathercontent_import_get_result($object)));
+  //     $commands[] = ctools_modal_command_dismiss();
+  //  }
+  //   elseif (!empty($form_state['cancel'])) {
+ 
+  //     // If cancelling, return to the activity.
+  //     $commands[] = ctools_modal_command_dismiss();
+  //   }
+  //   else {
+  //     $commands = ctools_modal_form_render($form_state, $output);
+  //   }
+  //   print ajax_render($commands);
+  // }
+  // else {
+  //   if ($output === FALSE || !empty($form_state['complete'])) {
+ 
+  //     return render(gathercontent_import_get_result($object)) . "\n\r" . l(t('Back'), 'example-link');
+  //   }
+  //   elseif (!empty($form_state['cancel'])) {
+  //     drupal_goto('example-link');
+  //   }
+  //   else {
+  //     return $output;
+  //   }
+  // }
+}
+
+/**
+ * Clears CTools' multistep form cache.
+ *
+ * @param integer $id
+ *   cache id.
+ */
+function gathercontent_import_cache_clear($id) {
+  ctools_include('object-cache');
+  ctools_object_cache_clear('gathercontent_import', $id);
+}
+ 
+/**
+ * Stores CTools' multistep form cache so we can retain data from form to form.
+ *
+ * @param integer $id
+ *   cache id.
+ * @param object $object
+ *   object with form values.
+ */
+function gathercontent_import_cache_set($id, $object) {
+  ctools_include('object-cache');
+  ctools_object_cache_set('gathercontent_import', $id, $object);
+}
+ 
+/**
+ * Gets the current object from the cache, or default.
+ *
+ * @param integer $id
+ *   cache id.
+ *
+ * @return object
+ *   cache with stored stuff.
+ */
+function gathercontent_import_cache_get($id) {
+  ctools_include('object-cache');
+  $object = ctools_object_cache_get('gathercontent_import', $id);
+  if (!$object) {
+    // Create a default object.
+    $object = new stdClass;
+  }
+ 
+  return $object;
+}
+
+/**
+ * Handles the 'next' click on the add/edit pane form wizard.
+ *
+ * All we need to do is store the updated pane in the cache.
+ */
+function gathercontent_import_next(&$form_state) {
+  gathercontent_import_cache_set($form_state['object_id'], $form_state['object']);
+}
+ 
+/**
+ * Handles the 'finish' click on teh add/edit pane form wizard.
+ *
+ * All we need to do is set a flag so the return can handle adding
+ * the pane.
+ */
+function gathercontent_import_finish(&$form_state) {
+  $form_state['complete'] = TRUE;
+}
+ 
+/**
+ * Handles the 'cancel' click on the add/edit pane form wizard.
+ */
+function gathercontent_import_cancel(&$form_state) {
+  $form_state['cancel'] = TRUE;
+}
+
+/* Import wizard step 1: Select project */
+function gathercontent_import_project($form, &$form_state){
+  $form = array();
+  
+  $projects = gathercontent_get_command('get_projects');
+  if (isset($resp->is_error)) {
+    form_set_error(NULL, $resp->error);
+  }
+  $newprojects = array();
+  if (is_object($projects) && isset($projects->projects) && is_array($projects->projects)) {
+    foreach ($projects->projects as $project) {
+      $newprojects[$project->id] = $project->name;
+    }
+    asort($newprojects);
+  }
+  $project = variable_get('gathercontent_project');
+  
+  $form['project'] = array(
+    '#title' => t('Select the project you want to import pages from'),
+    '#type' => 'radios',
+    '#default_value' => ($project == '' ? key($newprojects) : $project),
+    '#options' => $newprojects,
+    '#required' => TRUE
+  );
+  
+  return $form;
+}
+
+function gathercontent_import_project_submit($form, &$form_state) {
+  variable_set('gathercontent_project', $form_state['values']['project']);
+}
+
+/* Import wizard step 2: Select page type */
+function gathercontent_import_page_type($form, &$form_state){
+  $form = array();
+  $type = variable_get('gathercontent_page_type');
+  $form['page_type'] = array(
+    '#title' => t('Select page type'),
+    '#type' => 'radios',
+    '#default_value' => ($type == '' ? 'all' : $type),
+    '#options' => array('all'=>t('All Pages'),'approved'=>t('Approved Pages Only')),
+    '#required' => TRUE
+  );
+  
+  return $form;
+}
+
+function gathercontent_import_page_type_validate($form, &$form_state) {
+  $page_type = $form_state['values']['page_type'];
+  if ($page_type != 'all' && $page_type != 'approved') {
+    form_set_error('page_type', t('Please select a valid page type.'));
+  }
+}
+
+function gathercontent_import_page_type_submit($form, &$form_state) {
+  variable_set('gathercontent_page_type', $form_state['values']['page_type']);
+}
+
+/* Import wizard step 3: Import pages */
+function gathercontent_import_pages($form, &$form_state) {
+  drupal_add_css(drupal_get_path('module', 'gathercontent') . '/gathercontent.css');
+  $form = array();
+  $type = variable_get('gathercontent_type');
+  $form['table'] = array(
+    '#type' => 'markup',
+    '#prefix' => '
+<table class="gc_pages" cellspacing="0" cellpadding="0">
+  <thead>
+    <tr>
+      <th></th>
+      <th class="gc_th_page_name">'.t('Page Name').'</th>
+      <th>'.t('Overwrite').'</th>
+      <th>'.t('Main Field').'</th>
+    </tr>
+    </thead>
+    <tbody>',
+    '#suffix' => '
+  </tbody>
+</table>'
+  );
+  $class = new GatherContent_Pages();
+  $pages = $class->get_pages();
+  $form['table'] = $class->generate_settings($form['table'], array(), $pages);
+    
+  return $form;
+}
+
+function gathercontent_import_pages_submit($form, &$form_state) {
+  $class = new GatherContent_Pages();
+  $class->save_settings($form_state);
+}
+
+// function gathercontent_form_finished($form, &$form_state){
+//   $form = array();
+//   $form['page_type'] = array(
+//     '#type' => 'fieldset',
+//     '#title' => t('Success')
+//   );
+  
+//   $form['page_type']['link'] = array(
+//     '#type' => 'markup',
+//     '#markup' => t('<a href="!custom_var_link">Go back to pages screen<a>',array('!custom_var_link' => gathercontent_get_url('pages')))
+//   );
+//   return $form;
+// }
+
+// function gathercontent_get_url($page){
+//   $req = explode('/',request_uri());
+//   if(end($req) != 'gathercontent'){
+//     $req[count($req)-1] = $page;
+//   } else {
+//     $req[] = $page;
+//   }
+//   $url = implode('/',$req);
+//   return $url;
+// }
+
+function gathercontent_get_command($command = '', $postfields = array(), $account_name = '', $api_key = '') {
+  if ($account_name == '') {
+    $account_name = variable_get('gathercontent_account_name');
+  }
+  if ($api_key == ''){
+    $api_key = variable_get('gathercontent_api_key');
+  }
+  $api_url = 'https://' . $account_name . '.gathercontent.com/api/0.1/' . $command; 
+  $postfields = http_build_query($postfields); 
+  $session = curl_init();
+  curl_setopt($session, CURLOPT_URL, $api_url); 
+  curl_setopt($session, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST); 
+  curl_setopt($session, CURLOPT_HEADER, false); 
+  curl_setopt($session, CURLOPT_HTTPHEADER, array('Accept: application/json', 'Content-Type: application/x-www-form-urlencoded')); 
+  curl_setopt($session, CURLOPT_RETURNTRANSFER, true); 
+  curl_setopt($session, CURLOPT_USERPWD, $api_key . ":x"); 
+  curl_setopt($session, CURLOPT_POST, true); 
+  curl_setopt($session, CURLOPT_POSTFIELDS, $postfields); 
+  curl_setopt($session, CURLOPT_SSL_VERIFYPEER, true); 
+  $response = curl_exec($session); 
+  $httpcode = curl_getinfo($session, CURLINFO_HTTP_CODE); 
+  curl_close($session);
+  try {
+    $resp = json_decode($response);
+    if (isset($resp->success) && $resp->success === true) {
+      return $resp;
+    } 
+    elseif (isset($resp->error)) {
+      if ($resp->error == 'You have to log in.') {
+        $error = 'login_error';
+      }
+      return gathercontent_error_return($resp->error);
+    } 
+    else {
+      return gathercontent_error_return('login_error');
+    }
+  } 
+  catch(Exception $e) {
+    return gathercontent_error_return('There was a problem contacting the API. Please check your server allows it.');
+  }
+  return false;
+}
+
+function gathercontent_error_return($msg){
+  if($msg == 'login_error'){
+    $msg = sprintf(t('There was a problem contacting the API. Please check your API credentials.'));
+  }
+  $cls = new stdClass();
+  $cls->is_error = true;
+  $cls->error = t($msg);
+  return $cls;
+}
+
+
+
+
+class GatherContent_Pages {
+  var $pages = array();
+  var $original_pages = array();
+  var $cur_counter = 0;
+  
+  function save_settings($form_state){
+    $pages = $this->get_pages();
+    $original = $this->original_array;
+    $ids = array();
+    $fields = array('page_id','page_name','overwrite_id','main_content');
+    foreach($fields as $f){
+      $$f = $form_state['input'][$f];
+    }
+    $files = gathercontent_get_command('get_files_by_project',array('id'=>variable_get('gathercontent_project_id')));
+    $new_files = array();
+    if(isset($files->files)){
+      foreach($files->files as $file){
+        $pgid = $file->page_id;
+        if(!isset($new_files[$pgid])){
+          $new_files[$pgid] = array();
+        }
+        if(!isset($new_files[$pgid][$file->fieldname])){
+          $new_files[$pgid][$file->fieldname] = array();
+        }
+        $new_files[$pgid][$file->fieldname][] = $file;
+      }
+    }
+    for($i=0,$il=count($page_id);$i<$il;$i++){
+      if($form_state['values']['import_'.$page_id[$i]] == 1){
+        $content = '';
+        $obj = $original[$page_id[$i]];
+        $meta = array();
+        if(isset($obj->custom_field_values) && count($obj->custom_field_values) > 0){
+          if($main_content[$i] != 0){
+            $content = $obj->custom_field_values[$main_content[$i]];
+            foreach($obj->custom_field_config as $field){
+              $name = $field->name;
+              switch($field->type){
+                case 'attach':
+                  if(isset($new_files[$obj->id]) && isset($new_files[$obj->id][$field->name])){
+                    foreach($new_files[$obj->id][$field->name] as $file){
+                      $file_c = file_get_contents('https://gathercontent.s3.amazonaws.com/'.$file->filename);
+                      $filename = wp_unique_filename($uploads['path'],$file->original_filename,null);
+                      $new_file = $uploads['path'].'/'.$filename;
+                      $fp = fopen($new_file,'w');
+                      fwrite($fp, $file_c);
+                      fclose($fp);
+                      $object = array(
+                        'post_title' => $filename,
+                        'post_content' => $uploads['url'].'/'.$filename,
+                        'guid' => $uploads['url'].'/'.$filename,
+                        'post_status' => 'publish',
+                      );
+                      $id = wp_insert_attachment( $object, $new_file );
+                      //add_post_meta($post['ID'],$name,$uploads['url'].'/'.$filename);
+                    }
+                  }
+                  break;
+                default:
+                  if(isset($obj->custom_field_values->$name) && !empty($obj->custom_field_values->$name)){
+                    $value = $obj->custom_field_values->$name;
+                    $value = is_array($value) ? serialize($value) : $value;
+                    //update_post_meta($post['ID'],$name,$value);
+                  }
+                  break;
+              }
+              if($name != $main_content[$i]){
+                $meta[$name] = is_array($value) ? serialize($value) : $value;
+              }
+            }
+          } else {
+            if(isset($obj->custom_field_config) && is_array($obj->custom_field_config)){
+              foreach($obj->custom_field_config as $field){
+                $name = $field->name;
+                switch($field->type){
+                  case 'checkbox':
+                    $content .= '<ul>';
+                    foreach($obj->custom_field_values->$name as $value){
+                      $content .= '<li>'.$value.'</li>';
+                    }
+                    $content .= '</ul>\n\n\n';
+                    break;
+                  case 'attach':
+                    if(isset($new_files[$obj->id]) && isset($new_files[$obj->id][$field->name])){
+                      $content .= '<ul>';
+                      foreach($new_files[$obj->id][$field->name] as $file){
+                        $file_c = file_get_contents('https://gathercontent.s3.amazonaws.com/'.$file->filename);
+                        $filename = wp_unique_filename($uploads['path'],$file->original_filename,null);
+                        $new_file = $uploads['path'].'/'.$filename;
+                        $fp = fopen($new_file,'w');
+                        fwrite($fp, $file_c);
+                        fclose($fp);
+                        $object = array(
+                          'post_title' => $filename,
+                          'post_content' => $uploads['url'].'/'.$filename,
+                          'guid' => $uploads['url'].'/'.$filename,
+                          'post_status' => 'publish',
+                        );
+                        $id = wp_insert_attachment( $object, $new_file );
+                        $content .= '<li>'.$uploads['url'].'/'.$filename.'</li>';
+                      }
+                      $content .= '</ul>';
+                    }
+                    break;
+                  default:
+                    if(isset($obj->custom_field_values->$name) && !empty($obj->custom_field_values->$name)){
+                      $content .= '<p>'.$field->label.'<br />'.$obj->custom_field_values->$name.'</p>';
+                    }
+                    break;
+                }
+              }
+            }
+          }
+        }
+
+
+$node = new stdClass();
+$node->nid = '';
+
+if (substr($overwrite_id[$i], 0, 4) == 'new_') {
+  $node->type = substr($overwrite_id[$i], 4);
+} 
+else {
+  $nid = explode('_',$overwrite_id[$i]);
+  $node->nid = $nid[1];
+  $node->type = $nid[0];
+}
+ 
+//Main Node Fields
+$node->name = $page_name[$i];
+$node->title = $node->name;
+$node->language = 'und';
+$node->body['und'][] = array('value' => $content, 'format' => 'full_html');
+$node->created = time();
+$node->changed = $node->created;
+$node->promote = 0; // Display on front page ? 1 : 0
+$node->sticky = 0;  // Display top of page ? 1 : 0
+$node->status = 1;   // Published ? 1 : 0
+$node->comment = 1;
+node_object_prepare($node);
+if ($node = node_submit($node)) {
+  node_save($node);
+  drupal_set_message(t("Node ".$node->title." added correctly"));
+} 
+else {
+  drupal_set_message(t("Node ".$node->title." added incorrectly"), "error");
+}
+}
+}
+  exit;
+}
+  
+  function get_pages(){
+    $pages = gathercontent_get_command('get_pages_by_project',array('id'=>variable_get('gathercontent_project_id')));
+    $original = array();
+    $new_pages = array();
+    $parent_array = array();
+    $type = variable_get('gathercontent_type');
+    foreach($pages->pages as $page){
+      if($page->state != 'meta' && !($type == 'approved' && $page->state != 'signedoff')){
+        $original[$page->id] = $page;
+        $parent_id = $page->parent_id;
+        if($page->repeatable_page_id > 0){
+          $parent_id = $page->repeatable_page_id;
+          if(isset($original[$parent_id])){
+            $page->custom_field_config = $original[$parent_id]->custom_field_config;
+          }
+        }
+        if(!isset($parent_array[$parent_id])){
+          $parent_array[$parent_id] = array();
+        }
+        $parent_array[$parent_id][$page->id] = $page;
+      }
+    }
+    foreach($parent_array as $parent_id => $page_array){
+      $array = $page_array;
+      uasort($array,array(&$this,'sort_pages'));
+      $parent_array[$parent_id] = $array;
+    }
+    if(isset($parent_array[0])){
+      foreach($parent_array[0] as $id => $page){
+        $new_pages[$id] = $page;
+        $new_pages[$id]->children = $this->sort_recursive($parent_array,$id);
+      }
+    }
+    $this->pages = $new_pages;
+    $this->original_array = $original;
+    return $this->pages;
+  }
+  
+  function sort_recursive($pages,$current=0){
+    $children = array();
+    if(isset($pages[$current])){
+      $children = $pages[$current];
+      foreach($children as $id => $page){
+        $children[$id]->children = $this->sort_recursive($pages,$id);
+      }
+    }
+    return $children;
+  }
+  
+  function sort_pages($a,$b){
+    if($a->position == $b->position){
+      if($a->id == $b->id){
+        return 0;
+      } else {
+        return ($a->id < $b->id) ? -1 : 1;
+      }
+    }
+    return ($a->position < $b->position) ? -1 : 1;
+  }
+  
+  function generate_parent_select($cur_arr,$array,$selected,$current=0,$indent=''){
+    foreach($array as $page){
+      if($page->id != $current){
+        $cur_arr[$page->id] = $indent.$page->name;
+        if(isset($page->children)){
+          $cur_arr = $this->generate_parent_select($cur_arr,$page->children,$selected,$current,$indent.'----');
+        }
+      }
+    }
+    return $cur_arr;
+  }
+  
+  function generate_overwrite_select($page_name,$selected){
+    static $arr, $ids;
+    if(!isset($arr)){
+      $types = node_type_get_types();
+      $type_select = array();
+      foreach($types as $type){
+        $arr['new_'.$type->type] = sprintf(t('New (%s)'),$type->name);
+      }
+      
+      foreach($types as $type){
+        $query = db_select('node', 'n')
+          ->condition('n.type',$type->type)
+          ->fields('n',array('title','nid'))
+          ->orderBy('title','ASC')
+          ->execute();
+        if($query->rowCount() > 0){
+          $arr[$type->name] = array();
+          while($row = $query->fetchAssoc()){
+            $arr[$type->name][$type->type.'_'.$row['nid']] = $row['title'];
+            $ids[$type->type.'_'.$row['nid']] = $row['title'];
+          }
+        }
+      }
+    }
+    return array($arr,array_search($selected,$ids));
+  }
+  
+  function generate_main_content_select($fields){
+    $arr = array('0' => t('(Combine all fields)'));
+    if(is_array($fields) && count($fields) > 0){
+      foreach($fields as $f){
+        $arr[$f->name] = $f->label;
+      }
+    }
+    return $arr;
+  }
+  
+  function generate_settings($form,$parent,$array,$index=-1) {
+    $out = '';
+    $index++;
+    foreach($array as $id => $page){
+      $parent_id = $page->parent_id;
+      $field_config = $page->custom_field_config;
+      if($page->repeatable_page_id > 0){
+        $parent_id = $page->repeatable_page_id;
+      }
+      $indent = '';
+      if($index > 0) {
+        for($i=0; $i<$index; $i++) {
+          $indent .= '<div class="form-spacer"></div>';
+        }
+        $indent .= ' ';
+      }
+      $overwrite = $this->generate_overwrite_select($parent_id,$page->name);
+      $form['page_'.$id] = array(
+        '#type' => 'markup',
+        '#prefix' => '<tr class="gc_page">',
+        '#suffix' => '</tr>',
+        'import_'.$id => array(
+          '#type' => 'checkbox',
+          '#prefix' => '<td class="gc_checkbox">',
+          '#suffix' => '</td>'
+        ),
+        'page_id[]' => array(
+          '#type' => 'hidden',
+          '#value' => $id,
+          '#prefix' => '<td class="gc_pagename">'.$indent
+        ),
+        'page_name[]' => array(
+          '#type' => 'textfield',
+          '#suffix' => '</td>',
+          '#value' => $page->name,
+        ),
+        'overwrite_id[]' => array(
+          '#type' => 'select',
+          '#prefix' => '<td class="gc_overwrite">',
+          '#suffix' => '</td>',
+          '#options' => $overwrite[0],
+          '#value' => $overwrite[1],
+        ),
+        'main_content[]' => array(
+          '#type' => 'select',
+          '#prefix' => '<td class="gc_main_content_field">',
+          '#suffix' => '</td>',
+          '#options' => $this->generate_main_content_select($field_config)
+        )
+      );
+      if(isset($page->children) && count($page->children) > 0){
+        $form = $this->generate_settings($form,$page,$page->children,$index);
+      }
+    }
+    return $form;
+  }
+}

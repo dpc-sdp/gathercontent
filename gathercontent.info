@@ -1,0 +1,8 @@
+name = GatherContent
+description = Imports pages from GatherContent into Drupal
+package = Other
+core = 7.x
+dependencies[] = ctools
+configure = admin/config/content/gathercontent
+
+#files[] = gathercontent_api.inc
