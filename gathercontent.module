@@ -19,28 +19,43 @@ function gathercontent_help($path, $arg) {
 function gathercontent_menu() {
   $items = array(
     'admin/config/content/gathercontent' => array(
-      'title' => t('GatherContent'),
-      'description' => t('Import your content from GatherContent'),
+      'title' => 'GatherContent',
+      'description' => 'Import pages from GatherContent.',
+      'page callback' => 'system_admin_menu_block_page',
+      'access arguments' => array('administer gathercontent'),
+      'file' => 'system.admin.inc',
+      'file path' => drupal_get_path('module', 'system'),
+    ),
+    'admin/config/content/gathercontent/settings' => array(
+      'title' => t('Settings'),
+      'description' => t('Administer GatherContent settings.'),
       'page callback' => 'drupal_get_form',
       'page arguments' => array('gathercontent_api_admin'),
       'access arguments' => array('administer gathercontent'),
       'file' => 'gathercontent_admin.inc',
+      'type' => MENU_NORMAL_ITEM,
     ),
-    'admin/config/content/gathercontent/import' => array(
-      'title' => 'Import',
-      'page callback' => 'gathercontent_import_wizard',
+    'admin/config/content/gathercontent/%ctools_js/import' => array(
+      'title' => 'Import pages',
+      'description' => t('Use the wizard to import pages from GatherContent.'),
+      'page callback' => 'gathercontent_import',
+      'page arguments' => array(4),
       'access callback' => TRUE,
       'access arguments' => array('administer gathercontent'),
-      'type' => MENU_LOCAL_ACTION,
+      'type' => MENU_NORMAL_ITEM,
     ),
   );
   return $items;
 }
 
+function ctools_js_to_arg() {
+  return 'nojs';
+}
+
 /**
  * Implements hook_permission().
  */
-function gathercontent_permission(){
+function gathercontent_permission() {
   return array(
     'administer gathercontent' => array(
       'title' => t('Administer GatherContent'),
@@ -52,29 +67,28 @@ function gathercontent_permission(){
 /**
  * Import wizard, built with CTools multistep form wizard.
  */
-function gathercontent_import_wizard($js = NULL, $step = NULL) {
+function gathercontent_import($js = NULL, $step = NULL) {
   if ($js) {
     ctools_include('modal');
     ctools_include('ajax');
   }
- 
   // Define array for ctools multistep wizard.
   $form_info = array(
-    'id' => 'gathercontent_import',
-    // 'path' => "admin/config/content/gathercontent/" . ($js ? 'ajax' : 'nojs') . "/import/%step",
-    'path' => 'admin/config/content/gathercontent/import/%step',
-    'show trail' => TRUE,
+    'id' => 'gathercontent-import-form',
+    'path' => "admin/config/content/gathercontent/" . ($js ? 'ajax' : 'nojs') . "/import/%step",
+    'show trail' => FALSE,
     'show back' => TRUE,
-    'show cancel' => TRUE,
-    'show return' => TRUE,
+    'show cancel' => FALSE,
+    'show return' => FALSE,
+    'finish text' => 'Import pages',
     'next callback' => 'gathercontent_import_next',
     'finish callback' => 'gathercontent_import_finish',
     'cancel callback' => 'gathercontent_import_cancel',
  
     // Define forms order.
     'order' => array(
-      'project' => t('Select the project you want to import pages from'),
-      'page_type' => t('Do you want to import all or only approved pages?'),
+      'project' => t('Select project'),
+      'page_type' => t('Select page type'),
       'pages' => t('Import pages'),
     ),
  
@@ -99,65 +113,36 @@ function gathercontent_import_wizard($js = NULL, $step = NULL) {
   // in creation.
   //
   // We skip all this here by just using an id of 1.
-  // $object_id = 1;
+  $object_id = 1;
  
-  // if (empty($step)) {
+  if (empty($step)) {
  
-  //   // We reset the form when $step is NULL because that means they have
-  //   // for whatever reason started over.
-  //   gathercontent_import_cache_clear($object_id);
-  //   $step = 'project';
-  // }
+    // We reset the form when $step is NULL because that means they have
+    // for whatever reason started over.
+    gathercontent_import_cache_clear($object_id);
+    $step = 'project';
+  }
  
-  // // This automatically gets defaults if there wasn't anything saved.
-  // $object = gathercontent_import_cache_get($object_id);
+  // This automatically gets defaults if there wasn't anything saved.
+  $object = gathercontent_import_cache_get($object_id);
  
-  // // live $form_state changes.
-  // $form_state = array(
-  //   'ajax' => $js,
+  // live $form_state changes.
+  $form_state = array(
+    'ajax' => $js,
  
-  //   // Put our object and ID into the form state cache so we can easily find it.
-  //   'object_id' => $object_id,
-  //   'object' => &$object,
-  // );
+    // Put our object and ID into the form state cache so we can easily find it.
+    'object_id' => $object_id,
+    'object' => &$object,
+  );
  
   // Send this all off to our form. This is like drupal_get_form only wizardy.
   ctools_include('wizard');
   $form = ctools_wizard_multistep_form($form_info, $step, $form_state);
+  
   $output = drupal_render($form);
   
   return $output;
 
-  // if ($js) {
-  //   // If javascript is active, we have to use a render array.
-  //   $commands = array();
-  //   if ($output === FALSE || !empty($form_state['complete'])) {
-  //     // Dismiss the modal.
-  //     $commands[] = ajax_command_html('#ctools-sample', render(gathercontent_import_get_result($object)));
-  //     $commands[] = ctools_modal_command_dismiss();
-  //  }
-  //   elseif (!empty($form_state['cancel'])) {
- 
-  //     // If cancelling, return to the activity.
-  //     $commands[] = ctools_modal_command_dismiss();
-  //   }
-  //   else {
-  //     $commands = ctools_modal_form_render($form_state, $output);
-  //   }
-  //   print ajax_render($commands);
-  // }
-  // else {
-  //   if ($output === FALSE || !empty($form_state['complete'])) {
- 
-  //     return render(gathercontent_import_get_result($object)) . "\n\r" . l(t('Back'), 'example-link');
-  //   }
-  //   elseif (!empty($form_state['cancel'])) {
-  //     drupal_goto('example-link');
-  //   }
-  //   else {
-  //     return $output;
-  //   }
-  // }
 }
 
 /**
@@ -196,12 +181,6 @@ function gathercontent_import_cache_set($id, $object) {
 function gathercontent_import_cache_get($id) {
   ctools_include('object-cache');
   $object = ctools_object_cache_get('gathercontent_import', $id);
-  if (!$object) {
-    // Create a default object.
-    $object = new stdClass;
-  }
- 
-  return $object;
 }
 
 /**
@@ -232,8 +211,6 @@ function gathercontent_import_cancel(&$form_state) {
 
 /* Import wizard step 1: Select project */
 function gathercontent_import_project($form, &$form_state){
-  $form = array();
-  
   $projects = gathercontent_get_command('get_projects');
   if (isset($resp->is_error)) {
     form_set_error(NULL, $resp->error);
@@ -248,13 +225,15 @@ function gathercontent_import_project($form, &$form_state){
   $project = variable_get('gathercontent_project');
   
   $form['project'] = array(
-    '#title' => t('Select the project you want to import pages from'),
+    '#title' => t('Select the GatherContent project from which you want to import pages:'),
     '#type' => 'radios',
     '#default_value' => ($project == '' ? key($newprojects) : $project),
     '#options' => $newprojects,
     '#required' => TRUE
   );
-  
+  // Remove return button on the first step.
+  $form['buttons']['return']['#access'] = FALSE;
+
   return $form;
 }
 
@@ -263,14 +242,13 @@ function gathercontent_import_project_submit($form, &$form_state) {
 }
 
 /* Import wizard step 2: Select page type */
-function gathercontent_import_page_type($form, &$form_state){
-  $form = array();
-  $type = variable_get('gathercontent_page_type');
+function gathercontent_import_page_type($form, &$form_state) {
+  $page_type = variable_get('gathercontent_page_type');
   $form['page_type'] = array(
     '#title' => t('Select page type'),
     '#type' => 'radios',
-    '#default_value' => ($type == '' ? 'all' : $type),
-    '#options' => array('all'=>t('All Pages'),'approved'=>t('Approved Pages Only')),
+    '#default_value' => ($page_type == '' ? 'all' : $page_type),
+    '#options' => array('all' => t('All pages'), 'approved' => t('Approved pages only')),
     '#required' => TRUE
   );
   
@@ -291,8 +269,7 @@ function gathercontent_import_page_type_submit($form, &$form_state) {
 /* Import wizard step 3: Import pages */
 function gathercontent_import_pages($form, &$form_state) {
   drupal_add_css(drupal_get_path('module', 'gathercontent') . '/gathercontent.css');
-  $form = array();
-  $type = variable_get('gathercontent_type');
+  $type = variable_get('gathercontent_page_type');
   $form['table'] = array(
     '#type' => 'markup',
     '#prefix' => '
@@ -321,31 +298,6 @@ function gathercontent_import_pages_submit($form, &$form_state) {
   $class = new GatherContent_Pages();
   $class->save_settings($form_state);
 }
-
-// function gathercontent_form_finished($form, &$form_state){
-//   $form = array();
-//   $form['page_type'] = array(
-//     '#type' => 'fieldset',
-//     '#title' => t('Success')
-//   );
-  
-//   $form['page_type']['link'] = array(
-//     '#type' => 'markup',
-//     '#markup' => t('<a href="!custom_var_link">Go back to pages screen<a>',array('!custom_var_link' => gathercontent_get_url('pages')))
-//   );
-//   return $form;
-// }
-
-// function gathercontent_get_url($page){
-//   $req = explode('/',request_uri());
-//   if(end($req) != 'gathercontent'){
-//     $req[count($req)-1] = $page;
-//   } else {
-//     $req[] = $page;
-//   }
-//   $url = implode('/',$req);
-//   return $url;
-// }
 
 function gathercontent_get_command($command = '', $postfields = array(), $account_name = '', $api_key = '') {
   if ($account_name == '') {
@@ -556,7 +508,7 @@ else {
 }
   
   function get_pages(){
-    $pages = gathercontent_get_command('get_pages_by_project',array('id'=>variable_get('gathercontent_project_id')));
+    $pages = gathercontent_get_command('get_pages_by_project', array('id' => variable_get('gathercontent_project')));
     $original = array();
     $new_pages = array();
     $parent_array = array();
