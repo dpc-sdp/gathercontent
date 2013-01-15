@@ -9,7 +9,7 @@
  */
 function gathercontent_uninstall() {
   // Remove items from {variables} table.
-  variable_del('gathercontent_api_url');
+  variable_del('gathercontent_account_name');
   variable_del('gathercontent_api_key');
   variable_del('gathercontent_project');
   variable_del('gathercontent_page_type');
