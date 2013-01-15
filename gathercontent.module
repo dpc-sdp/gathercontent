@@ -1,16 +1,26 @@
 <?php
-
-
 /**
  * @file
- * @TODO docs.
+ * Imports pages from GatherContent (http://gathercontent.com/) into Drupal as 
+ * nodes.
+ *
+ * @TODO code efficiency can probably be improved quite a bit 
+ * (for example, batch operation for node creation, OOP vs procedural, ...).
+ * 
+ * @TODO form elements in tableselect form: is this possible/usable at all? 
+ * Ie. is there a way to use the form data?
+ * 
+ * @TODO Move GatherContent API functions to its own file (for example, 
+ * gathercontent_api.inc).
+ * 
+ * @TODO etc etc etc ... See issue queue. Patches welcome!
  */
 
 /**
  * Implements hook_help().
  */
 function gathercontent_help($path, $arg) {
-  // @TODO help. 
+  // @TODO help.
 }
 
 /**
@@ -27,8 +37,8 @@ function gathercontent_menu() {
       'file path' => drupal_get_path('module', 'system'),
     ),
     'admin/config/content/gathercontent/settings' => array(
-      'title' => t('Settings'),
-      'description' => t('Administer GatherContent settings.'),
+      'title' => 'Settings',
+      'description' => 'Administer GatherContent settings.',
       'page callback' => 'drupal_get_form',
       'page arguments' => array('gathercontent_api_admin'),
       'access arguments' => array('administer gathercontent'),
@@ -37,7 +47,7 @@ function gathercontent_menu() {
     ),
     'admin/config/content/gathercontent/%ctools_js/import' => array(
       'title' => 'Import pages',
-      'description' => t('Use the wizard to import pages from GatherContent.'),
+      'description' => 'Use the wizard to import pages from GatherContent.',
       'page callback' => 'gathercontent_import',
       'page arguments' => array(4),
       'access callback' => TRUE,
@@ -48,6 +58,9 @@ function gathercontent_menu() {
   return $items;
 }
 
+/**
+ * Fixes weird menu_translate error.
+ */
 function ctools_js_to_arg() {
   return 'nojs';
 }
@@ -59,8 +72,8 @@ function gathercontent_permission() {
   return array(
     'administer gathercontent' => array(
       'title' => t('Administer GatherContent'),
-      'description' => t('Change settings and import pages from GatherContent')
-    )
+      'description' => t('Change settings and import pages from GatherContent'),
+    ),
   );
 }
 
@@ -84,24 +97,24 @@ function gathercontent_import($js = NULL, $step = NULL) {
     'next callback' => 'gathercontent_import_next',
     'finish callback' => 'gathercontent_import_finish',
     'cancel callback' => 'gathercontent_import_cancel',
- 
+
     // Define forms order.
     'order' => array(
       'page_type' => t('Select page type'),
       'pages' => t('Import pages'),
     ),
- 
-   // Define forms
+
+    // Define forms.
     'forms' => array(
       'page_type' => array(
-        'form id' => 'gathercontent_import_page_type'
+        'form id' => 'gathercontent_import_page_type',
       ),
       'pages' => array(
-        'form id' => 'gathercontent_import_pages'
+        'form id' => 'gathercontent_import_pages',
       ),
     ),
   );
- 
+
   // We're not using any real storage here, so we're going to set our
   // object_id to 1. When using wizard forms, id management turns
   // out to be one of the hardest parts. Editing an object with an id
@@ -110,52 +123,48 @@ function gathercontent_import($js = NULL, $step = NULL) {
   //
   // We skip all this here by just using an id of 1.
   $object_id = 1;
- 
+
   if (empty($step)) {
- 
+
     // We reset the form when $step is NULL because that means they have
     // for whatever reason started over.
     gathercontent_import_cache_clear($object_id);
     $step = 'page_type';
   }
- 
+
   // This automatically gets defaults if there wasn't anything saved.
   $object = gathercontent_import_cache_get($object_id);
- 
-  // live $form_state changes.
+
+  // Live $form_state changes.
   $form_state = array(
     'ajax' => $js,
- 
+
     // Put our object and ID into the form state cache so we can easily find it.
     'object_id' => $object_id,
     'object' => &$object,
   );
- 
+
   // Send this all off to our form. This is like drupal_get_form only wizardy.
   ctools_include('wizard');
   $form = ctools_wizard_multistep_form($form_info, $step, $form_state);
-  
-  $output = drupal_render($form);
-  
-  return $output;
 
+  $output = drupal_render($form);
+
+  return $output;
 }
 
 /**
  * Clears CTools' multistep form cache.
- *
- * @param integer $id
- *   cache id.
  */
 function gathercontent_import_cache_clear($id) {
   ctools_include('object-cache');
   ctools_object_cache_clear('gathercontent_import', $id);
 }
- 
+
 /**
  * Stores CTools' multistep form cache so we can retain data from form to form.
  *
- * @param integer $id
+ * @param int $id
  *   cache id.
  * @param object $object
  *   object with form values.
@@ -164,11 +173,11 @@ function gathercontent_import_cache_set($id, $object) {
   ctools_include('object-cache');
   ctools_object_cache_set('gathercontent_import', $id, $object);
 }
- 
+
 /**
  * Gets the current object from the cache, or default.
  *
- * @param integer $id
+ * @param int $id
  *   cache id.
  *
  * @return object
@@ -187,7 +196,7 @@ function gathercontent_import_cache_get($id) {
 function gathercontent_import_next(&$form_state) {
   gathercontent_import_cache_set($form_state['object_id'], $form_state['object']);
 }
- 
+
 /**
  * Handles the 'finish' click on teh add/edit pane form wizard.
  *
@@ -197,7 +206,7 @@ function gathercontent_import_next(&$form_state) {
 function gathercontent_import_finish(&$form_state) {
   $form_state['complete'] = TRUE;
 }
- 
+
 /**
  * Handles the 'cancel' click on the add/edit pane form wizard.
  */
@@ -205,7 +214,9 @@ function gathercontent_import_cancel(&$form_state) {
   $form_state['cancel'] = TRUE;
 }
 
-/* Import wizard step 1: Select page type */
+/**
+ * Import wizard step 1: Select page type.
+ */
 function gathercontent_import_page_type($form, &$form_state) {
   $page_type = variable_get('gathercontent_page_type');
   $form['gathercontent_page_type'] = array(
@@ -213,33 +224,38 @@ function gathercontent_import_page_type($form, &$form_state) {
     '#type' => 'radios',
     '#default_value' => ($page_type == '' ? 'all' : $page_type),
     '#options' => array('all' => t('All pages'), 'approved' => t('Approved pages only')),
-    '#required' => TRUE
+    '#required' => TRUE,
   );
-  
+
   return $form;
 }
 
+/**
+ * Form submit handler.
+ */
 function gathercontent_import_page_type_submit($form, &$form_state) {
   variable_set('gathercontent_page_type', $form_state['values']['gathercontent_page_type']);
 }
 
-/* Import wizard step 2: Import pages */
+/**
+ * Import wizard step 2: Import pages.
+ */
 function gathercontent_import_pages($form, &$form_state) {
-  $class = new GatherContent_Pages();
-  $pages = $class->get_pages();
+  $class = new GatherContentPages();
+  $pages = $class->getPages();
 
   // Build table header.
   $header = array(
     'title' => t('Page title'),
+    // @TODO: Major todo: figure out if there's way to use form elements in a
+    // tableselect form. It's possible to display them, but seems impossible to
+    // actually use the form data.
     // 'page_name' => t('Page title'),
     // 'overwrite_id' => t('Overwrite?'),
     // 'main_content' => t('Fields'),
   );
 
-  // @TODO: Major todo: figure out if there's way to use form elements in a tableselect form.
-  // It's possible to display them, but seems impossible to actually the data set in the form
-  // elements, eg. to change the title, content types, fields.
-  $options = $class->generate_settings($pages);
+  $options = $class->pageImportForm($pages);
   $form['pages_list'] = array(
     '#type' => 'tableselect',
     '#header' => $header,
@@ -251,93 +267,101 @@ function gathercontent_import_pages($form, &$form_state) {
 }
 
 function gathercontent_import_pages_submit($form, &$form_state) {
-  $class = new GatherContent_Pages();
+  $class = new GatherContentPages();
   // Get rid of unchecked rows.
   $page_ids = array_filter($form_state['values']['pages_list']);
-  $class->save_settings($page_ids);
+  $class->createNodes($page_ids);
 }
 
+/**
+ * Connecting to the GatherContent API. Data retrieved as JSON.
+ */
 function gathercontent_get_command($command = '', $postfields = array(), $account_name = '', $api_key = '') {
   if ($account_name == '') {
     $account_name = variable_get('gathercontent_account_name');
   }
-  if ($api_key == ''){
+  if ($api_key == '') {
     $api_key = variable_get('gathercontent_api_key');
   }
-  $api_url = 'https://' . $account_name . '.gathercontent.com/api/0.1/' . $command; 
-  $postfields = http_build_query($postfields); 
+  $api_url = 'https://' . $account_name . '.gathercontent.com/api/0.1/' . $command;
+  $postfields = http_build_query($postfields);
   $session = curl_init();
-  curl_setopt($session, CURLOPT_URL, $api_url); 
-  curl_setopt($session, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST); 
-  curl_setopt($session, CURLOPT_HEADER, false); 
-  curl_setopt($session, CURLOPT_HTTPHEADER, array('Accept: application/json', 'Content-Type: application/x-www-form-urlencoded')); 
-  curl_setopt($session, CURLOPT_RETURNTRANSFER, true); 
-  curl_setopt($session, CURLOPT_USERPWD, $api_key . ":x"); 
-  curl_setopt($session, CURLOPT_POST, true); 
-  curl_setopt($session, CURLOPT_POSTFIELDS, $postfields); 
-  curl_setopt($session, CURLOPT_SSL_VERIFYPEER, true); 
-  $response = curl_exec($session); 
-  $httpcode = curl_getinfo($session, CURLINFO_HTTP_CODE); 
+  curl_setopt($session, CURLOPT_URL, $api_url);
+  curl_setopt($session, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
+  curl_setopt($session, CURLOPT_HEADER, FALSE);
+  curl_setopt($session, CURLOPT_HTTPHEADER, array('Accept: application/json', 'Content-Type: application/x-www-form-urlencoded'));
+  curl_setopt($session, CURLOPT_RETURNTRANSFER, TRUE);
+  curl_setopt($session, CURLOPT_USERPWD, $api_key . ":x");
+  curl_setopt($session, CURLOPT_POST, TRUE);
+  curl_setopt($session, CURLOPT_POSTFIELDS, $postfields);
+  curl_setopt($session, CURLOPT_SSL_VERIFYPEER, TRUE);
+  $response = curl_exec($session);
+  $httpcode = curl_getinfo($session, CURLINFO_HTTP_CODE);
   curl_close($session);
   try {
     $resp = json_decode($response);
-    if (isset($resp->success) && $resp->success === true) {
+    if (isset($resp->success) && $resp->success === TRUE) {
       return $resp;
-    } 
+    }
     elseif (isset($resp->error)) {
       if ($resp->error == 'You have to log in.') {
         $error = 'login_error';
       }
       return gathercontent_error_return($resp->error);
-    } 
+    }
     else {
       return gathercontent_error_return('login_error');
     }
-  } 
-  catch(Exception $e) {
+  }
+  catch (Exception $e) {
     return gathercontent_error_return('There was a problem contacting the API. Please check your server allows it.');
   }
-  return false;
+  return FALSE;
 }
 
-function gathercontent_error_return($msg){
-  if($msg == 'login_error'){
+/**
+ * GatherContent API error handling.
+ */
+function gathercontent_error_return($msg) {
+  if ($msg == 'login_error') {
     $msg = sprintf(t('There was a problem contacting the API. Please check your API credentials.'));
   }
   $cls = new stdClass();
-  $cls->is_error = true;
+  $cls->is_error = TRUE;
   $cls->error = t($msg);
   return $cls;
 }
 
-class GatherContent_Pages {
-  var $pages = array();
-  var $original_pages = array();
-  var $cur_counter = 0;
-  
-  function save_settings($page_ids) {
+/**
+ * Class to create Drupal nodes from GatherContent pages. Very simple for now.
+ */
+class GatherContentPages {
+
+  /**
+   * Fetch pages from GatherContent, and create nodes. 
+   */
+  function createNodes($page_ids) {
     foreach ($page_ids as $id) {
       $gc_page_id = substr($id, 11);
-      // Get the page from GatherContent
+      // Get the page from GatherContent.
       $gc_page = gathercontent_get_command('get_page', array('id' => $gc_page_id));
 
       // Get the actual page.
       // @GC: Why is this an array inside an object, and not just an array?
       $gc_page = $gc_page->page[0];
       $body_content = '';
-      // Get all the content fields
+      // Get all the content fields.
       foreach ($gc_page->custom_field_values as $field_name => $field_value) {
         $body_content .= $field_value;
       }
 
       // Prepare creation date.
       $created = strtotime($gc_page->created_at);
-      
-      // dsm($gc_page);
 
       $node = new stdClass();
-      
-      //Main Node Fields
+
+      // Create the node.
+      // @TODO: Move this to a batch operation?
       $node->title = $gc_page->name;
       $node->type = 'page';
       $node->language = LANGUAGE_NONE;
@@ -346,135 +370,100 @@ class GatherContent_Pages {
       if ($node = node_submit($node)) {
         $node->created = $created;
         node_save($node);
-        drupal_set_message(t('<em>' . $node->title . '</em> created successfully.'));
+        drupal_set_message(t('%node_title created successfully.', array('%node_title' => check_plain($node->title))));
       }
       else {
-        drupal_set_message(t('Something went wrong while creating <em>' . $node->title . '</em>: '), 'error');
+        drupal_set_message(t('Something went wrong while creating %node_title:', array('%node_title' => check_plain($node->title) . ' ')), 'error');
       }
     }
   }
-  
-  function get_pages(){
+
+  /**
+   * Get pages from GatherContent.
+   */
+  function getPages() {
     $pages = gathercontent_get_command('get_pages_by_project', array('id' => variable_get('gathercontent_project')));
     $original = array();
     $new_pages = array();
     $parent_array = array();
     $type = variable_get('gathercontent_type');
-    foreach($pages->pages as $page){
-      if($page->state != 'meta' && !($type == 'approved' && $page->state != 'signedoff')){
+    foreach ($pages->pages as $page) {
+      if ($page->state != 'meta' && !($type == 'approved' && $page->state != 'signedoff')) {
         $original[$page->id] = $page;
         $parent_id = $page->parent_id;
-        if($page->repeatable_page_id > 0){
+        if ($page->repeatable_page_id > 0) {
           $parent_id = $page->repeatable_page_id;
-          if(isset($original[$parent_id])){
+          if (isset($original[$parent_id])) {
             $page->custom_field_config = $original[$parent_id]->custom_field_config;
           }
         }
-        if(!isset($parent_array[$parent_id])){
+        if (!isset($parent_array[$parent_id])) {
           $parent_array[$parent_id] = array();
         }
         $parent_array[$parent_id][$page->id] = $page;
       }
     }
-    foreach($parent_array as $parent_id => $page_array){
+    foreach ($parent_array as $parent_id => $page_array) {
       $array = $page_array;
-      uasort($array,array(&$this,'sort_pages'));
+      uasort($array, array(&$this, 'sortPages'));
       $parent_array[$parent_id] = $array;
     }
-    if(isset($parent_array[0])){
-      foreach($parent_array[0] as $id => $page){
+    if (isset($parent_array[0])) {
+      foreach ($parent_array[0] as $id => $page) {
         $new_pages[$id] = $page;
-        $new_pages[$id]->children = $this->sort_recursive($parent_array,$id);
+        $new_pages[$id]->children = $this->sortRecursive($parent_array, $id);
       }
     }
     $this->pages = $new_pages;
     $this->original_array = $original;
     return $this->pages;
   }
-  
-  function sort_recursive($pages,$current=0){
+
+  /**
+   * Sort page children recursively.
+   */
+  function sortRecursive($pages, $current=0) {
     $children = array();
-    if(isset($pages[$current])){
+    if (isset($pages[$current])) {
       $children = $pages[$current];
-      foreach($children as $id => $page){
-        $children[$id]->children = $this->sort_recursive($pages,$id);
+      foreach ($children as $id => $page) {
+        $children[$id]->children = $this->sortRecursive($pages, $id);
       }
     }
     return $children;
   }
-  
-  function sort_pages($a,$b){
-    if($a->position == $b->position){
-      if($a->id == $b->id){
+
+  /**
+   * Sort pages.
+   */
+  function sortPages($a, $b) {
+    if ($a->position == $b->position) {
+      if ($a->id == $b->id) {
         return 0;
-      } else {
+      }
+      else {
         return ($a->id < $b->id) ? -1 : 1;
       }
     }
     return ($a->position < $b->position) ? -1 : 1;
   }
-  
-  function generate_parent_select($cur_arr,$array,$selected,$current=0,$indent=''){
-    foreach($array as $page){
-      if($page->id != $current){
-        $cur_arr[$page->id] = $indent.$page->name;
-        if(isset($page->children)){
-          $cur_arr = $this->generate_parent_select($cur_arr,$page->children,$selected,$current,$indent.'----');
-        }
-      }
-    }
-    return $cur_arr;
-  }
-  
-  function generate_overwrite_select($page_name, $selected){
-    static $arr, $ids;
-    if (!isset($arr)) {
-      $types = node_type_get_types();
-      $type_select = array();
-      foreach ($types as $type) {
-        $arr['new_'.$type->type] = sprintf(t('New (%s)'), $type->name);
-      }
-      
-      foreach ($types as $type) {
-        $query = db_select('node', 'n')
-          ->condition('n.type',$type->type)
-          ->fields('n',array('title','nid'))
-          ->orderBy('title','ASC')
-          ->execute();
-        if ($query->rowCount() > 0) {
-          $arr[$type->name] = array();
-          while ($row = $query->fetchAssoc()) {
-            $arr[$type->name][$type->type . '_' . $row['nid']] = $row['title'];
-            $ids[$type->type . '_' . $row['nid']] = $row['title'];
-          }
-        }
-      }
-    }
-    return array($arr, array_search($selected, $ids));
-  }
-  
-  function generate_main_content_select($fields){
-    $arr = array('0' => t('(Combine all fields)'));
-    if(is_array($fields) && count($fields) > 0){
-      foreach($fields as $f){
-        $arr[$f->name] = $f->label;
-      }
-    }
-    return $arr;
-  }
-  
-  // function generate_settings($form,$parent,$array,$index=-1) {
-  function generate_settings($pages) {
+
+  /**
+   * Generate tableselect form.
+   */
+  function pageImportForm($pages) {
     $index = 0;
     $options = array();
-    
-    return $this->_generate_options($pages, $options, $index);
+
+    return $this->generateOptions($pages, $options, $index);
   }
 
-  // @TODO: Major todo: figure out if there's way to use form elements in a tableselect form.
-  // It's possible to display them, but seems impossible to actually the data set in the form
-  // elements, eg. to change the title, content types, fields.
-  function _generate_options($pages, $options, $index) {
+  // @TODO: Make this function recursive, so it actually imports ALL child
+  // pages, without having to repeat ourselves.
+  /**
+   * Generate table rows.
+   */
+  function generateOptions($pages, $options, $index) {
     foreach ($pages as $id => $page) {
       $index = 0;
       $parent_id = $page->parent_id;
@@ -482,15 +471,17 @@ class GatherContent_Pages {
       if ($page->repeatable_page_id > 0) {
         $parent_id = $page->repeatable_page_id;
       }
-      // $overwrite = $this->generate_overwrite_select($parent_id, $page->name);
       $options['gc_page_id_' . $id] = array(
         'title' => array(
           'data' => array(
             '#markup' => theme('indentation', array('size' => $index)) . $page->name,
             '#title' => $page->name,
-            // '#title_display' => 'invisible',
           ),
         ),
+        // @TODO: Major todo: figure out if there's a way to use form elements
+        // in a tableselect form.
+        // It's possible to display them, but seems impossible to actually use
+        // the form data.
         // 'page_name' => array(
         //   'data' => array(
         //     '#type' => 'textfield',
@@ -500,14 +491,14 @@ class GatherContent_Pages {
         // 'overwrite_id' => array(
         //   'data' => array(
         //     '#type' => 'select',
-        //     '#options' => $overwrite[0],
-        //     '#default_value' => $overwrite[1],
+        //     '#options' => array(),
+        //     '#default_value' => array(),
         //   ),
         // ),
         // 'main_content' => array(
         //   'data' => array(
         //     '#type' => 'select',
-        //     '#options' => $this->generate_main_content_select($field_config),
+        //     '#options' => array(),
         //   ),
         // ),
       );
@@ -520,35 +511,14 @@ class GatherContent_Pages {
           if ($page->repeatable_page_id > 0) {
             $parent_id = $page->repeatable_page_id;
           }
-          // $overwrite = $this->generate_overwrite_select($parent_id, $page->name);
-          
+
           $options['gc_page_id_' . $id] = array(
             'title' => array(
               'data' => array(
                 '#markup' => theme('indentation', array('size' => $index)) . $page->name,
                 '#title' => $page->name,
-                // '#title_display' => 'invisible',
               ),
             ),
-            // 'page_name' => array(
-            //   'data' => array(
-            //     '#type' => 'textfield',
-            //     '#value' => $page->name,
-            //   ),
-            // ),
-            // 'overwrite_id' => array(
-            //   'data' => array(
-            //     '#type' => 'select',
-            //     '#options' => $overwrite[0],
-            //     '#default_value' => $overwrite[1],
-            //   ),
-            // ),
-            // 'main_content' => array(
-            //   'data' => array(
-            //     '#type' => 'select',
-            //     '#options' => $this->generate_main_content_select($field_config),
-            //   ),
-            // ),
           );
         }
       }
