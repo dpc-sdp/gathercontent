@@ -27,7 +27,7 @@ function gathercontent_api_admin() {
     '#type' => 'textfield',
     '#title' => t('GatherContent account name'),
     '#default_value' => variable_get('gathercontent_account_name', ''),
-    '#description' => t("Your GatherContent account name. It's the first part of the GatherContent url when you\'re logged in, eg. https://[accountname].gathercontent.com."),
+    '#description' => t("Your GatherContent account name. It's the first part of the GatherContent url when you're logged in, eg. https://[accountname].gathercontent.com."),
     '#required' => TRUE,
   );
   $form['gathercontent_api_key'] = array(

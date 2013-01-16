@@ -115,31 +115,20 @@ function gathercontent_import($js = NULL, $step = NULL) {
     ),
   );
 
-  // We're not using any real storage here, so we're going to set our
-  // object_id to 1. When using wizard forms, id management turns
-  // out to be one of the hardest parts. Editing an object with an id
-  // is easy, but new objects don't usually have ids until somewhere
-  // in creation.
-  //
-  // We skip all this here by just using an id of 1.
-  $object_id = 1;
+  $object_id = 'gathercontent_import';
 
   if (empty($step)) {
-
-    // We reset the form when $step is NULL because that means they have
-    // for whatever reason started over.
+    // Reset the form when $step is NULL.
     gathercontent_import_cache_clear($object_id);
     $step = 'page_type';
   }
 
-  // This automatically gets defaults if there wasn't anything saved.
+  // This automatically gets defaults if nothing was saved.
   $object = gathercontent_import_cache_get($object_id);
-
+  // dsm($object);
   // Live $form_state changes.
   $form_state = array(
     'ajax' => $js,
-
-    // Put our object and ID into the form state cache so we can easily find it.
     'object_id' => $object_id,
     'object' => &$object,
   );
@@ -156,36 +145,36 @@ function gathercontent_import($js = NULL, $step = NULL) {
 /**
  * Clears CTools' multistep form cache.
  */
-function gathercontent_import_cache_clear($id) {
+function gathercontent_import_cache_clear($name) {
   ctools_include('object-cache');
-  ctools_object_cache_clear('gathercontent_import', $id);
+  ctools_object_cache_clear('gathercontent_import', $name);
 }
 
 /**
  * Stores CTools' multistep form cache so we can retain data from form to form.
  *
- * @param int $id
+ * @param $id
  *   cache id.
  * @param object $object
  *   object with form values.
  */
-function gathercontent_import_cache_set($id, $object) {
+function gathercontent_import_cache_set($name, $object) {
   ctools_include('object-cache');
-  ctools_object_cache_set('gathercontent_import', $id, $object);
+  ctools_object_cache_set('gathercontent_import', $name, $object);
 }
 
 /**
  * Gets the current object from the cache, or default.
  *
- * @param int $id
+ * @param $id
  *   cache id.
  *
  * @return object
  *   cache with stored stuff.
  */
-function gathercontent_import_cache_get($id) {
+function gathercontent_import_cache_get($name) {
   ctools_include('object-cache');
-  $object = ctools_object_cache_get('gathercontent_import', $id);
+  return ctools_object_cache_get('gathercontent_import', $name);
 }
 
 /**
@@ -194,6 +183,7 @@ function gathercontent_import_cache_get($id) {
  * All we need to do is store the updated pane in the cache.
  */
 function gathercontent_import_next(&$form_state) {
+  $form_state['object'] = $form_state['values'];
   gathercontent_import_cache_set($form_state['object_id'], $form_state['object']);
 }
 
@@ -220,7 +210,7 @@ function gathercontent_import_cancel(&$form_state) {
 function gathercontent_import_page_type($form, &$form_state) {
   $page_type = variable_get('gathercontent_page_type');
   $form['gathercontent_page_type'] = array(
-    '#title' => t('Select page type'),
+    '#title' => t("Select page type - NOTE: currently only 'All pages' works."),
     '#type' => 'radios',
     '#default_value' => ($page_type == '' ? 'all' : $page_type),
     '#options' => array('all' => t('All pages'), 'approved' => t('Approved pages only')),
@@ -241,8 +231,9 @@ function gathercontent_import_page_type_submit($form, &$form_state) {
  * Import wizard step 2: Import pages.
  */
 function gathercontent_import_pages($form, &$form_state) {
+  $page_type = $form_state['object']['gathercontent_page_type'];
   $class = new GatherContentPages();
-  $pages = $class->getPages();
+  $pages = $class->getPages($page_type);
 
   // Build table header.
   $header = array(
@@ -381,14 +372,14 @@ class GatherContentPages {
   /**
    * Get pages from GatherContent.
    */
-  function getPages() {
+  function getPages($page_type) {
     $pages = gathercontent_get_command('get_pages_by_project', array('id' => variable_get('gathercontent_project')));
     $original = array();
     $new_pages = array();
     $parent_array = array();
-    $type = variable_get('gathercontent_type');
+    
     foreach ($pages->pages as $page) {
-      if ($page->state != 'meta' && !($type == 'approved' && $page->state != 'signedoff')) {
+      if ($page->state != 'meta' && !($page_type == 'approved' && $page->state != 'signedoff')) {
         $original[$page->id] = $page;
         $parent_id = $page->parent_id;
         if ($page->repeatable_page_id > 0) {
