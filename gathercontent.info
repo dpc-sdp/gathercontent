@@ -5,4 +5,4 @@ core = 7.x
 dependencies[] = ctools
 configure = admin/config/content/gathercontent
 
-#files[] = gathercontent_api.inc
+files[] = gathercontent_pages.inc
