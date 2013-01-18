@@ -9,7 +9,7 @@ class GatherContentPages {
   /**
    * Fetch pages from GatherContent, and create nodes. 
    */
-  function createNodes($page_ids) {
+  public function createNodes($page_ids) {
     foreach ($page_ids as $id) {
       $gc_page_id = substr($id, 11);
       // Get the page from GatherContent.
@@ -50,7 +50,7 @@ class GatherContentPages {
   /**
    * Get pages from GatherContent.
    */
-  function getPages($page_type) {
+  public function getPages($page_type) {
     $pages = gathercontent_get_command('get_pages_by_project', array('id' => variable_get('gathercontent_project')));
     $original = array();
     $new_pages = array();
@@ -91,7 +91,7 @@ class GatherContentPages {
   /**
    * Sort page children recursively.
    */
-  function sortRecursive($pages, $current = 0) {
+  private function sortRecursive($pages, $current = 0) {
     $children = array();
     if (isset($pages[$current])) {
       $children = $pages[$current];
@@ -105,7 +105,7 @@ class GatherContentPages {
   /**
    * Sort pages.
    */
-  function sortPages($a, $b) {
+  private function sortPages($a, $b) {
     if ($a->position == $b->position) {
       if ($a->id == $b->id) {
         return 0;
@@ -120,7 +120,7 @@ class GatherContentPages {
   /**
    * Generate tableselect rows.
    */
-  function pageImportForm($pages, $options, $index = -1) {
+  public function pageImportForm($pages, $options, $index = -1) {
     $index++;
     foreach ($pages as $id => $page) {
       $options['gc_page_id_' . $id] = array(
