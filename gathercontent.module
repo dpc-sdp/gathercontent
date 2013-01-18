@@ -45,7 +45,7 @@ function gathercontent_menu() {
       'file' => 'gathercontent_admin.inc',
       'type' => MENU_NORMAL_ITEM,
     ),
-    'admin/config/content/gathercontent/%ctools_js/import' => array(
+    'admin/config/content/gathercontent/%gathercontent_ctools_js/import' => array(
       'title' => 'Import pages',
       'description' => 'Use the wizard to import pages from GatherContent.',
       'page callback' => 'gathercontent_import',
@@ -61,7 +61,7 @@ function gathercontent_menu() {
 /**
  * Fixes weird menu_translate error.
  */
-function ctools_js_to_arg() {
+function gathercontent_ctools_js_to_arg() {
   return 'nojs';
 }
 
