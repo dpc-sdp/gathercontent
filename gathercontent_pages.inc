@@ -54,7 +54,7 @@ class GatherContentPages {
     $original = array();
     $new_pages = array();
     $parent_array = array();
-    
+
     foreach ($pages->pages as $page) {
       if ($page->state != 'meta' && !($page_type == 'approved' && $page->state != 'signedoff')) {
         $original[$page->id] = $page;
@@ -129,32 +129,9 @@ class GatherContentPages {
             '#title' => $page->name,
           ),
         ),
-        // @TODO: Major todo: figure out if there's a way to use form elements
-        // in a tableselect form.
-        // It's possible to display them, but seems impossible to actually use
-        // the form data.
-        // 'page_name' => array(
-        //   'data' => array(
-        //     '#type' => 'textfield',
-        //     '#value' => $page->name,
-        //   ),
-        // ),
-        // 'overwrite_id' => array(
-        //   'data' => array(
-        //     '#type' => 'select',
-        //     '#options' => array(),
-        //     '#default_value' => array(),
-        //   ),
-        // ),
-        // 'main_content' => array(
-        //   'data' => array(
-        //     '#type' => 'select',
-        //     '#options' => array(),
-        //   ),
-        // ),
       );
 
-      // If the page has children, call this function recursively, so the 
+      // If the page has children, call this function recursively, so the
       // children are added to the form as well.
       if (isset($page->children) && count($page->children) > 0) {
         $options = $this->pageImportForm($page->children, $options, $index);

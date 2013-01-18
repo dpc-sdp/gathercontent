@@ -1,6 +1,6 @@
 This module integrates Drupal with GatherContent, a service to "plan, structure and collaborate on web content" (http://gathercontent.com/).
 
-Currently, the module allows you to import all pages from a GatherContent project, creating a node for every GatherContent page. See the issue queue for future plans.
+Currently, the module allows you to import all pages from a GatherContent project, creating a node for every GatherContent page.
 
 Instructions:
 

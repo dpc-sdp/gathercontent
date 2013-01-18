@@ -153,8 +153,9 @@ function gathercontent_import_cache_clear($name) {
 /**
  * Stores CTools' multistep form cache so we can retain data from form to form.
  *
- * @param $id
+ * @param string $name
  *   cache id.
+ *
  * @param object $object
  *   object with form values.
  */
@@ -166,7 +167,7 @@ function gathercontent_import_cache_set($name, $object) {
 /**
  * Gets the current object from the cache, or default.
  *
- * @param $id
+ * @param string $name
  *   cache id.
  *
  * @return object
@@ -245,7 +246,7 @@ function gathercontent_import_pages($form, &$form_state) {
     // 'overwrite_id' => t('Overwrite?'),
     // 'main_content' => t('Fields'),
   );
-  
+
   $options = array();
   $rows = $class->pageImportForm($pages, $options);
 
@@ -259,6 +260,9 @@ function gathercontent_import_pages($form, &$form_state) {
   return $form;
 }
 
+/**
+ * Form submit handler.
+ */
 function gathercontent_import_pages_submit($form, &$form_state) {
   $class = new GatherContentPages();
   // Get rid of unchecked rows.
