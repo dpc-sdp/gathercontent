@@ -91,7 +91,7 @@ class GatherContentPages {
   /**
    * Sort page children recursively.
    */
-  private function sortRecursive($pages, $current = 0) {
+  protected function sortRecursive($pages, $current = 0) {
     $children = array();
     if (isset($pages[$current])) {
       $children = $pages[$current];
@@ -105,7 +105,7 @@ class GatherContentPages {
   /**
    * Sort pages.
    */
-  private function sortPages($a, $b) {
+  protected function sortPages($a, $b) {
     if ($a->position == $b->position) {
       if ($a->id == $b->id) {
         return 0;
