@@ -266,7 +266,8 @@ function gathercontent_import_content_type_submit($form, &$form_state) {
  * Import wizard step 3: Import pages.
  */
 function gathercontent_import_pages($form, &$form_state) {
-  // @TODO: Why doesn't gathercontent_page_type get passed into $form_state['object']?
+  // @TODO: Why doesn't gathercontent_page_type get passed into 
+  // $form_state['object']?
   // $page_type = $form_state['object']['gathercontent_page_type'];
   $page_type = variable_get('gathercontent_page_type');
   $class = new GatherContentPages();
