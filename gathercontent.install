@@ -13,4 +13,5 @@ function gathercontent_uninstall() {
   variable_del('gathercontent_api_key');
   variable_del('gathercontent_project');
   variable_del('gathercontent_page_type');
+  variable_del('gathercontent_content_type');
 }

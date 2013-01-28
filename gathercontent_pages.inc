@@ -9,7 +9,7 @@ class GatherContentPages {
   /**
    * Fetch pages from GatherContent, and create nodes. 
    */
-  public function createNodes($page_ids) {
+  public function createNodes($page_ids, $content_type) {
     foreach ($page_ids as $id) {
       $gc_page_id = substr($id, 11);
       // Get the page from GatherContent.
@@ -32,7 +32,7 @@ class GatherContentPages {
       // Create the node.
       // @TODO: Move this to a batch operation?
       $node->title = $gc_page->name;
-      $node->type = 'page';
+      $node->type = $content_type;
       $node->language = LANGUAGE_NONE;
       $node->body[$node->language][] = array('value' => $body_content, 'format' => 'full_html');
       node_object_prepare($node);

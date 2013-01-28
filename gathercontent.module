@@ -101,6 +101,7 @@ function gathercontent_import($js = NULL, $step = NULL) {
     // Define forms order.
     'order' => array(
       'page_type' => t('Select page type'),
+      'content_type' => t('Select content type'),
       'pages' => t('Import pages'),
     ),
 
@@ -108,6 +109,9 @@ function gathercontent_import($js = NULL, $step = NULL) {
     'forms' => array(
       'page_type' => array(
         'form id' => 'gathercontent_import_page_type',
+      ),
+      'content_type' => array(
+        'form id' => 'gathercontent_import_content_type',
       ),
       'pages' => array(
         'form id' => 'gathercontent_import_pages',
@@ -229,10 +233,42 @@ function gathercontent_import_page_type_submit($form, &$form_state) {
 }
 
 /**
- * Import wizard step 2: Import pages.
+ * Import wizard step 2: Select content type.
+ */
+function gathercontent_import_content_type($form, &$form_state) {
+  $content_types = array();
+  $available_content_types = node_type_get_types();
+  foreach ($available_content_types as $type => $info) {
+    $content_types[$type] = $info->name;
+  }
+  asort($content_types);
+  $content_type = variable_get('gathercontent_content_type');
+  $form['gathercontent_content_type'] = array(
+    '#title' => t("Select content type."),
+    '#description' => t("Select the content type of which you want to create nodes. Make sure the content type has a body field (field mapping may be possible in a future version of this module - see https://drupal.org/node/1890600)."),
+    '#type' => 'select',
+    '#default_value' => ($content_type == '' ? 'all' : $content_type),
+    '#options' => $content_types,
+    '#required' => TRUE,
+  );
+
+  return $form;
+}
+
+/**
+ * Form submit handler.
+ */
+function gathercontent_import_content_type_submit($form, &$form_state) {
+  variable_set('gathercontent_content_type', $form_state['values']['gathercontent_content_type']);
+}
+
+/**
+ * Import wizard step 3: Import pages.
  */
 function gathercontent_import_pages($form, &$form_state) {
-  $page_type = $form_state['object']['gathercontent_page_type'];
+  // @TODO: Why doesn't gathercontent_page_type get passed into $form_state['object']?
+  // $page_type = $form_state['object']['gathercontent_page_type'];
+  $page_type = variable_get('gathercontent_page_type');
   $class = new GatherContentPages();
   $pages = $class->getPages($page_type);
 
@@ -264,10 +300,11 @@ function gathercontent_import_pages($form, &$form_state) {
  * Form submit handler.
  */
 function gathercontent_import_pages_submit($form, &$form_state) {
+  $content_type = $form_state['object']['gathercontent_content_type'];
   $class = new GatherContentPages();
   // Get rid of unchecked rows.
   $page_ids = array_filter($form_state['values']['pages_list']);
-  $class->createNodes($page_ids);
+  $class->createNodes($page_ids, $content_type);
 }
 
 /**
