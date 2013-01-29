@@ -127,7 +127,7 @@ class GatherContentPages {
         'title' => array(
           'data' => array(
             '#markup' => theme('indentation', array('size' => $index)) . $page->name,
-            '#title' => $page->name,
+            '#title' => check_plain($page->name),
           ),
         ),
       );
