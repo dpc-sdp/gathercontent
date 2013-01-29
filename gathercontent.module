@@ -73,6 +73,7 @@ function gathercontent_permission() {
     'administer gathercontent' => array(
       'title' => t('Administer GatherContent'),
       'description' => t('Change settings and import pages from GatherContent'),
+      'restrict access' => TRUE,
     ),
   );
 }
