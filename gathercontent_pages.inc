@@ -29,16 +29,16 @@ class GatherContentPages {
 
       $node = new stdClass();
 
-      // Create the node.
+      // Create the node(s).
       // @TODO: Move this to a batch operation?
       $node->title = $gc_page->name;
       $node->type = $content_type;
       $node->language = LANGUAGE_NONE;
       $node->body[$node->language][] = array('value' => $body_content, 'format' => 'full_html');
       node_object_prepare($node);
-      if ($node = node_submit($node)) {
-        $node->created = $created;
-        node_save($node);
+      $node->created = $created;
+      node_save($node);
+      if ($node->nid) {
         drupal_set_message(t('%node_title created successfully.', array('%node_title' => $node->title)));
       }
       else {
