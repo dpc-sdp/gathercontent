@@ -359,11 +359,13 @@ function gathercontent_get_command($command = '', $postfields = array(), $accoun
  * GatherContent API error handling.
  */
 function gathercontent_error_return($msg) {
-  if ($msg == 'login_error') {
-    $msg = sprintf(t('There was a problem contacting the API. Please check your API credentials.'));
-  }
   $cls = new stdClass();
   $cls->is_error = TRUE;
-  $cls->error = t($msg);
+  if ($msg == 'login_error') {
+    $cls->error = t('There was a problem contacting the API. Please check your API credentials.');
+  }
+  else {
+    $cls->error = t('@error_message', array('@error_message' => $msg));
+  }
   return $cls;
 }
