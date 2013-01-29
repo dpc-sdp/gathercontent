@@ -18,7 +18,7 @@ function gathercontent_api_admin() {
   // page, we're doing this here  instead of the form's validation.
   $resp = gathercontent_get_command('get_me');
   if (isset($resp->is_error)) {
-    drupal_set_message(t('The GatherContent API could not be reached. Please verify your API credentials (Error message: %error_message)', array('%error_message' => check_plain($resp->error))), 'error');
+    drupal_set_message(t('The GatherContent API could not be reached. Please verify your API credentials (Error message: %error_message)', array('%error_message' => $resp->error)), 'error');
   }
   elseif ($resp->success == TRUE) {
     drupal_set_message(t('We have succesfully contacted the GatherContent API.'));

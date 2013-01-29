@@ -39,10 +39,10 @@ class GatherContentPages {
       if ($node = node_submit($node)) {
         $node->created = $created;
         node_save($node);
-        drupal_set_message(t('%node_title created successfully.', array('%node_title' => check_plain($node->title))));
+        drupal_set_message(t('%node_title created successfully.', array('%node_title' => $node->title)));
       }
       else {
-        drupal_set_message(t('Something went wrong while creating %node_title:', array('%node_title' => check_plain($node->title) . ' ')), 'error');
+        drupal_set_message(t('Something went wrong while creating %node_title:', array('%node_title' => $node->title . ' ')), 'error');
       }
     }
   }
