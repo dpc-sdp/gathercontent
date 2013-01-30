@@ -321,6 +321,9 @@ function gathercontent_get_command($command = '', $postfields = array(), $accoun
   }
   $api_url = 'https://' . $account_name . '.gathercontent.com/api/0.1/' . $command;
   $postfields = http_build_query($postfields);
+  // Using cURL, since GatherContent's API requires Digest authentication,
+  // and drupal_http_request() doesn't support that 
+  // (see https://drupal.org/node/289820).
   $session = curl_init();
   curl_setopt($session, CURLOPT_URL, $api_url);
   curl_setopt($session, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
