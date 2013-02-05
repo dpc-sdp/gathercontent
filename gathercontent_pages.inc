@@ -7,7 +7,13 @@
 class GatherContentPages {
 
   /**
-   * Fetch pages from GatherContent, and create nodes. 
+   * Fetch pages from GatherContent, and create nodes.
+   *
+   * @param array $page_ids
+   *   GatherContent page identifiers.
+   *
+   * @param string $content_type
+   *   Which type of content to create.
    */
   public function createNodes($page_ids, $content_type) {
     foreach ($page_ids as $id) {
@@ -48,43 +54,39 @@ class GatherContentPages {
   }
 
   /**
-   * Get pages from GatherContent.
+   * Get pages from GatherContent for a given project.
+   *
+   * @param string $project_id
+   *   The project to fetch pages for. 
    */
-  public function getPages($page_type) {
-    $pages = gathercontent_get_command('get_pages_by_project', array('id' => variable_get('gathercontent_project')));
-    $original = array();
+  public function getPages($project_id) {
+    $pages = gathercontent_get_command('get_pages_by_project', array('id' => $project_id));
     $new_pages = array();
-    $parent_array = array();
-
+    $parents = array();
+    
     foreach ($pages->pages as $page) {
-      if ($page->state != 'meta' && !($page_type == 'approved' && $page->state != 'signedoff')) {
-        $original[$page->id] = $page;
+      // Exclude 'meta' pages from pages list.
+      if ($page->state != 'meta') {
         $parent_id = $page->parent_id;
-        if ($page->repeatable_page_id > 0) {
-          $parent_id = $page->repeatable_page_id;
-          if (isset($original[$parent_id])) {
-            $page->custom_field_config = $original[$parent_id]->custom_field_config;
-          }
-        }
-        if (!isset($parent_array[$parent_id])) {
-          $parent_array[$parent_id] = array();
-        }
-        $parent_array[$parent_id][$page->id] = $page;
+        // @TODO: Not sure if this is still relevant in the GC API, checking
+        // with them.
+        // if ($page->repeatable_page_id > 0) {
+        //   $parent_id = $page->repeatable_page_id;
+        // }
+        $parents[$parent_id][$page->id] = $page;
       }
     }
-    foreach ($parent_array as $parent_id => $page_array) {
-      $array = $page_array;
-      uasort($array, array(&$this, 'sortPages'));
-      $parent_array[$parent_id] = $array;
-    }
-    if (isset($parent_array[0])) {
-      foreach ($parent_array[0] as $id => $page) {
+    // foreach ($page_children as $child_id => $child) {
+    //   $page_children[$child_id] = $child;
+    // }
+    // If there are children, add them to the parent page's array.
+    if (isset($parents[0])) {
+      foreach ($parents[0] as $id => $page) {
         $new_pages[$id] = $page;
-        $new_pages[$id]->children = $this->sortRecursive($parent_array, $id);
+        $new_pages[$id]->children = $this->sortRecursive($parents, $id);
       }
     }
     $this->pages = $new_pages;
-    $this->original_array = $original;
     return $this->pages;
   }
 
@@ -100,21 +102,6 @@ class GatherContentPages {
       }
     }
     return $children;
-  }
-
-  /**
-   * Sort pages.
-   */
-  protected function sortPages($a, $b) {
-    if ($a->position == $b->position) {
-      if ($a->id == $b->id) {
-        return 0;
-      }
-      else {
-        return ($a->id < $b->id) ? -1 : 1;
-      }
-    }
-    return ($a->position < $b->position) ? -1 : 1;
   }
 
   /**
