@@ -55,21 +55,18 @@ class GatherContentPages {
 
   /**
    * Get pages from GatherContent for a given project, and order them by parent.
-   * We use this to build the tableselect form that lists all the pages in a
-   * GatherContent project.
    *
    * @param string $project_id
    *   The project to fetch pages for. 
    * 
    * @return array $pages
-   *   An associative array containing the project's pages, 
-   *   recursively ordered by their parent page.
+   *   The project's pages, ordered by their parent page.
    */
   public static function getPages($project_id) {
     $gathercontent_pages = gathercontent_get_command('get_pages_by_project', array('id' => $project_id));
     $parents = array();
     $pages = array();
-    
+   
     // Populate $parents with parent pages ...
     foreach ($gathercontent_pages->pages as $page) {
       // Exclude 'meta' pages.
@@ -78,7 +75,8 @@ class GatherContentPages {
         $parents[$parent_id][$page->id] = $page;
       }
     }
-    // ... and loop through $parents[0] (since this contains all the parent pages' ids) and add the child pages recursively.
+    // ... then loop through $parents[0] (since this contains all 
+    // the parent ids) and add child pages.
     if (isset($parents[0])) {
       foreach ($parents[0] as $id => $page) {
         $pages[$id] = $page;
@@ -91,7 +89,7 @@ class GatherContentPages {
   /**
    * Sort page children recursively.
    */
-  private static function sortRecursive($pages, $current = 0) {
+  protected static function sortRecursive($pages, $current = 0) {
     $children = array();
     if (isset($pages[$current])) {
       $children = $pages[$current];
