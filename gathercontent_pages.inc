@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * Class to create Drupal nodes from GatherContent pages. Very simple for now.
+ * Class to fetch pages from GatherContent and turn them into Drupal nodes.
  */
 
 class GatherContentPages {

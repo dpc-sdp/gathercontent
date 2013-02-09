@@ -241,7 +241,6 @@ function gathercontent_import_content_type_submit($form, &$form_state) {
  */
 function gathercontent_import_pages($form, &$form_state) {
   $project_id = variable_get('gathercontent_project');
-  // $class = new GatherContentPages();
   $pages = GatherContentPages::getPages($project_id);
 
   // Build table header.
@@ -273,7 +272,6 @@ function gathercontent_import_pages($form, &$form_state) {
  */
 function gathercontent_import_pages_submit($form, &$form_state) {
   $content_type = $form_state['object']['gathercontent_content_type'];
-  // $class = new GatherContentPages();
   // Get rid of unchecked rows.
   $page_ids = array_filter($form_state['values']['pages_list']);
   GatherContentPages::createNodes($page_ids, $content_type);
@@ -338,7 +336,7 @@ function gathercontent_error_return($msg) {
     $cls->error = t('There was a problem contacting the API. Please check your API credentials.');
   }
   else {
-    $cls->error = t('@error_message', array('@error_message' => $msg));
+    $cls->error = $msg;
   }
   return $cls;
 }
