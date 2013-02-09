@@ -15,7 +15,7 @@ class GatherContentPages {
    * @param string $content_type
    *   Which type of content to create.
    */
-  public function createNodes($page_ids, $content_type) {
+  public static function createNodes($page_ids, $content_type) {
     foreach ($page_ids as $id) {
       $gc_page_id = substr($id, 11);
       // Get the page from GatherContent.
@@ -65,7 +65,7 @@ class GatherContentPages {
    *   An associative array containing the project's pages, 
    *   recursively ordered by their parent page.
    */
-  public function getPages($project_id) {
+  public static function getPages($project_id) {
     $gathercontent_pages = gathercontent_get_command('get_pages_by_project', array('id' => $project_id));
     $parents = array();
     $pages = array();
@@ -82,22 +82,21 @@ class GatherContentPages {
     if (isset($parents[0])) {
       foreach ($parents[0] as $id => $page) {
         $pages[$id] = $page;
-        $pages[$id]->children = $this->sortRecursive($parents, $id);
+        $pages[$id]->children = GatherContentPages::sortRecursive($parents, $id);
       }
     }
-    $this->pages = $pages;
-    return $this->pages;
+    return $pages;
   }
 
   /**
    * Sort page children recursively.
    */
-  protected function sortRecursive($pages, $current = 0) {
+  private static function sortRecursive($pages, $current = 0) {
     $children = array();
     if (isset($pages[$current])) {
       $children = $pages[$current];
       foreach ($children as $id => $page) {
-        $children[$id]->children = $this->sortRecursive($pages, $id);
+        $children[$id]->children = GatherContentPages::sortRecursive($pages, $id);
       }
     }
     return $children;
@@ -106,7 +105,7 @@ class GatherContentPages {
   /**
    * Generate tableselect rows.
    */
-  public function pageImportForm($pages, $options, $index = -1) {
+  public static function pageImportForm($pages, $options, $index = -1) {
     $index++;
     foreach ($pages as $id => $page) {
       $options['gc_page_id_' . $id] = array(
@@ -121,7 +120,7 @@ class GatherContentPages {
       // If the page has children, call this function recursively, so the
       // children are added to the form as well.
       if (isset($page->children) && count($page->children) > 0) {
-        $options = $this->pageImportForm($page->children, $options, $index);
+        $options = GatherContentPages::pageImportForm($page->children, $options, $index);
       }
     }
     return $options;
