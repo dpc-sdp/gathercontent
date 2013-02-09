@@ -66,7 +66,7 @@ class GatherContentPages {
     $gathercontent_pages = gathercontent_get_command('get_pages_by_project', array('id' => $project_id));
     $parents = array();
     $pages = array();
-   
+
     // Populate $parents with parent pages ...
     foreach ($gathercontent_pages->pages as $page) {
       // Exclude 'meta' pages.
@@ -75,7 +75,7 @@ class GatherContentPages {
         $parents[$parent_id][$page->id] = $page;
       }
     }
-    // ... then loop through $parents[0] (since this contains all 
+    // ... then loop through $parents[0] (since this contains all
     // the parent ids) and add child pages.
     if (isset($parents[0])) {
       foreach ($parents[0] as $id => $page) {
