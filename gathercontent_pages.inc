@@ -59,9 +59,9 @@ class GatherContentPages {
    * @param string $project_id
    *   The project to fetch pages for. 
    * 
-   * 
    * @return array $pages
    *   The project's pages, ordered by their parent page.
+   *
    */
   public static function getPages($project_id) {
     $gathercontent_pages = gathercontent_get_command('get_pages_by_project', array('id' => $project_id));
