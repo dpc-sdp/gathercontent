@@ -57,8 +57,7 @@ class GatherContentPages {
    * Get pages from GatherContent for a given project, and order them by parent.
    *
    * @param string $project_id
-   *   The project to fetch pages for. 
-   * 
+   *   The project to fetch pages for.
    * @return array $pages
    *   The project's pages, ordered by their parent page.
    */
