@@ -7,7 +7,7 @@
 class GatherContentPages {
 
   /**
-   * Fetch pages from GatherContent, and create nodes.
+   * Fetch the selected pages from GatherContent, and create nodes.
    *
    * @param array $page_ids
    *   GatherContent page identifiers.
@@ -54,39 +54,38 @@ class GatherContentPages {
   }
 
   /**
-   * Get pages from GatherContent for a given project.
+   * Get pages from GatherContent for a given project, and order them by parent.
+   * We use this to build the tableselect form that lists all the pages in a
+   * GatherContent project.
    *
    * @param string $project_id
    *   The project to fetch pages for. 
+   * 
+   * @return array $pages
+   *   An associative array containing the project's pages, 
+   *   recursively ordered by their parent page.
    */
   public function getPages($project_id) {
-    $pages = gathercontent_get_command('get_pages_by_project', array('id' => $project_id));
-    $new_pages = array();
+    $gathercontent_pages = gathercontent_get_command('get_pages_by_project', array('id' => $project_id));
     $parents = array();
+    $pages = array();
     
-    foreach ($pages->pages as $page) {
-      // Exclude 'meta' pages from pages list.
+    // Populate $parents with parent pages ...
+    foreach ($gathercontent_pages->pages as $page) {
+      // Exclude 'meta' pages.
       if ($page->state != 'meta') {
         $parent_id = $page->parent_id;
-        // @TODO: Not sure if this is still relevant in the GC API, checking
-        // with them.
-        // if ($page->repeatable_page_id > 0) {
-        //   $parent_id = $page->repeatable_page_id;
-        // }
         $parents[$parent_id][$page->id] = $page;
       }
     }
-    // foreach ($page_children as $child_id => $child) {
-    //   $page_children[$child_id] = $child;
-    // }
-    // If there are children, add them to the parent page's array.
+    // ... and loop through $parents[0] (since this contains all the parent pages' ids) and add the child pages recursively.
     if (isset($parents[0])) {
       foreach ($parents[0] as $id => $page) {
-        $new_pages[$id] = $page;
-        $new_pages[$id]->children = $this->sortRecursive($parents, $id);
+        $pages[$id] = $page;
+        $pages[$id]->children = $this->sortRecursive($parents, $id);
       }
     }
-    $this->pages = $new_pages;
+    $this->pages = $pages;
     return $this->pages;
   }
 
