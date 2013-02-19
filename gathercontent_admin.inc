@@ -46,7 +46,7 @@ function gathercontent_api_admin() {
       drupal_set_message(t('Please select one of your available GatherContent projects.'), 'warning', FALSE);
     }
     elseif (!empty($project_id)) {
-      drupal_set_message(t('All set! <a href="/admin/config/content/gathercontent/nojs/import">Go ahead</a> and import your GatherContent pages.'), 'status', FALSE);
+      drupal_set_message(t('All set! Go ahead and <a href="/admin/config/content/gathercontent/nojs/import">import your GatherContent pages</a>.'), 'status', FALSE);
     }
     elseif (empty($projects)) {
       drupal_set_message(t('It looks like you didn\'t configure any GatherContent projects yet. <a href="@gc_link">Please do so first</a>, and then continue your import configuration here.'), array('@gc_link' => 'https://' . $account_name . '.gathercontent.com/'), 'warning', FALSE);

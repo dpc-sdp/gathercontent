@@ -260,7 +260,7 @@ function gathercontent_import_pages($form, &$form_state) {
 
   $options = array();
   $rows = GatherContentPages::pageImportForm($pages, $options);
-
+  $form['#prefix'] = '<p>' . t('Select the page(s) you want to import. Then, click the \'Import pages\' button at the bottom of this page.') . '</p>';
   $form['pages_list'] = array(
     '#type' => 'tableselect',
     '#header' => $header,
@@ -291,7 +291,7 @@ function gathercontent_get_command($command = '', $postfields = array(), $accoun
   if ($api_key == '') {
     $api_key = variable_get('gathercontent_api_key');
   }
-  $api_url = 'https://' . $account_name . '.gathercontent.com/api/0.1/' . $command;
+  $api_url = 'https://' . $account_name . '.gathercontent.com/api/0.2/' . $command;
   $postfields = http_build_query($postfields);
   // Using cURL, since GatherContent's API requires Digest authentication,
   // and drupal_http_request() doesn't support that

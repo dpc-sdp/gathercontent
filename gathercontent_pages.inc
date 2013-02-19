@@ -26,12 +26,9 @@ class GatherContentPages {
 
       $body_content = '';
       // Get all the content fields.
-      // @GC: Did $gc_page->custom_field_values become a string? Verifying this
-      // with the GatherContent devs.
-      // foreach ($gc_page->custom_field_values as $field_name => $field_value) {
-      //   $body_content .= $field_value;
-      // }
-      $body_content = $gc_page->custom_field_values;
+      foreach ($gc_page->custom_field_values as $field_name => $field_value) {
+        $body_content .= $field_value;
+      }
 
       // Prepare creation date.
       $created = strtotime($gc_page->created_at);
