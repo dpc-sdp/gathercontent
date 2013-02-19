@@ -20,15 +20,18 @@ class GatherContentPages {
       $gc_page_id = substr($id, 11);
       // Get the page from GatherContent.
       $gc_page = gathercontent_get_command('get_page', array('id' => $gc_page_id));
-
       // Get the actual page.
       // @GC: Why is this an array inside an object, and not just an array?
       $gc_page = $gc_page->page[0];
+      
       $body_content = '';
       // Get all the content fields.
-      foreach ($gc_page->custom_field_values as $field_name => $field_value) {
-        $body_content .= $field_value;
-      }
+      // @GC: Did $gc_page->custom_field_values become a string? Verifying this
+      // with the GatherContent devs.
+      // foreach ($gc_page->custom_field_values as $field_name => $field_value) {
+      //   $body_content .= $field_value;
+      // }
+      $body_content = $gc_page->custom_field_values;
 
       // Prepare creation date.
       $created = strtotime($gc_page->created_at);
@@ -64,26 +67,30 @@ class GatherContentPages {
    */
   public static function getPages($project_id) {
     $gathercontent_pages = gathercontent_get_command('get_pages_by_project', array('id' => $project_id));
-    $parents = array();
-    $pages = array();
-
-    // Populate $parents with parent pages ...
-    foreach ($gathercontent_pages->pages as $page) {
-      // Exclude 'meta' pages.
-      if ($page->state != 'meta') {
-        $parent_id = $page->parent_id;
-        $parents[$parent_id][$page->id] = $page;
-      }
+    if (!isset($project_id)) {
+      drupal_set_message(t('Please select a GatherContent project <a href="/admin/config/content/gathercontent/settings">here</a> before continuing.'), 'warning');
     }
-    // ... then loop through $parents[0] (since this contains all
-    // the parent ids) and add child pages.
-    if (isset($parents[0])) {
-      foreach ($parents[0] as $id => $page) {
-        $pages[$id] = $page;
-        $pages[$id]->children = GatherContentPages::sortRecursive($parents, $id);
+    else {
+      $parents = array();
+      $pages = array();
+      // Populate $parents with parent pages ...
+      foreach ($gathercontent_pages->pages as $page) {
+        // Exclude 'meta' pages.
+        if ($page->state != 'meta') {
+          $parent_id = $page->parent_id;
+          $parents[$parent_id][$page->id] = $page;
+        }
       }
+      // ... then loop through $parents[0] (since this contains all
+      // the parent ids) and add child pages.
+      if (isset($parents[0])) {
+        foreach ($parents[0] as $id => $page) {
+          $pages[$id] = $page;
+          $pages[$id]->children = GatherContentPages::sortRecursive($parents, $id);
+        }
+      }
+      return $pages;
     }
-    return $pages;
   }
 
   /**
@@ -105,22 +112,24 @@ class GatherContentPages {
    */
   public static function pageImportForm($pages, $options, $index = -1) {
     $index++;
-    foreach ($pages as $id => $page) {
-      $options['gc_page_id_' . $id] = array(
-        'title' => array(
-          'data' => array(
-            '#markup' => theme('indentation', array('size' => $index)) . $page->name,
-            '#title' => check_plain($page->name),
+    if (isset($pages)) {
+      foreach ($pages as $id => $page) {
+        $options['gc_page_id_' . $id] = array(
+          'title' => array(
+            'data' => array(
+              '#markup' => theme('indentation', array('size' => $index)) . $page->name,
+              '#title' => check_plain($page->name),
+            ),
           ),
-        ),
-      );
+        );
 
-      // If the page has children, call this function recursively, so the
-      // children are added to the form as well.
-      if (isset($page->children) && count($page->children) > 0) {
-        $options = GatherContentPages::pageImportForm($page->children, $options, $index);
+        // If the page has children, call this function recursively, so the
+        // children are added to the form as well.
+        if (isset($page->children) && count($page->children) > 0) {
+          $options = GatherContentPages::pageImportForm($page->children, $options, $index);
+        }
       }
+      return $options;
     }
-    return $options;
   }
 }

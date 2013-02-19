@@ -210,6 +210,10 @@ function gathercontent_import_cancel(&$form_state) {
  * Import wizard step 1: Select content type.
  */
 function gathercontent_import_content_type($form, &$form_state) {
+  $project_id = variable_get('gathercontent_project_id');
+  if (empty($project_id)) {
+    drupal_set_message(t('Please select a GatherContent project <a href="/admin/config/content/gathercontent/settings">here</a> before continuing.'), 'warning');
+  }
   $content_types = array();
   $available_content_types = node_type_get_types();
   foreach ($available_content_types as $type => $info) {
@@ -219,7 +223,7 @@ function gathercontent_import_content_type($form, &$form_state) {
   $content_type = variable_get('gathercontent_content_type');
   $form['gathercontent_content_type'] = array(
     '#title' => t("Select content type."),
-    '#description' => t("Select the content type of which you want to create nodes. Make sure the content type has a body field (field mapping may be possible in a future version of this module - see https://drupal.org/node/1890600)."),
+    '#description' => t("Select the content type of which you want to create nodes. Make sure the content type has a body field: your GatherContent page content will be imported into the node\'s body field (field mapping may be possible in a future version of this module - see https://drupal.org/node/1890600)."),
     '#type' => 'select',
     '#default_value' => ($content_type == '' ? 'all' : $content_type),
     '#options' => $content_types,
@@ -240,7 +244,7 @@ function gathercontent_import_content_type_submit($form, &$form_state) {
  * Import wizard step 3: Import pages.
  */
 function gathercontent_import_pages($form, &$form_state) {
-  $project_id = variable_get('gathercontent_project');
+  $project_id = variable_get('gathercontent_project_id');
   $pages = GatherContentPages::getPages($project_id);
 
   // Build table header.
