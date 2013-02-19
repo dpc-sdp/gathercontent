@@ -23,7 +23,7 @@ class GatherContentPages {
       // Get the actual page.
       // @GC: Why is this an array inside an object, and not just an array?
       $gc_page = $gc_page->page[0];
-      
+
       $body_content = '';
       // Get all the content fields.
       // @GC: Did $gc_page->custom_field_values become a string? Verifying this
