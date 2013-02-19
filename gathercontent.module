@@ -260,7 +260,7 @@ function gathercontent_import_pages($form, &$form_state) {
 
   $options = array();
   $rows = GatherContentPages::pageImportForm($pages, $options);
-  $form['#prefix'] = '<p>' . t('Select the page(s) you want to import. Then, click the \'Import pages\' button at the bottom of this page.') . '</p>';
+  $form['#prefix'] = '<p>' . t("Select the page(s) you want to import. Then, click the 'Import pages' button at the bottom of this page.") . '</p>';
   $form['pages_list'] = array(
     '#type' => 'tableselect',
     '#header' => $header,
