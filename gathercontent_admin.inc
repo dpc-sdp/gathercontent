@@ -41,16 +41,8 @@ function gathercontent_api_admin() {
   );
 
   if (!empty($account_name) && !empty($api_key)) {
+    // Build an array of available GatherContent projects, if any.
     $projects = gathercontent_get_command('get_projects');
-    if (!empty($projects) && empty($project_id)) {
-      drupal_set_message(t('Please select one of your available GatherContent projects.'), 'warning', FALSE);
-    }
-    elseif (!empty($project_id)) {
-      drupal_set_message(t('All set! Go ahead and <a href="/admin/config/content/gathercontent/nojs/import">import your GatherContent pages</a>.'), 'status', FALSE);
-    }
-    elseif (empty($projects)) {
-      drupal_set_message(t('It looks like you didn\'t configure any GatherContent projects yet. <a href="@gc_link">Please do so first</a>, and then continue your import configuration here.'), array('@gc_link' => 'https://' . $account_name . '.gathercontent.com/'), 'warning', FALSE);
-    }
     $projects_list = array();
     if (is_object($projects) && isset($projects->projects) && is_array($projects->projects)) {
       foreach ($projects->projects as $project) {
@@ -58,12 +50,24 @@ function gathercontent_api_admin() {
       }
       asort($projects_list);
     }
-
+    // Do some error checking first.
+    if (isset($projects->success) && $projects->success == TRUE) {
+      if (empty($project_id) || !array_key_exists($project_id, $projects_list)) {
+      drupal_set_message(t('Please select one of your available GatherContent projects.'), 'warning', FALSE);
+      }
+      elseif (!empty($project_id) && array_key_exists($project_id, $projects_list)) {
+        drupal_set_message(t('All set! Go ahead and <a href="/admin/config/content/gathercontent/nojs/import">import your GatherContent pages</a>.'), 'status', FALSE);
+      }
+    }
+    elseif (isset($projects->is_error) && $projects->is_error == TRUE) {
+      drupal_set_message(t('It looks like you didn\'t configure any GatherContent projects yet. <a href="@gc_link">Please do so first</a>, and then continue your import configuration here.', array('@gc_link' => 'https://' . $account_name . '.gathercontent.com/')), 'warning', FALSE);
+    }
     $form['gathercontent_project_id'] = array(
       '#title' => t('Select the GatherContent project from which you want to import pages:'),
       '#type' => 'radios',
-      '#default_value' => (!empty($project_id) ? $project_id : ''),
-      '#options' => $projects_list,
+      '#default_value' => ((!empty($project_id) && array_key_exists($project_id, $projects_list)) ? $project_id : NULL),
+      '#options' => (!empty($projects_list) ? $projects_list : NULL),
+      '#description' => ((isset($projects->is_error) && $projects->is_error == TRUE) ? t('No projects found. ') : NULL),
       '#required' => TRUE,
     );
   }
