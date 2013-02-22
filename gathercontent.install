@@ -5,6 +5,30 @@
  */
 
 /**
+ * Implements hook_requirements().
+ */
+function gathercontent_requirements($phase) {
+  $requirements = array();
+  $t = get_t();
+  // Check if cURL is installed on the server.
+  // The GatherContent API requires Digest HTTP authentication, which
+  // drupal_http_request() doesn't support yet
+  // (see https://drupal.org/node/289820).
+  $has_curl = function_exists('curl_init');
+
+  $requirements['curl'] = array(
+    'title' => $t('cURL'),
+    'value' => $has_curl ? $t('Enabled') : $t('Not found'),
+  );
+  if (!$has_curl) {
+    $requirements['curl']['severity'] = REQUIREMENT_ERROR;
+    $requirements['curl']['description'] = $t('GatherContent could not be installed because the PHP <a href="@curl_url">cURL</a> library is not available.', array('@curl_url' => 'http://php.net/manual/en/curl.setup.php'));
+  }
+
+  return $requirements;
+}
+
+/**
  * Implements hook_uninstall().
  */
 function gathercontent_uninstall() {
