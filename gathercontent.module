@@ -210,9 +210,24 @@ function gathercontent_import_cancel(&$form_state) {
  * Import wizard step 1: Select content type.
  */
 function gathercontent_import_content_type($form, &$form_state) {
+  $account_name = variable_get('gathercontent_account_name');
+  $api_key = variable_get('gathercontent_api_key');
   $project_id = variable_get('gathercontent_project_id');
-  if (empty($project_id)) {
-    drupal_set_message(t('Please select a GatherContent project <a href="/admin/config/content/gathercontent/settings">here</a> before continuing.'), 'warning');
+  // Build an array of available GatherContent projects, if any.
+  $projects = gathercontent_get_command('get_projects');
+  $projects_list = gathercontent_projects_list($projects);
+  if (empty($account_name) || empty($api_key)) {
+    drupal_set_message(t('Please <a href="/admin/config/content/gathercontent/settings">enter your GatherContent account name and API key</a> before continuing.'), 'warning', FALSE);
+  }
+  if (!empty($account_name) && !empty($api_key)) {
+    if (isset($projects->success) && $projects->success == TRUE) {
+      if (empty($project_id) || !array_key_exists($project_id, $projects_list)) {
+        drupal_set_message(t('Please <a href="/admin/config/content/gathercontent/settings">select one of your available GatherContent projects</a> before continuing.'), 'warning', FALSE);
+      }
+    }
+    elseif (isset($projects->is_error) && $projects->is_error == TRUE) {
+      drupal_set_message(t('It looks like you didn\'t configure any GatherContent projects yet. <a href="@gc_link">Please do so first</a>, then <a href="/admin/config/content/gathercontent/settings">select it here</a> before continuing with your import.', array('@gc_link' => 'https://' . $account_name . '.gathercontent.com/')), 'warning', FALSE);
+    }
   }
   $content_types = array();
   $available_content_types = node_type_get_types();
@@ -343,4 +358,18 @@ function gathercontent_error_return($msg) {
     $cls->error = $msg;
   }
   return $cls;
+}
+
+/**
+ * Build an array of available GatherContent projects.
+ */
+function gathercontent_projects_list($projects) {
+  $projects_list = array();
+  if (is_object($projects) && isset($projects->projects) && is_array($projects->projects)) {
+    foreach ($projects->projects as $project) {
+      $projects_list[$project->id] = $project->name;
+    }
+    asort($projects_list);
+  }
+  return $projects_list;
 }

@@ -43,17 +43,11 @@ function gathercontent_api_admin() {
   if (!empty($account_name) && !empty($api_key)) {
     // Build an array of available GatherContent projects, if any.
     $projects = gathercontent_get_command('get_projects');
-    $projects_list = array();
-    if (is_object($projects) && isset($projects->projects) && is_array($projects->projects)) {
-      foreach ($projects->projects as $project) {
-        $projects_list[$project->id] = $project->name;
-      }
-      asort($projects_list);
-    }
+    $projects_list = gathercontent_projects_list($projects);
     // Do some error checking first.
     if (isset($projects->success) && $projects->success == TRUE) {
       if (empty($project_id) || !array_key_exists($project_id, $projects_list)) {
-      drupal_set_message(t('Please select one of your available GatherContent projects.'), 'warning', FALSE);
+        drupal_set_message(t('Please select one of your available GatherContent projects.'), 'warning', FALSE);
       }
       elseif (!empty($project_id) && array_key_exists($project_id, $projects_list)) {
         drupal_set_message(t('All set! Go ahead and <a href="/admin/config/content/gathercontent/nojs/import">import your GatherContent pages</a>.'), 'status', FALSE);
@@ -68,7 +62,7 @@ function gathercontent_api_admin() {
       '#default_value' => ((!empty($project_id) && array_key_exists($project_id, $projects_list)) ? $project_id : NULL),
       '#options' => (!empty($projects_list) ? $projects_list : NULL),
       '#description' => ((isset($projects->is_error) && $projects->is_error == TRUE) ? t('No projects found. ') : NULL),
-      '#required' => TRUE,
+      '#required' => ((isset($projects->is_error) && $projects->is_error == TRUE) ? FALSE : TRUE),
     );
   }
 
