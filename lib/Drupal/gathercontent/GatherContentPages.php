@@ -6,8 +6,6 @@
 
 namespace Drupal\gathercontent;
 
-use Drupal\Core\Entity\EntityInterface;
-
 class GatherContentPages {
 
   /**
@@ -37,13 +35,22 @@ class GatherContentPages {
       // Prepare creation date.
       $created = strtotime($gc_page->created_at);
 
-      // $node = new stdClass();
+      global $user;
+
+      $values = array(
+        'type' => $content_type,
+        'uid' => $user->uid,
+        'status' => 1,
+        'comment' => 1,
+        'promote' => 0,
+      );
+
+      $node = entity_create('node', $values);
 
       // Create the node(s).
       // @TODO: Move this to a batch operation?
       $node->title = $gc_page->name;
-      $node->type = $content_type;
-      $node->language = LANGUAGE_NONE;
+      $node->language = LANGUAGE_NOT_SPECIFIED;
       $node->body[$node->language][] = array('value' => $body_content, 'format' => 'full_html');
       node_submit($node);
       node_save($node);
