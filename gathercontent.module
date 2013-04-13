@@ -16,6 +16,7 @@
  * @TODO etc etc etc ... See issue queue. Patches welcome!
  */
 
+
 /**
  * Implements hook_help().
  */
@@ -45,24 +46,16 @@ function gathercontent_menu() {
       'file' => 'gathercontent_admin.inc',
       'type' => MENU_NORMAL_ITEM,
     ),
-    'admin/config/content/gathercontent/%gathercontent_ctools_js/import' => array(
+    'admin/config/content/gathercontent/import' => array(
       'title' => 'Import pages',
-      'description' => 'Use the wizard to import pages from GatherContent.',
-      'page callback' => 'gathercontent_import',
-      'page arguments' => array(4),
-      'access callback' => TRUE,
+      'description' => 'Import pages from GatherContent.',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('gathercontent_import_form'),
       'access arguments' => array('administer gathercontent'),
       'type' => MENU_NORMAL_ITEM,
     ),
   );
   return $items;
-}
-
-/**
- * Fixes weird menu_translate error.
- */
-function gathercontent_ctools_js_to_arg() {
-  return 'nojs';
 }
 
 /**
@@ -79,137 +72,13 @@ function gathercontent_permission() {
 }
 
 /**
- * Import wizard, built with CTools multistep form wizard.
+ * Import form.
+ * In the 7.x version of this module, this used to be a CTools multistep form.
+ * In D8, this could become a multistep form once https://drupal.org/node/1886616 gets in.
  */
-function gathercontent_import($js = NULL, $step = NULL) {
-  if ($js) {
-    ctools_include('modal');
-    ctools_include('ajax');
-  }
-  // Define array for ctools multistep wizard.
-  $form_info = array(
-    'id' => 'gathercontent-import-form',
-    'path' => "admin/config/content/gathercontent/" . ($js ? 'ajax' : 'nojs') . "/import/%step",
-    'show trail' => FALSE,
-    'show back' => TRUE,
-    'show cancel' => FALSE,
-    'show return' => FALSE,
-    'finish text' => 'Import pages',
-    'next callback' => 'gathercontent_import_next',
-    'finish callback' => 'gathercontent_import_finish',
-    'cancel callback' => 'gathercontent_import_cancel',
-
-    // Define forms order.
-    'order' => array(
-      'content_type' => t('Select content type'),
-      'pages' => t('Import pages'),
-    ),
-
-    // Define forms.
-    'forms' => array(
-      'content_type' => array(
-        'form id' => 'gathercontent_import_content_type',
-      ),
-      'pages' => array(
-        'form id' => 'gathercontent_import_pages',
-      ),
-    ),
-  );
-
-  $object_id = 'gathercontent_import';
-
-  if (empty($step)) {
-    // Reset the form when $step is NULL.
-    gathercontent_import_cache_clear($object_id);
-    $step = 'content_type';
-  }
-
-  // This automatically gets defaults if nothing was saved.
-  $object = gathercontent_import_cache_get($object_id);
-
-  // Live $form_state changes.
-  $form_state = array(
-    'ajax' => $js,
-    'object_id' => $object_id,
-    'object' => &$object,
-  );
-
-  // Send this all off to our form. This is like drupal_get_form only wizardy.
-  ctools_include('wizard');
-  $form = ctools_wizard_multistep_form($form_info, $step, $form_state);
-
-  $output = drupal_render($form);
-
-  return $output;
-}
-
-/**
- * Clears CTools' multistep form cache.
- */
-function gathercontent_import_cache_clear($name) {
-  ctools_include('object-cache');
-  ctools_object_cache_clear('gathercontent_import', $name);
-}
-
-/**
- * Stores CTools' multistep form cache so we can retain data from form to form.
- *
- * @param string $name
- *   cache id.
- *
- * @param object $object
- *   object with form values.
- */
-function gathercontent_import_cache_set($name, $object) {
-  ctools_include('object-cache');
-  ctools_object_cache_set('gathercontent_import', $name, $object);
-}
-
-/**
- * Gets the current object from the cache, or default.
- *
- * @param string $name
- *   cache id.
- *
- * @return object
- *   cache with stored stuff.
- */
-function gathercontent_import_cache_get($name) {
-  ctools_include('object-cache');
-  return ctools_object_cache_get('gathercontent_import', $name);
-}
-
-/**
- * Handles the 'next' click on the add/edit pane form wizard.
- *
- * All we need to do is store the updated pane in the cache.
- */
-function gathercontent_import_next(&$form_state) {
-  $form_state['object'] = $form_state['values'];
-  gathercontent_import_cache_set($form_state['object_id'], $form_state['object']);
-}
-
-/**
- * Handles the 'finish' click on teh add/edit pane form wizard.
- *
- * All we need to do is set a flag so the return can handle adding
- * the pane.
- */
-function gathercontent_import_finish(&$form_state) {
-  $form_state['complete'] = TRUE;
-}
-
-/**
- * Handles the 'cancel' click on the add/edit pane form wizard.
- */
-function gathercontent_import_cancel(&$form_state) {
-  $form_state['cancel'] = TRUE;
-}
-
-/**
- * Import wizard step 1: Select content type.
- */
-function gathercontent_import_content_type($form, &$form_state) {
+function gathercontent_import_form($js = NULL, $step = NULL) {
+  $gathercontent = new Drupal\gathercontent\GatherContentPages;
+  // Let's do some error handling first.
   $account_name = variable_get('gathercontent_account_name');
   $api_key = variable_get('gathercontent_api_key');
   $project_id = variable_get('gathercontent_project_id');
@@ -229,38 +98,9 @@ function gathercontent_import_content_type($form, &$form_state) {
       drupal_set_message(t('It looks like you didn\'t configure any GatherContent projects yet. <a href="@gc_link">Please do so first</a>, then <a href="/admin/config/content/gathercontent/settings">select it here</a> before continuing with your import.', array('@gc_link' => 'https://' . $account_name . '.gathercontent.com/')), 'warning', FALSE);
     }
   }
-  $content_types = array();
-  $available_content_types = node_type_get_types();
-  foreach ($available_content_types as $type => $info) {
-    $content_types[$type] = $info->name;
-  }
-  asort($content_types);
-  $content_type = variable_get('gathercontent_content_type');
-  $form['gathercontent_content_type'] = array(
-    '#title' => t("Select content type."),
-    '#description' => t("Select the content type of which you want to create nodes. Make sure the content type has a body field: your GatherContent page content will be imported into the node\'s body field (field mapping may be possible in a future version of this module - see https://drupal.org/node/1890600)."),
-    '#type' => 'select',
-    '#default_value' => ($content_type == '' ? 'all' : $content_type),
-    '#options' => $content_types,
-    '#required' => TRUE,
-  );
-
-  return $form;
-}
-
-/**
- * Form submit handler.
- */
-function gathercontent_import_content_type_submit($form, &$form_state) {
-  variable_set('gathercontent_content_type', $form_state['values']['gathercontent_content_type']);
-}
-
-/**
- * Import wizard step 3: Import pages.
- */
-function gathercontent_import_pages($form, &$form_state) {
+  
   $project_id = variable_get('gathercontent_project_id');
-  $pages = GatherContentPages::getPages($project_id);
+  $pages = $gathercontent::getPages($project_id);
 
   // Build table header.
   $header = array(
@@ -274,7 +114,7 @@ function gathercontent_import_pages($form, &$form_state) {
   );
 
   $options = array();
-  $rows = GatherContentPages::pageImportForm($pages, $options);
+  $rows = $gathercontent::pageImportForm($pages, $options);
   $form['#prefix'] = '<p>' . t("Select the page(s) you want to import. Then, click the 'Import pages' button at the bottom of this page.") . '</p>';
   $form['pages_list'] = array(
     '#type' => 'tableselect',
@@ -282,7 +122,12 @@ function gathercontent_import_pages($form, &$form_state) {
     '#options' => $rows,
     '#empty' => t('No pages found.'),
   );
-
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Import pages'),
+  );
+  $form['#submit'][] = 'gathercontent_import_pages_submit';
+  
   return $form;
 }
 
@@ -290,10 +135,11 @@ function gathercontent_import_pages($form, &$form_state) {
  * Form submit handler.
  */
 function gathercontent_import_pages_submit($form, &$form_state) {
-  $content_type = $form_state['object']['gathercontent_content_type'];
+  $gathercontent = new Drupal\gathercontent\GatherContentPages;
+  $content_type = variable_get('gathercontent_content_type');
   // Get rid of unchecked rows.
   $page_ids = array_filter($form_state['values']['pages_list']);
-  GatherContentPages::createNodes($page_ids, $content_type);
+  $gathercontent::createNodes($page_ids, $content_type);
 }
 
 /**

@@ -4,6 +4,10 @@
  * Class to fetch pages from GatherContent and turn them into Drupal nodes.
  */
 
+namespace Drupal\gathercontent;
+
+use Drupal\Core\Entity\EntityInterface;
+
 class GatherContentPages {
 
   /**
@@ -33,7 +37,7 @@ class GatherContentPages {
       // Prepare creation date.
       $created = strtotime($gc_page->created_at);
 
-      $node = new stdClass();
+      // $node = new stdClass();
 
       // Create the node(s).
       // @TODO: Move this to a batch operation?
@@ -41,8 +45,7 @@ class GatherContentPages {
       $node->type = $content_type;
       $node->language = LANGUAGE_NONE;
       $node->body[$node->language][] = array('value' => $body_content, 'format' => 'full_html');
-      node_object_prepare($node);
-      $node->created = $created;
+      node_submit($node);
       node_save($node);
       if ($node->nid) {
         drupal_set_message(t('%node_title created successfully.', array('%node_title' => $node->title)));

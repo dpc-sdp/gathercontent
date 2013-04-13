@@ -66,5 +66,22 @@ function gathercontent_api_admin() {
     );
   }
 
+  // Select content type.
+  $content_types = array();
+  $available_content_types = node_type_get_types();
+  foreach ($available_content_types as $type => $info) {
+    $content_types[$type] = $info->name;
+  }
+  asort($content_types);
+  $content_type = variable_get('gathercontent_content_type');
+  $form['gathercontent_content_type'] = array(
+    '#title' => t("Select content type."),
+    '#description' => t("Select the content type of which you want to create nodes. Make sure the content type has a body field: your GatherContent page content will be imported into the node\'s body field (field mapping may be possible in a future version of this module - see https://drupal.org/node/1890600)."),
+    '#type' => 'select',
+    '#default_value' => ($content_type == '' ? 'all' : $content_type),
+    '#options' => $content_types,
+    '#required' => TRUE,
+  );
+
   return system_settings_form($form);
 }
