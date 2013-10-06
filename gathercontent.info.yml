@@ -3,3 +3,4 @@ description: Imports pages from GatherContent into Drupal
 package: Other
 core: 8.x
 configure: admin/config/content/gathercontent
+type: module
