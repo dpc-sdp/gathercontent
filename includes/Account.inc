@@ -68,7 +68,7 @@ class Account {
     $accounts = array();
 
     try {
-      $response = $this->client->send('/accounts');
+      $response = $this->client->get('/accounts');
 
       if ($response->getStatusCode() === 200) {
         $data = json_decode($response->getBody());
