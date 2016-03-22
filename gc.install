@@ -1,0 +1,143 @@
+<?php
+
+/**
+ * @file
+ * Install and uninstall script for GatherContent module.
+ */
+
+function gc_install() {
+  db_add_field(
+    'node',
+    'gc_mapping_id',
+    array(
+      'definition' => 'The ID of GatherContent mapping.',
+      'type' => 'int',
+      'unsigned' => TRUE,
+    )
+  );
+  db_add_field(
+    'node',
+    'gc_id',
+    array(
+      'definition' => 'The ID of content in GatherContent.',
+      'type' => 'int',
+      'unsigned' => TRUE,
+    )
+  );
+  db_add_field(
+    'file_managed',
+    'gc_id',
+    array(
+      'definition' => 'The ID of file in GatherContent.',
+      'type' => 'int',
+      'unsigned' => TRUE,
+    )
+  );
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function gc_uninstall() {
+  variable_del('gc_username');
+  variable_del('gc_api_key');
+  variable_del('gc_account');
+
+  db_drop_field('node', 'gc_mapping_id');
+  db_drop_field('node', 'gc_id');
+  db_drop_field('file_managed', 'gc_id');
+}
+
+/**
+ * Implements schema for our custom entity.
+ *
+ * @inheritdoc
+ */
+function gc_schema() {
+  $schema = array();
+
+  $schema['gc_mapping'] = array(
+    'description' => 'The base table for the Mapping entity',
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'gc_project_id' => array(
+        'type' => 'int',
+        'length' => 11,
+        'not null' => TRUE,
+      ),
+      'gc_project' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'gc_template_id' => array(
+        'type' => 'int',
+        'length' => 11,
+        'not null' => TRUE,
+      ),
+      'gc_template' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'content_type' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'data' => array(
+        'type' => 'blob',
+        'not null' => TRUE,
+        'size' => 'big',
+        'serialize' => TRUE,
+      ),
+      'created' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'updated_drupal' => array(
+        'type' => 'int',
+        'not null' => FALSE,
+      ),
+      'updated_gc' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array('id'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_schema_alter().
+ *
+ * Adding extra properties to node.
+ *
+ * @inheritdoc
+ */
+function gc_schema_alter(&$schema) {
+  $schema['node']['fields']['gc_mapping_id'] = array(
+    'definition' => 'The ID of GatherContent mapping.',
+    'type' => 'int',
+    'unsigned' => TRUE,
+  );
+  $schema['node']['fields']['gc_id'] = array(
+    'definition' => 'The ID of content in GatherContent.',
+    'type' => 'int',
+    'unsigned' => TRUE,
+  );
+  $schema['file_managed']['fields']['gc_id'] = array(
+    'definition' => 'The ID of file in GatherContent.',
+    'type' => 'int',
+    'unsigned' => TRUE,
+  );
+}

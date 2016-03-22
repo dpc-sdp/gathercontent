@@ -1,0 +1,18 @@
+name = GatherContent
+description = Imports items from GatherContent to your Drupal CMS
+package = GatherContent
+core = 7.x
+configure = admin/config/content/gc/config
+dependencies[] = image
+dependencies[] = file
+dependencies[] = entity
+dependencies[] = views
+
+files[] = "includes/Account.inc"
+files[] = "includes/Project.inc"
+files[] = "views/gc.views.inc"
+files[] = "views/handlers/views_handler_field_mapping_link_delete.inc"
+files[] = "views/handlers/views_handler_field_mapping_link_edit.inc"
+files[] = "gc.import.inc"
+files[] = "gc.authentication.inc"
+files[] = "gc.mapping.inc"
