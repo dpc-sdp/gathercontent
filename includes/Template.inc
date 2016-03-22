@@ -36,13 +36,15 @@ class Template {
 
     $this->client = new Client(
       array(
-        'base_uri' => 'https://api.gathercontent.com',
-        'auth' => array(
-          $username,
-          $api_key,
-        ),
-        'headers' => array(
-          'Accept' => 'application/vnd.gathercontent.v0.5+json',
+        'base_url' => 'https://api.gathercontent.com',
+        'defaults' => array(
+          'auth' => array(
+            $username,
+            $api_key,
+          ),
+          'headers' => array(
+            'Accept' => 'application/vnd.gathercontent.v0.5+json',
+          ),
         ),
       )
     );
@@ -57,9 +59,8 @@ class Template {
   public function getTemplates($project_id) {
     $templates = array();
 
-    $request = new Request('GET', '/templates?project_id=' . $project_id);
     try {
-      $response = $this->client->send($request);
+      $response = $this->client->get('/templates?project_id=' . $project_id);
       if ($response->getStatusCode() === 200) {
         $data = json_decode($response->getBody());
         foreach ($data->data as $template) {
@@ -83,9 +84,8 @@ class Template {
    */
   public function getTemplate($template_id) {
     $template = NULL;
-    $request = new Request('GET', '/templates/' . $template_id);
     try {
-      $response = $this->client->send($request);
+      $response = $this->client->get('/templates/' . $template_id);
       if ($response->getStatusCode() === 200) {
         $data = json_decode($response->getBody());
         $template = $data->data;

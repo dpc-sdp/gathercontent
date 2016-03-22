@@ -4,6 +4,8 @@ namespace GatherContent;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Message\Request;
+use Namshi\Cuzzle\Formatter\CurlFormatter;
+
 
 class Project {
   private $client;
@@ -37,13 +39,15 @@ class Project {
 
       $this->client = new Client(
         array(
-          'base_uri' => 'https://api.gathercontent.com',
-          'auth' => array(
-            $username,
-            $api_key,
-          ),
-          'headers' => array(
-            'Accept' => 'application/vnd.gathercontent.v0.5+json',
+          'base_url' => 'https://api.gathercontent.com',
+          'defaults' => array(
+            'auth' => array(
+              $username,
+              $api_key,
+            ),
+            'headers' => array(
+              'Accept' => 'application/vnd.gathercontent.v0.5+json',
+            ),
           ),
         )
       );
@@ -64,9 +68,8 @@ class Project {
       reset($account);
       $account_id = key($account);
 
-      $request = new Request('GET', '/projects?account_id=' . $account_id);
       try {
-        $response = $this->client->send($request);
+        $response = $this->client->get('/projects?account_id=' . $account_id);
         if ($response->getStatusCode() === 200) {
           $data = json_decode($response->getBody());
           foreach ($data->data as $project) {

@@ -43,13 +43,15 @@ class Content {
 
     $this->client = new Client(
       array(
-        'base_uri' => 'https://api.gathercontent.com',
-        'auth' => array(
-          $username,
-          $api_key,
-        ),
-        'headers' => array(
-          'Accept' => 'application/vnd.gathercontent.v0.5+json',
+        'base_url' => 'https://api.gathercontent.com',
+        'defaults' => array(
+          'auth' => array(
+            $username,
+            $api_key,
+          ),
+          'headers' => array(
+            'Accept' => 'application/vnd.gathercontent.v0.5+json',
+          ),
         ),
       )
     );
@@ -66,8 +68,7 @@ class Content {
     $accounts = array();
 
     try {
-      $request = new Request('GET', '/items?project_id=' . $project_id);
-      $response = $this->client->send($request);
+      $response = $this->client->get('/items?project_id=' . $project_id);
 
       if ($response->getStatusCode() === 200) {
         $data = json_decode($response->getBody());
@@ -95,8 +96,7 @@ class Content {
     $accounts = array();
 
     try {
-      $request = new Request('GET', '/items/' . $content_id);
-      $response = $this->client->send($request);
+      $response = $this->client->get('/items/' . $content_id);
 
       if ($response->getStatusCode() === 200) {
         $data = json_decode($response->getBody());
@@ -124,8 +124,7 @@ class Content {
     $accounts = array();
 
     try {
-      $request = new Request('GET', '/items/' . $content_id . '/files');
-      $response = $this->client->send($request);
+      $response = $this->client->get('/items/' . $content_id . '/files');
 
       if ($response->getStatusCode() === 200) {
         $data = json_decode($response->getBody());

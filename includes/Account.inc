@@ -43,13 +43,15 @@ class Account {
 
     $this->client = new Client(
       array(
-        'base_uri' => 'https://api.gathercontent.com',
-        'auth' => array(
-          $username,
-          $api_key,
-        ),
-        'headers' => array(
-          'Accept' => 'application/vnd.gathercontent.v0.5+json',
+        'base_url' => 'https://api.gathercontent.com',
+        'defaults' => array(
+          'auth' => array(
+            $username,
+            $api_key,
+          ),
+          'headers' => array(
+            'Accept' => 'application/vnd.gathercontent.v0.5+json',
+          ),
         ),
       )
     );
@@ -66,8 +68,7 @@ class Account {
     $accounts = array();
 
     try {
-      $request = new Request('GET', '/accounts');
-      $response = $this->client->send($request);
+      $response = $this->client->send('/accounts');
 
       if ($response->getStatusCode() === 200) {
         $data = json_decode($response->getBody());
