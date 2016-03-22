@@ -7,6 +7,10 @@ dependencies[] = image
 dependencies[] = file
 dependencies[] = entity
 dependencies[] = views
+dependencies[] = admin_views
+dependencies[] = views_bulk_operations
+dependencies[] = select_or_other
+dependencies[] = composer_manager
 
 files[] = "includes/Account.inc"
 files[] = "includes/Project.inc"
