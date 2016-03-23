@@ -67,7 +67,7 @@ function gc_menu() {
   $items['admin/config/gc/mapping/%/delete'] = array(
     'title' => 'Delete GatherContent Mapping',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('gc_mapping_delete_form', 5),
+    'page arguments' => array('gc_mapping_delete_form', 4),
     'access arguments' => array(
       'administer gathercontent',
     ),
@@ -77,7 +77,7 @@ function gc_menu() {
   $items['admin/config/gc/mapping/%/edit'] = array(
     'title' => 'Edit GatherContent Mapping',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('gc_mapping_edit_form', 5),
+    'page arguments' => array('gc_mapping_edit_form', 4),
     'access arguments' => array(
       'administer gathercontent',
     ),
