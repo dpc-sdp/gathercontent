@@ -265,7 +265,8 @@ function _gc_fetcher($gc_id, $entity = NULL) {
 
   if (isset($result['gc_mapping'])) {
     $mapping_ids = array_keys($result['gc_mapping']);
-    $mapping = reset(entity_load('gc_mapping', $mapping_ids));
+    $entities = entity_load('gc_mapping', $mapping_ids);
+    $mapping = reset($entities);
 
     $mapping_data = unserialize($mapping->data);
 
@@ -282,7 +283,6 @@ function _gc_fetcher($gc_id, $entity = NULL) {
       $node = entity_metadata_wrapper('node', $entity);
 
       $files = $content_obj->getFiles($gc_id);
-
       foreach ($content->config as $pane) {
         foreach ($pane->elements as $field) {
           if (isset($mapping_data[$field->name]) && !empty($mapping_data[$field->name])) {
@@ -292,8 +292,8 @@ function _gc_fetcher($gc_id, $entity = NULL) {
                   if ($file->field === $field->name) {
                     $node->{$mapping_data[$field->name]}->info();
                     $found = FALSE;
-                    foreach ($node->{$mapping_data[$field->name]} as $value) {
-                      if ($value->gc_id === $file->id) {
+                    foreach ($node->{$mapping_data[$field->name]}->value() as $file) {
+                      if ($file['gc_id'] === $file->id) {
                         $found = TRUE;
                       }
                     }
@@ -301,6 +301,7 @@ function _gc_fetcher($gc_id, $entity = NULL) {
                     if (!$found) {
                       $local_file = file_save_data(file_get_contents($file->url), 'public://' . $file->filename);
                       $local_file->gc_id = $file->id;
+                      file_save($local_file);
                       $node->{$mapping_data[$field->name]}[] = array('fid' => $local_file->fid);
                     }
                   }
@@ -321,6 +322,15 @@ function _gc_fetcher($gc_id, $entity = NULL) {
                 break;
 
               case 'choice_checkbox':
+                foreach ($node->{$mapping_data[$field->name]}->getIterator() as $delta => $item) {
+                  $node->{$mapping_data[$field->name]}->set(array(NULL));
+                }
+                $node->save(TRUE);
+                foreach ($field->options as $option) {
+                  if ($option->selected) {
+                    $node->{$mapping_data[$field->name]}[] = $option->name;
+                  }
+                }
                 break;
 
               case 'section':
