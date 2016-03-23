@@ -15,7 +15,7 @@ function gc_import_form($step = NULL) {
   // Define array for ctools multistep wizard.
   $form_info = array(
     'id' => 'gc_import',
-    'path' => "admin/config/content/gc/import/%step",
+    'path' => "admin/config/gc/import/%step",
     'show trail' => FALSE,
     'show back' => FALSE,
     'show cancel' => FALSE,
@@ -66,7 +66,7 @@ function gc_import_form($step = NULL) {
 
   if ($output === FALSE || !empty($form_state['complete'])) {
     drupal_set_message(t('New mapping has been saved.'));
-    drupal_goto("admin/config/content/gc/mapping");
+    drupal_goto("admin/config/gc/mapping");
   }
 
   return $output;

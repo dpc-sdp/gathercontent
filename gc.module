@@ -33,30 +33,38 @@ function gc_permission() {
  */
 function gc_menu() {
   $items = array();
-  $items['admin/config/content/gc/config'] = array(
-    'title' => 'GatherContent Authentication',
+  $items['admin/config/gc'] = array(
+    'title' => 'GatherContent',
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('administer gathercontent'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
+  );
+
+  $items['admin/config/gc/config'] = array(
+    'title' => 'Authentication',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('gc_authentication_form'),
     'access arguments' => array('administer gathercontent'),
     'file' => 'gc.authentication.inc',
   );
-  $items['admin/config/content/gc/mapping/create'] = array(
-    'title' => 'GatherContent Mapping',
+  $items['admin/config/gc/mapping/create'] = array(
+    'title' => 'Create Mapping',
     'page callback' => 'gc_mapping_form',
     'access arguments' => array(
       'administer gathercontent',
     ),
     'file' => 'gc.mapping.inc',
   );
-  $items['admin/config/content/gc/import'] = array(
-    'title' => 'GatherContent Import Content',
+  $items['admin/config/gc/import'] = array(
+    'title' => 'Import Content',
     'page callback' => 'gc_import_form',
     'access arguments' => array(
       'administer gathercontent',
     ),
     'file' => 'gc.import.inc',
   );
-  $items['admin/config/content/gc/mapping/%/delete'] = array(
+  $items['admin/config/gc/mapping/%/delete'] = array(
     'title' => 'Delete GatherContent Mapping',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('gc_mapping_delete_form', 5),
@@ -66,7 +74,7 @@ function gc_menu() {
     'type' => MENU_CALLBACK,
     'file' => 'gc.mapping.inc',
   );
-  $items['admin/config/content/gc/mapping/%/edit'] = array(
+  $items['admin/config/gc/mapping/%/edit'] = array(
     'title' => 'Edit GatherContent Mapping',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('gc_mapping_edit_form', 5),

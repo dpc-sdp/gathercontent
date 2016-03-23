@@ -7,16 +7,16 @@ function gc_views_default_views() {
   $view = new view();
   $view->name = 'mapping';
   $view->description = '';
-  $view->tag = 'default';
+  $view->tag = 'gc';
   $view->base_table = 'gc_mapping';
-  $view->human_name = 'mapping';
+  $view->human_name = 'Mappings';
   $view->core = 7;
   $view->api_version = '3.0';
   $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
 
   /* Display: Master */
   $handler = $view->new_display('default', 'Master', 'default');
-  $handler->display->display_options['title'] = 'Mapping';
+  $handler->display->display_options['title'] = 'Mappings';
   $handler->display->display_options['use_more_always'] = FALSE;
   $handler->display->display_options['access']['type'] = 'none';
   $handler->display->display_options['cache']['type'] = 'none';
@@ -73,7 +73,7 @@ function gc_views_default_views() {
     ),
     'edit_mapping' => array(
       'align' => '',
-      'separator' => '',
+      'separator' => '&emsp;',
       'empty_column' => 0,
     ),
     'delete_mapping' => array(
@@ -127,9 +127,9 @@ function gc_views_default_views() {
 
   /* Display: Page */
   $handler = $view->new_display('page', 'Page', 'page');
-  $handler->display->display_options['path'] = 'admin/config/content/gc/mapping';
+  $handler->display->display_options['path'] = 'admin/config/gc/mapping';
   $handler->display->display_options['menu']['type'] = 'normal';
-  $handler->display->display_options['menu']['title'] = 'Mapping';
+  $handler->display->display_options['menu']['title'] = 'Mappings';
   $handler->display->display_options['menu']['weight'] = '0';
   $handler->display->display_options['menu']['name'] = 'management';
   $handler->display->display_options['menu']['context'] = 0;
@@ -138,4 +138,21 @@ function gc_views_default_views() {
   $views[$view->name] = $view;
 
   return $views;
+}
+
+
+/**
+ * Implements hook_views_default_views_alter().
+ */
+function gc_views_default_views_alter(&$views) {
+  if (isset($views['admin_views_node'])) {
+    $handler = &$views['admin_views_node']->display['default']->handler;
+    $handler->display->display_options['fields']['views_bulk_operations']['vbo_operations']['action::gc_update'] = array(
+      'selected' => 1,
+      'postpone_processing' => 0,
+      'skip_confirmation' => 0,
+      'override_label' => 0,
+      'label' => '',
+    );
+  }
 }
