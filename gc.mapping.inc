@@ -20,7 +20,7 @@ function gc_mapping_form($step = NULL) {
   // Define array for ctools multistep wizard.
   $form_info = array(
     'id' => 'gc_mapping',
-    'path' => "admin/config/content/gc/mapping/create/%step",
+    'path' => "admin/config/gc/mapping/create/%step",
     'show trail' => FALSE,
     'show back' => FALSE,
     'show cancel' => FALSE,
@@ -71,7 +71,7 @@ function gc_mapping_form($step = NULL) {
 
   if ($output === FALSE || !empty($form_state['complete'])) {
     drupal_set_message(t('New mapping has been saved.'));
-    drupal_goto("admin/config/content/gc/mapping");
+    drupal_goto("admin/config/gc/mapping");
   }
 
   return $output;
@@ -457,7 +457,7 @@ function gc_mapping_delete_form($form, &$form_state, $id) {
   return confirm_form(
     $form,
     t('Are you sure you want to delete this item?'),
-    'admin/config/content/gc/mapping',
+    'admin/config/gc/mapping',
     t('This action cannot be undone.'),
     t('Delete'),
     t('Cancel')
@@ -472,7 +472,7 @@ function gc_mapping_delete_form($form, &$form_state, $id) {
 function gc_mapping_delete_form_submit($form, &$form_state) {
   entity_delete('gc_mapping', $form_state['values']['id']);
   drupal_set_message(t('You removed mapping #@id', array('@id' => $form_state['values']['id'])));
-  $form_state['redirect'] = 'admin/config/content/gc/mapping';
+  $form_state['redirect'] = 'admin/config/gc/mapping';
 }
 
 /**
@@ -630,5 +630,5 @@ function gc_mapping_edit_form_submit($form, &$form_state) {
     drupal_set_message(t('Mapping #@id has been updated.',
       array('@id' => $form_state['values']['id'])));
   }
-  drupal_goto('admin/config/content/gc/mapping');
+  drupal_goto('admin/config/gc/mapping');
 }

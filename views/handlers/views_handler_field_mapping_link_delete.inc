@@ -17,7 +17,7 @@ class views_handler_field_mapping_link_delete extends views_handler_field_node_l
    */
   function render_link($entity, $values) {
     $this->options['alter']['make_link'] = TRUE;
-    $this->options['alter']['path'] = "admin/config/content/gc/mapping/$entity->id/delete";
+    $this->options['alter']['path'] = "admin/config/gc/mapping/$entity->id/delete";
     $this->options['alter']['query'] = drupal_get_destination();
 
     $text = !empty($this->options['text']) ? $this->options['text'] : t('delete');
