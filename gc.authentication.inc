@@ -24,15 +24,20 @@ function gc_authentication_form($form, &$form_state) {
   $form = array();
   $form['gc_username'] = array(
     '#type' => 'textfield',
-    '#title' => t('GatherContent username'),
+    '#title' => t('GatherContent User Email Address'),
     '#required' => TRUE,
     '#default_value' => variable_get('gc_username', ''),
+    '#description' => t('This is the email address you use to login to 
+    GatherContent. Your permissions will determine what accounts, 
+    projects and content is available.'),
   );
   $form['gc_api_key'] = array(
     '#type' => 'textfield',
     '#title' => t('GatherContent API key'),
     '#required' => TRUE,
     '#default_value' => variable_get('gc_api_key', ''),
+    '#description' => l(t('Click to find out where you can generate your API Key'),
+      'https://gathercontent.com/developers/authentication/'),
   );
 
   if (!isset($_SESSION['accounts'])) {
@@ -55,13 +60,16 @@ function gc_authentication_form($form, &$form_state) {
     $form['account'] = array(
       '#type' => 'select',
       '#options' => $_SESSION['accounts'],
-      '#title' => t('Account'),
+      '#title' => t('Select GatherContent Account'),
       '#required' => TRUE,
+      '#description' => t('Multiple accounts will be listed if the GatherContent
+       user has more than one account. Please select the account you want to 
+       import and update content from.'),
     );
 
     $form['submit'] = array(
       '#type' => 'submit',
-      '#value' => t('Submit'),
+      '#value' => t('Save'),
     );
   }
   return $form;
