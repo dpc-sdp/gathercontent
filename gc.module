@@ -40,13 +40,24 @@ function gc_menu() {
     'file' => 'system.admin.inc',
     'file path' => drupal_get_path('module', 'system'),
   );
-
   $items['admin/config/gc/config'] = array(
     'title' => 'Authentication',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('gc_authentication_form'),
     'access arguments' => array('administer gathercontent'),
     'file' => 'gc.authentication.inc',
+  );
+  $items['admin/config/gc/config/config'] = array(
+    'title' => 'Authentication',
+    'access arguments' => array('administer gathercontent'),
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+  $items['admin/config/gc/config/test'] = array(
+    'title' => 'Test connection',
+    'page callback' => 'gc_authentication_test_page',
+    'access arguments' => array('administer gathercontent'),
+    'file' => 'gc.authentication.inc',
+    'type' => MENU_LOCAL_TASK,
   );
   $items['admin/config/gc/mapping/create'] = array(
     'title' => 'Create Mapping',

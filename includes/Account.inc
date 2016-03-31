@@ -9,7 +9,6 @@ namespace GatherContent;
 
 
 use GuzzleHttp\Client;
-use GuzzleHttp\Message\Request;
 
 /**
  * Class Account.
@@ -84,6 +83,28 @@ class Account {
     }
 
     return $accounts;
+  }
+
+  /**
+   * Test connection with current credentials.
+   *
+   * @return bool
+   *   Return TRUE on success connection otherwise FALSE.
+   */
+  public function testConnection() {
+    try {
+      $response = $this->client->get('/me');
+
+      if ($response->getStatusCode() === 200) {
+        return TRUE;
+      }
+      else {
+        return FALSE;
+      }
+    }
+    catch (\Exception $e) {
+      return FALSE;
+    }
   }
 
 }
