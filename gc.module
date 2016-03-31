@@ -50,7 +50,8 @@ function gc_menu() {
   );
   $items['admin/config/gc/mapping/create'] = array(
     'title' => 'Create Mapping',
-    'page callback' => 'gc_mapping_form',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('gc_mapping_form_templates'),
     'access arguments' => array(
       'administer gathercontent',
     ),
@@ -91,7 +92,6 @@ function gc_menu() {
  * Implements hook_entity_info().
  */
 function gc_entity_info() {
-
   $info = array();
 
   $info['gc_mapping'] = array(
@@ -368,5 +368,25 @@ function _gc_fetcher($gc_id, $entity = NULL) {
     else {
       exit(0);
     }
+  }
+}
+
+/**
+ * Implements hook_menu_local_tasks_alter().
+ */
+function gc_menu_local_tasks_alter(&$data, $router_item, $root_path) {
+  if ($root_path === 'admin/config/gc/mapping') {
+    $data['actions']['output'][] = array(
+      '#theme' => 'menu_local_task',
+      '#link' => array(
+        'title' => t('Add new mapping'),
+        'href' => 'admin/config/gc/mapping/create',
+        'localized_options' => array(
+          'attributes' => array(
+            'title' => t('Add new mapping'),
+          ),
+        ),
+      ),
+    );
   }
 }

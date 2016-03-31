@@ -89,12 +89,12 @@ function gc_schema() {
       'content_type' => array(
         'type' => 'varchar',
         'length' => 255,
-        'not null' => TRUE,
+        'not null' => FALSE,
         'default' => '',
       ),
       'data' => array(
         'type' => 'blob',
-        'not null' => TRUE,
+        'not null' => FALSE,
         'size' => 'big',
         'serialize' => TRUE,
       ),
@@ -120,7 +120,7 @@ function gc_schema() {
 /**
  * Implements hook_schema_alter().
  *
- * Adding extra properties to node.
+ * Adding extra properties to node and file_managed.
  *
  * @inheritdoc
  */
@@ -140,4 +140,22 @@ function gc_schema_alter(&$schema) {
     'type' => 'int',
     'unsigned' => TRUE,
   );
+}
+
+/**
+ * Change `content_type` and `data` fields from `gc_mapping` table.
+ */
+function gc_update_7001() {
+  db_change_field('gc_mapping', 'content_type', 'content_type', array(
+    'type' => 'varchar',
+    'length' => 255,
+    'not null' => FALSE,
+    'default' => '',
+  ));
+  db_change_field('gc_mapping', 'data', 'data', array(
+    'type' => 'blob',
+    'not null' => FALSE,
+    'size' => 'big',
+    'serialize' => TRUE,
+  ));
 }
