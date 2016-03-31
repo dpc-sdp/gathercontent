@@ -176,6 +176,7 @@ function gc_mapping_edit_form($form, &$form_state, $id) {
           '#type' => 'fieldset',
           '#title' => $fieldset->label,
           '#collapsible' => TRUE,
+          '#collapsed' => ($i === 0 ? FALSE : TRUE),
         );
 
         foreach ($fieldset->elements as $gc_field) {
@@ -223,7 +224,7 @@ function gc_mapping_edit_form($form, &$form_state, $id) {
         'method' => 'replace',
         'effect' => 'fade',
       ),
-      '#default_value' => (isset($form_state['values']['content_type']) ? $form_state['values']['content_type'] : null),
+      '#default_value' => (isset($form_state['values']['content_type']) ? $form_state['values']['content_type'] : NULL),
     );
 
     $form['mapping'] = array(
@@ -238,6 +239,7 @@ function gc_mapping_edit_form($form, &$form_state, $id) {
             '#type' => 'fieldset',
             '#title' => $fieldset->label,
             '#collapsible' => TRUE,
+            '#collapsed' => ($i === 0 ? FALSE : TRUE),
           );
 
           if ($i === 0) {
