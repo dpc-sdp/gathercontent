@@ -41,17 +41,19 @@ function gc_authentication_form($form, &$form_state) {
   );
 
   if (!isset($_SESSION['accounts'])) {
-    if (!empty($account = variable_get('gc_account'))) {
+    $account = variable_get('gc_account');
+    $account = array_pop($account);
+    if (!empty($account)) {
       $form['current_account'] = array(
         '#prefix' => '<div>',
-        '#markup' => t('Current account is <strong>@account</strong>.', array('@account' => array_pop($account))),
+        '#markup' => t('Current account is <strong>@account</strong>.', array('@account' => $account)),
         '#suffix' => '</div>',
       );
     }
 
     $form['verify'] = array(
       '#type' => 'submit',
-      '#value' => t('Verify'),
+      '#value' => (!empty($account) ? t('Change GatherContent Account') : t('Verify')),
       '#submit' => array('gc_authentication_form_verify'),
     );
   }
@@ -111,5 +113,22 @@ function gc_authentication_form_submit($form, &$form_state) {
   variable_set('gc_account', array($form_state['values']['account'] => $account_name));
   drupal_set_message(t("Credentials and project were saved."));
   unset($_SESSION['accounts']);
+}
 
+/**
+ * Page callback for connection testing page.
+ *
+ * @return string
+ *   Content of the page.
+ */
+function gc_authentication_test_page() {
+  $acc_obj = new Account();
+  $success = $acc_obj->testConnection();
+
+  if ($success === TRUE) {
+    return t('Connection successful');
+  }
+  else {
+    return t('Connection wasn\'t successful');
+  }
 }
