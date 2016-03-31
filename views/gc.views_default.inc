@@ -82,6 +82,14 @@ function gc_views_default_views() {
       'empty_column' => 0,
     ),
   );
+  $handler->display->display_options['style_options']['empty_table'] = TRUE;
+  /* No results behavior: Global: Text area */
+  $handler->display->display_options['empty']['area']['id'] = 'area';
+  $handler->display->display_options['empty']['area']['table'] = 'views';
+  $handler->display->display_options['empty']['area']['field'] = 'area';
+  $handler->display->display_options['empty']['area']['empty'] = TRUE;
+  $handler->display->display_options['empty']['area']['content'] = 'No mappings were created.';
+  $handler->display->display_options['empty']['area']['format'] = 'plain_text';
   /* Field: Mapping: GC Project */
   $handler->display->display_options['fields']['gc_project']['id'] = 'gc_project';
   $handler->display->display_options['fields']['gc_project']['table'] = 'gc_mapping';
@@ -97,12 +105,13 @@ function gc_views_default_views() {
   $handler->display->display_options['fields']['content_type_name']['table'] = 'gc_mapping';
   $handler->display->display_options['fields']['content_type_name']['field'] = 'content_type_name';
   $handler->display->display_options['fields']['content_type_name']['label'] = 'Content type';
+  $handler->display->display_options['fields']['content_type_name']['empty'] = 'None';
   /* Field: Mapping: Updated (Drupal) */
   $handler->display->display_options['fields']['updated_drupal']['id'] = 'updated_drupal';
   $handler->display->display_options['fields']['updated_drupal']['table'] = 'gc_mapping';
   $handler->display->display_options['fields']['updated_drupal']['field'] = 'updated_drupal';
   $handler->display->display_options['fields']['updated_drupal']['empty'] = 'Never';
-  $handler->display->display_options['fields']['updated_drupal']['date_format'] = 'custom';
+  $handler->display->display_options['fields']['updated_drupal']['date_format'] = 'short';
   $handler->display->display_options['fields']['updated_drupal']['custom_date_format'] = 'd.m.Y H:i:s';
   $handler->display->display_options['fields']['updated_drupal']['second_date_format'] = 'long';
   /* Field: Mapping: Updated (GC) */
@@ -110,7 +119,7 @@ function gc_views_default_views() {
   $handler->display->display_options['fields']['updated_gc']['table'] = 'gc_mapping';
   $handler->display->display_options['fields']['updated_gc']['field'] = 'updated_gc';
   $handler->display->display_options['fields']['updated_gc']['label'] = 'Updated (GatherContent)';
-  $handler->display->display_options['fields']['updated_gc']['date_format'] = 'custom';
+  $handler->display->display_options['fields']['updated_gc']['date_format'] = 'short';
   $handler->display->display_options['fields']['updated_gc']['custom_date_format'] = 'd.m.Y H:i:s';
   $handler->display->display_options['fields']['updated_gc']['second_date_format'] = 'long';
   /* Field: Mapping: Edit link */
