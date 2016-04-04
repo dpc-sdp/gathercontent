@@ -12,6 +12,8 @@ dependencies[] = views_bulk_operations
 dependencies[] = select_or_other
 dependencies[] = composer_manager
 
+scripts[] = js/filter.js
+
 files[] = "includes/Account.inc"
 files[] = "includes/Project.inc"
 files[] = "views/gc.views.inc"

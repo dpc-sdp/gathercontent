@@ -9,6 +9,13 @@ include_once "includes/Content.inc";
 use GatherContent\Content;
 
 /**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function gc_form_gc_import_form_select_alter(&$form) {
+  $form['#attributes']['class'][] = 'form-select-import';
+}
+
+/**
  * Implements hook_permission().
  */
 function gc_permission() {
