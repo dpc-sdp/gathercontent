@@ -2,9 +2,11 @@
 
 include_once "includes/Project.inc";
 include_once "includes/Content.inc";
+include_once "includes/Template.inc";
 
 use GatherContent\Content;
 use GatherContent\Project;
+use GatherContent\Template;
 
 /**
  * Multistep form function.
@@ -17,11 +19,12 @@ function gc_import_form($step = NULL) {
     'id' => 'gc_import',
     'path' => "admin/config/gc/import/%step",
     'show trail' => FALSE,
-    'show back' => FALSE,
+    'show back' => TRUE,
     'show cancel' => FALSE,
     'show return' => FALSE,
     'next callback' => 'gc_import_wizard_next',
     'finish callback' => 'gc_import_wizard_finish',
+    'finish text' => t('Import'),
 
     // Define forms order.
     'order' => array(
@@ -177,6 +180,8 @@ function gc_import_form_select($form, &$form_state) {
         $mapping_array[] = $mapping->gc_template_id;
       }
 
+      $tmp_obj = new Template();
+      $templates = $tmp_obj->getTemplates($form_state['values']['project']);
       foreach ($content as $item) {
         // If template is not empty, we have mapped template and item
         // isn't synced yet.
@@ -185,17 +190,19 @@ function gc_import_form_select($form, &$form_state) {
           && in_array($item->template_id, $mapping_array)
         ) {
           $content_table[$item->id] = array(
-            'status' => $item->status->data->name,
+            'status' => '<div style="width:20px; height: 20px; float: left; margin-right: 5px; background: ' . $item->status->data->color . ';"></div>' . $item->status->data->name,
             'title' => $item->name,
             'updated' => $item->updated_at->date,
+            'template' => $templates[$item->template_id],
           );
         }
       }
 
       $header = array(
         'status' => t('Status'),
-        'title' => t('Title'),
-        'updated' => t('Updated in GatherContent'),
+        'title' => t('Item Name'),
+        'updated' => t('Last updated in GatherContent'),
+        'template' => t('GatherContent Template Name'),
       );
 
       $form['import']['content'] = array(
