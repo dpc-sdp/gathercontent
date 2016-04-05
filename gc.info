@@ -13,6 +13,7 @@ dependencies[] = select_or_other
 dependencies[] = composer_manager
 
 scripts[] = js/filter.js
+stylesheets[all][] = css/gc_style.css
 
 files[] = "includes/Account.inc"
 files[] = "includes/Project.inc"
