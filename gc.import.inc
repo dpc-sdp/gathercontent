@@ -190,10 +190,16 @@ function gc_import_form_select($form, &$form_state) {
           && in_array($item->template_id, $mapping_array)
         ) {
           $content_table[$item->id] = array(
-            'status' => '<div style="width:20px; height: 20px; float: left; margin-right: 5px; background: ' . $item->status->data->color . ';"></div>' . $item->status->data->name,
+            'status' => array(
+              'data' => '<div style="width:20px; height: 20px; float: left; margin-right: 5px; background: ' . $item->status->data->color . ';"></div>' . $item->status->data->name,
+              'class' => array('status-item'),
+            ),
             'title' => $item->name,
             'updated' => $item->updated_at->date,
-            'template' => $templates[$item->template_id],
+            'template' => array(
+              'data' => $templates[$item->template_id],
+              'class' => array('template-name-item'),
+            ),
           );
         }
       }
