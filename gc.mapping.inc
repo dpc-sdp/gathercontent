@@ -156,13 +156,16 @@ function gc_mapping_edit_form($form, &$form_state, $id) {
 
     $form = array();
     $form['info'] = array(
-      '#markup' => t('Project name: @name', array('@name' => $mapping->gc_project))
-        . '<br>'
-        . t('GatherContent template: @gc_template', array('@gc_template' => $mapping->gc_template))
-        . '<br>'
-        . '<div class="drupal-content-type">'
-        . t('Drupal content type: @content_type', array('@content_type' => $content_type))
-        . '</div>',
+      '#markup' =>
+      '<div class="project-name">' .
+      t('Project name: @name', array('@name' => $mapping->gc_project))
+      . '</div>'
+      . '<div class="gather-content">'
+      . t('GatherContent template: @gc_template', array('@gc_template' => $mapping->gc_template))
+      . '</div>'
+      . '<div class="drupal-content-type">'
+      . t('Drupal content type: @content_type', array('@content_type' => $content_type))
+      . '</div>',
 
     );
     $form['id'] = array(
