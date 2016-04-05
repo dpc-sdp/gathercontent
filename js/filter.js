@@ -22,10 +22,10 @@
       $("#edit-import table:not(.sticky-header)").once('gc-import-filter', function(){
         $('.gc-import-filters').remove();
 
-        $('.form-select-import .form-item-project').append(" <div class='gc-import-filters project-status'><label for='ga-form-select-status'>Status</label>  <select id='ga-form-select-status' class='form-select'></select></div>");
-        $('.form-select-import .form-item-project').append(" <div class='gc-import-filters'><label for='ga-form-select-template'>GatherContent Template Name</label>  <select id='ga-form-select-template' class='form-select'></div>");
+        $('.form-select-import .form-item-project').append(" <div class='gc-import-filters project-status'><label for='ga-form-select-status'>Status</label>  <select id='ga-form-select-status' class='form-select'><option value='all'>All</option></select></div>");
+        $('.form-select-import .form-item-project').append(" <div class='gc-import-filters'><label for='ga-form-select-template'>GatherContent Template Name</label>  <select id='ga-form-select-template' class='form-select'><option value='all'>All</option></select></div>");
 
-        $('.form-select-import .form-item-project').append(" <div class='gc-import-filters'><label for='ga-form-select-search'>Search</label>  <input placeholder='Filter by Item Name' type='text' id='ga-form-select-search' class='form-text'  maxlength='255' size='60' value=''></div>");
+        $('.form-select-import .form-item-project').append(" <div class='gc-import-filters'><label for='ga-form-select-search'>Search</label>  <input placeholder='Filter by Item Name' type='text' id='ga-form-select-search' class='form-text' value=''></div>");
 
         $("#ga-form-select-search").keyup(function(){
 
@@ -77,6 +77,11 @@
         var selectedValue = $(this).val();
         $("[data-status]").hide();
         $("[data-status='" + selectedValue + "']").show();
+        if(selectedValue == 'all') {
+          $(".gc-import-filter-processed tr").each(function(){
+            $(this).show();
+          });
+        }
       });
 
       $('#ga-form-select-template').bind('change', function() {
@@ -90,6 +95,11 @@
         var selectedValue = $(this).val();
         $("[data-template]").hide();
         $("[data-template='" + selectedValue + "']").show();
+        if(selectedValue == 'all') {
+          $(".gc-import-filter-processed tr").each(function(){
+            $(this).show();
+          });
+        }
       });
 
     }
