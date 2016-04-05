@@ -8,3 +8,10 @@
 .gc-import-filters.project-status {
   padding-left: 0;
 }
+.form-gc-mapping .form-type-select label,
+.form-gc-mapping .form-type-select select {
+  display: inline-block;
+}
+.drupal-content-type {
+  text-align: right;
+}

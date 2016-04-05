@@ -16,6 +16,13 @@ function gc_form_gc_import_form_select_alter(&$form) {
 }
 
 /**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function gc_form_gc_mapping_edit_form_alter(&$form) {
+  $form['#attributes']['class'][] = 'form-gc-mapping';
+}
+
+/**
  * Implements hook_permission().
  */
 function gc_permission() {

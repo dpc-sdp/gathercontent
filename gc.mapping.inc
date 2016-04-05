@@ -160,7 +160,10 @@ function gc_mapping_edit_form($form, &$form_state, $id) {
         . '<br>'
         . t('GatherContent template: @gc_template', array('@gc_template' => $mapping->gc_template))
         . '<br>'
-        . t('Drupal content type: @content_type', array('@content_type' => $content_type)),
+        . '<div class="drupal-content-type">'
+        . t('Drupal content type: @content_type', array('@content_type' => $content_type))
+        . '</div>',
+
     );
     $form['id'] = array(
       '#type' => 'value',
