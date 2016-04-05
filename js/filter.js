@@ -54,8 +54,6 @@
           if ($('#ga-form-select-status option[value="' + optionvalue + '"]').length === 0 ) {
             $('#ga-form-select-status').append("<option value='" + optionvalue  + "'>" + optionText + "</option>");
           }
-          console.log($(this).text());
-          console.log($('#ga-form-select-status option[value="' + optionvalue + '"]').length);
         });
 
         $("#edit-import .template-name-item").each(function(){
@@ -77,7 +75,6 @@
           $(this).attr( "checked", false )
         });
         var selectedValue = $(this).val();
-        console.log(selectedValue);
         $("[data-status]").hide();
         $("[data-status='" + selectedValue + "']").show();
       });
@@ -91,7 +88,6 @@
           $(this).attr( "checked", false )
         });
         var selectedValue = $(this).val();
-        console.log(selectedValue);
         $("[data-template]").hide();
         $("[data-template='" + selectedValue + "']").show();
       });
