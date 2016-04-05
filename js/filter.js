@@ -19,6 +19,28 @@
   Drupal.behaviors.gcImportFilter = {
     attach: function (context, settings) {
 
+      // Create mapping page template counter.
+
+      var counter = 0;
+      $("#gc-mapping-form-templates input[type='checkbox']").change(function() {
+        if($(this).prop('checked')) {
+          counter++;
+        }
+        else {
+          counter--;
+        }
+        $("#gc-mapping-form-templates .vertical-tab-button.last .selected-templates").html(counter);
+      });
+
+
+
+
+      // Import widgets.
+
+      $('#gc-mapping-form-templates .vertical-tab-button.last').append("<a><span class='selected-templates'></span> Templates selected </a>");
+      $("#gc-mapping-form-templates .vertical-tab-button.last .selected-templates").append(counter);
+
+
       $("#edit-import table:not(.sticky-header)").once('gc-import-filter', function(){
         $('.gc-import-filters').remove();
 
@@ -66,8 +88,8 @@
         });
       });
 
-      $('#ga-form-select-status').bind('change', function() {
-
+      $('#ga-form-select-status, #ga-form-select-search, #ga-form-select-template').bind('change keyup', function() {
+        console.log('change called');
         $(".gc-import-filter-processed .selected").each(function(){
           $(this).removeClass('selected');
         });
