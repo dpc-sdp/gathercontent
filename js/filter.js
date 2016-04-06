@@ -48,26 +48,8 @@
 
         $('.form-select-import .form-item-project').append(" <div class='gc-import-filters'><label for='ga-form-select-search'>Search</label>  <input placeholder='Filter by Item Name' type='text' id='ga-form-select-search' class='form-text' value=''></div>");
 
-        $("#ga-form-select-search").keyup(function(){
 
-          // Retrieve the input field text and reset the count to zero.
-          var filter = $(this).val(), count = 0;
-
-          // Loop through the table.
-          $("#edit-import table tbody tr").each(function(){
-
-            // If the list item does not contain the text phrase fade it out.
-            if ($(this).text().search(new RegExp(filter, "i")) < 0) {
-              $(this).fadeOut();
-
-              // Show the list item if the phrase matches and increase the count by 1.
-            } else {
-              $(this).show();
-              count++;
-            }
-          });
-        });
-
+        // I collects the status values of the select box.
         $("#edit-import table tbody .status-item").each(function(){
           var optionText =  $(this).text();
           var optionvalue = optionText.toLowerCase().replace(/[^a-z0-9]/g, '-');
@@ -77,6 +59,7 @@
           }
         });
 
+        // I collects the template values of the select box.
         $("#edit-import .template-name-item").each(function(){
           var optionText =  $(this).text();
           var optionvalue = optionText.toLowerCase().replace(/[^a-z0-9]/g, '-');
@@ -87,42 +70,52 @@
         });
       });
 
+      // If the field condition is changing then we run the filtering.
       $('#ga-form-select-status, #ga-form-select-search, #ga-form-select-template').bind('change keyup', function() {
-        console.log('change called');
+
+        // I collects data from all fields.
+        var statusValue = $("#ga-form-select-status").val();
+        var templateValue = $("#ga-form-select-template").val();
+        var searchValue = $("#ga-form-select-search").val();
+
         $(".gc-import-filter-processed .selected").each(function(){
+          // It removes te bg color from the table rows.
           $(this).removeClass('selected');
         });
         $(".gc-import-filter-processed input[type='checkbox']").each(function(){
+          //It removes the checked attributes from the table rows.
           $(this).attr( "checked", false )
         });
-        var selectedValue = $(this).val();
-        $("[data-status]").hide();
-        $("[data-status='" + selectedValue + "']").show();
-        if(selectedValue == 'all') {
-          $(".gc-import-filter-processed tr").each(function(){
+
+        // Run through every rows.
+        $("#edit-import table tbody tr").each(function(){
+
+          // The default value is the show 'all' items. There is no hidden value by default.
+          var hidden = false;
+
+          // Check status value.
+          if (($(this).data("status") !== statusValue) && statusValue !== 'all') {
+            hidden = true;
+          }
+          // Check template value.
+          if (($(this).data("template") !== templateValue) && templateValue !== 'all') {
+            hidden = true;
+          }
+
+          // If the list item does not contain the text phrase fade it out.
+          if ($(this).text().search(new RegExp(searchValue, "i")) < 0) {
+            hidden = true;
+          }
+
+          // Hide/Show rows after evaluate the conditions.
+          if (hidden) {
+            $(this).hide();
+          }
+          else {
             $(this).show();
-          });
-        }
-      });
-
-      $('#ga-form-select-template').bind('change', function() {
-
-        $(".gc-import-filter-processed .selected").each(function(){
-          $(this).removeClass('selected');
+          }
         });
-        $(".gc-import-filter-processed input[type='checkbox']").each(function(){
-          $(this).attr( "checked", false )
-        });
-        var selectedValue = $(this).val();
-        $("[data-template]").hide();
-        $("[data-template='" + selectedValue + "']").show();
-        if(selectedValue == 'all') {
-          $(".gc-import-filter-processed tr").each(function(){
-            $(this).show();
-          });
-        }
       });
-
     }
   };
 })(jQuery, Drupal);
