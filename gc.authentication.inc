@@ -97,7 +97,7 @@ function gc_authentication_form_verify($form, &$form_state) {
     $accounts[$account->id] = $account->name;
   }
 
-  $_SESSION['accounts'] = $accounts;
+  $_SESSION['accounts'] = $data;
 }
 
 /**
@@ -109,7 +109,13 @@ function gc_authentication_form_verify($form, &$form_state) {
  *   Array with form values and state.
  */
 function gc_authentication_form_submit($form, &$form_state) {
-  $account_name = $_SESSION['accounts'][$form_state['values']['account']];
+  foreach ($_SESSION['accounts'] as $account) {
+    if ($account->id === $form_state['values']['account']) {
+      $account_name = $account->name;
+      variable_set('gc_urlkey', $account->urlkey);
+      break;
+    }
+  }
   variable_set('gc_account', array($form_state['values']['account'] => $account_name));
   drupal_set_message(t("Credentials and project were saved."));
   unset($_SESSION['accounts']);

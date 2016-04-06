@@ -5,8 +5,12 @@
  */
 
 include_once "includes/Content.inc";
+include_once "includes/Project.inc";
+include_once "includes/Template.inc";
 
 use GatherContent\Content;
+use GatherContent\Project;
+use GatherContent\Template;
 
 /**
  * Implements hook_form_FORM_ID_alter().
@@ -200,12 +204,6 @@ function gc_entity_property_info() {
     'type' => 'date',
     'schema field' => 'updated_drupal',
   );
-  $info['gc_mapping']['properties']['updated_gc'] = array(
-    'label' => t('Updated (GC)'),
-    'description' => t('Timestamp of mapping update in GatherContent'),
-    'type' => 'date',
-    'schema field' => 'updated_gc',
-  );
   $info['node']['properties']['gc_mapping_id'] = array(
     'label' => t("GC Mapping ID"),
     'type' => 'integer',
@@ -215,6 +213,11 @@ function gc_entity_property_info() {
     'label' => t("GC ID"),
     'type' => 'integer',
     'description' => t("The ID of content in GatherContent"),
+  );
+  $info['node']['properties']['gc_import_status'] = array(
+    'label' => t("GC Import status"),
+    'type' => 'text',
+    'description' => t("Status of import from GatherContent"),
   );
   $info['file']['properties']['gc_id'] = array(
     'label' => t("GC ID"),
@@ -266,7 +269,7 @@ function gc_action_info() {
  *
  * @see gc_action_info
  */
-function gc_update(&$entity, $context = array()) {
+function gc_update(&$entity, &$context) {
   _gc_fetcher($entity->gc_id, $entity);
 }
 
@@ -277,6 +280,9 @@ function gc_update(&$entity, $context = array()) {
  *   ID of GatherContent piece of content.
  * @param object|null $entity
  *   Object of entity, if we are updating exiting content.
+ *
+ * @return int|FALSE
+ *   Return nid if operation was successful.
  */
 function _gc_fetcher($gc_id, $entity = NULL) {
   global $user;
@@ -389,9 +395,10 @@ function _gc_fetcher($gc_id, $entity = NULL) {
         }
       }
       $node->save(TRUE);
+      return $entity->nid;
     }
     else {
-      exit(0);
+      return FALSE;
     }
   }
 }
@@ -412,6 +419,140 @@ function gc_menu_local_tasks_alter(&$data, $router_item, $root_path) {
           ),
         ),
       ),
+    );
+  }
+}
+
+
+/**
+ * Implements hook_views_pre_render().
+ */
+function gc_views_pre_render(&$view) {
+  if ($view->name == 'update') {
+    $results = &$view->result;
+    $used_mappings = array();
+    $nids = array();
+    foreach ($results as $result) {
+      $nids[] = $result->nid;
+    }
+    $nodes = node_load_multiple($nids);
+    foreach ($nodes as $node) {
+      if (!in_array($node->gc_mapping_id, $used_mappings)) {
+        $used_mappings[] = $node->gc_mapping_id;
+      }
+    }
+
+    $selected_projects = array();
+    $contents = array();
+    $content_obj = new \GatherContent\Content();
+    $mappings = entity_load('gc_mapping', $used_mappings);
+    foreach ($mappings as $mapping) {
+      if (!in_array($mapping->gc_project_id, $selected_projects)) {
+        $selected_projects[] = $mapping->gc_project_id;
+        $content = $content_obj->getContents($mapping->gc_project_id);
+        foreach ($content as $c) {
+          $single_content = array();
+          $single_content['gc_updated'] = $c->updated_at;
+          $single_content['status'] = $c->status;
+          $single_content['name'] = $c->name;
+          $contents[$c->id] = $single_content;
+        }
+      }
+    }
+
+    $view->field['gc_status']->contents = $contents;
+  }
+
+  if ($view->name == 'mapping') {
+    $project_obj = new Project();
+    $projects = $project_obj->getProjectObjects();
+    $temp_obj = new Template();
+    $templates = array();
+    foreach ($projects as $project) {
+      $remote_templates = $temp_obj->getTemplatesObject($project->id);
+      foreach ($remote_templates as $remote_template) {
+        $templates[$remote_template->id]['updated_at'] = $remote_template->updated_at;
+      }
+    }
+    $view->field['gc_updated']->templates = $templates;
+  }
+}
+
+/**
+ * Implements hook_views_bulk_operations_form_alter().
+ */
+function gc_views_bulk_operations_form_alter(&$form, &$form_state, $vbo) {
+  if ($form_state['step'] === 'views_bulk_operations_confirm_form' && $form_state['values']['operation'] === 'action::gc_update') {
+    $array = array(implode('+', array_filter($form_state['values']['views_bulk_operations'])));
+    $view = views_get_view('update');
+    $view->set_display("block_1");
+    $view->set_arguments($array);
+    $view->preview();
+    $content = $view->render();
+    $form['description']['#markup'] = '<p>' . t('Please review your import selection before updating.') . '</p>' . $content;
+    $form['#vbo_confirm_form_title'] = format_plural(count(array_filter($form_state['values']['views_bulk_operations'])),
+      'Confirm update selection (@count item)',
+      'Confirm update selection (@count items)');
+
+    $form['actions']['submit']['#submit'] = array('gc_views_vbo_redirect');
+  }
+}
+
+function gc_views_vbo_redirect($form, &$form_state) {
+  $operations = array();
+  $nodes = node_load_multiple($form_state['selection']);
+  foreach ($nodes as $node) {
+    $operations[] = array(
+      'gc_update_process',
+      array($node),
+    );
+  }
+
+  $batch = array(
+    'title' => t('Updating content ...'),
+    'operations' => $operations,
+    'finished' => 'gc_update_finished',
+    'init_message' => t('Update is starting ...'),
+    'progress_message' => t('Processed @current out of @total.'),
+    'error_message' => t('An error occurred during processing'),
+  );
+
+  batch_set($batch);
+}
+
+/**
+ * Batch operation callback.
+ *
+ * We are doing real update thing here.
+ *
+ * @param object $node
+ *   Object of content we want to update.
+ */
+function gc_update_process($node, &$context) {
+  if (_gc_fetcher($node->gc_id, $node) !== FALSE) {
+    $context['results'][] = $node->nid;
+  };
+}
+
+/**
+ * Finished callback.
+ *
+ * @inheritdoc
+ */
+function gc_update_finished($success, $results, $operations) {
+  if ($success) {
+    drupal_goto('admin/content/update/result/' . implode('+', $results));
+  }
+  else {
+    $error_operation = reset($operations);
+    drupal_set_message(
+      t('An error occurred while processing @operation with arguments : @args',
+        array(
+          '@operation' => $error_operation[0],
+          '@args' => print_r($error_operation[0], TRUE),
+        )
+      ),
+      'error'
     );
   }
 }

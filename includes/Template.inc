@@ -77,6 +77,32 @@ class Template {
   }
 
   /**
+   * Fetch projects from GatherContent.
+   *
+   * @return array
+   *   Associative array of projects.
+   */
+  public function getTemplatesObject($project_id) {
+    $templates = array();
+
+    try {
+      $response = $this->client->get('/templates?project_id=' . $project_id);
+      if ($response->getStatusCode() === 200) {
+        $data = json_decode($response->getBody());
+        foreach ($data->data as $template) {
+          $templates[$template->id] = $template;
+        }
+      }
+    }
+    catch (\Exception $e) {
+      drupal_set_message($e->getMessage(), 'error');
+      watchdog('gathercontent', $e->getMessage(), array(), WATCHDOG_ERROR);
+    }
+
+    return $templates;
+  }
+
+  /**
    * TBD.
    *
    * @param $template_id

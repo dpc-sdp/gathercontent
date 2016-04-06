@@ -3,8 +3,6 @@
 namespace GatherContent;
 
 use GuzzleHttp\Client;
-use GuzzleHttp\Message\Request;
-use Namshi\Cuzzle\Formatter\CurlFormatter;
 
 
 class Project {
@@ -92,4 +90,70 @@ class Project {
     }
   }
 
+  /**
+   * Fetch projects from GatherContent.
+   *
+   * @return array
+   *   Associative array of projects.
+   */
+  public function getProjectObjects() {
+    if (!$this->local) {
+      $account = variable_get('gc_account', array());
+      $projects = array();
+
+      reset($account);
+      $account_id = key($account);
+
+      try {
+        $response = $this->client->get('/projects?account_id=' . $account_id);
+        if ($response->getStatusCode() === 200) {
+          $data = json_decode($response->getBody());
+          foreach ($data->data as $project) {
+            if ($project->active) {
+              $projects[$project->id] = $project;
+            }
+          }
+        }
+      }
+      catch (\Exception $e) {
+        drupal_set_message($e->getMessage(), 'error');
+        watchdog('gathercontent', $e->getMessage(), array(), WATCHDOG_ERROR);
+      }
+
+      return $projects;
+    }
+    else {
+      drupal_set_message(t('Error occured, please contact your system administrator'), 'error');
+      watchdog('gathercontent', 'Object Project created as local, but trying to reach remote data.', NULL, WATCHDOG_ALERT);
+    }
+  }
+
+  /**
+   * Description.
+   *
+   * @param int $project_id
+   *   Project ID.
+   *
+   * @return array
+   *   Description.
+   */
+  public function getStatuses($project_id) {
+    if (!$this->local) {
+      try {
+        $response = $this->client->get('/projects/' . $project_id . '/statuses');
+        if ($response->getStatusCode() === 200) {
+          $data = json_decode($response->getBody());
+          return $data->data;
+        }
+      }
+      catch (\Exception $e) {
+        drupal_set_message($e->getMessage(), 'error');
+        watchdog('gathercontent', $e->getMessage(), array(), WATCHDOG_ERROR);
+      }
+    }
+    else {
+      drupal_set_message(t('Error occured, please contact your system administrator'), 'error');
+      watchdog('gathercontent', 'Object Project created as local, but trying to reach remote data.', NULL, WATCHDOG_ALERT);
+    }
+  }
 }
