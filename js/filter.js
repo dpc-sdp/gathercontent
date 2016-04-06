@@ -32,9 +32,6 @@
         $("#gc-mapping-form-templates .vertical-tab-button.last .selected-templates").html(counter);
       });
 
-
-
-
       // Import widgets.
 
       $('#gc-mapping-form-templates .vertical-tab-button.last').append("<a><span class='selected-templates'></span> Templates selected </a>");
@@ -43,6 +40,8 @@
 
       $("#edit-import table:not(.sticky-header)").once('gc-import-filter', function(){
         $('.gc-import-filters').remove();
+
+        $(".gc-import-filter-processed").tablesorter();
 
         $('.form-select-import .form-item-project').append(" <div class='gc-import-filters project-status'><label for='ga-form-select-status'>Status</label>  <select id='ga-form-select-status' class='form-select'><option value='all'>All</option></select></div>");
         $('.form-select-import .form-item-project').append(" <div class='gc-import-filters'><label for='ga-form-select-template'>GatherContent Template Name</label>  <select id='ga-form-select-template' class='form-select'><option value='all'>All</option></select></div>");

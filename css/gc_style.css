@@ -45,3 +45,20 @@
   margin-left: 50px;
   min-width: 150px;
 }
+.gc-import-filter-processed thead tr .headerSortUp {
+  background-image: url("../images/desc.gif");
+}
+.gc-import-filter-processed thead tr .headerSortDown {
+  background-image: url("../images/asc.gif");
+
+}
+
+.gc-import-filter-processed thead tr th {
+  background-image: url("../images/bg.gif");
+  background-position: right center;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+.gc-import-filter-processed thead tr th.select-all {
+  background-image: none;
+}
