@@ -5,6 +5,8 @@
  * Install and uninstall script for GatherContent module.
  */
 
+include "includes/Account.inc";
+
 function gc_install() {
   db_add_field(
     'node',
@@ -106,10 +108,6 @@ function gc_schema() {
         'type' => 'int',
         'not null' => FALSE,
       ),
-      'updated_gc' => array(
-        'type' => 'int',
-        'not null' => TRUE,
-      ),
     ),
     'primary key' => array('id'),
   );
@@ -135,11 +133,19 @@ function gc_schema_alter(&$schema) {
     'type' => 'int',
     'unsigned' => TRUE,
   );
+  $schema['node']['fields']['gc_import_status'] = array(
+    'definition' => 'The ID of content in GatherContent.',
+    'type' => 'text',
+  );
   $schema['file_managed']['fields']['gc_id'] = array(
     'definition' => 'The ID of file in GatherContent.',
     'type' => 'int',
     'unsigned' => TRUE,
   );
+
+  if (isset($schema['gc_mapping']['fields']['updated_gc'])) {
+    unset($schema['gc_mapping']['fields']['updated_gc']);
+  }
 }
 
 /**
@@ -158,4 +164,41 @@ function gc_update_7001() {
     'size' => 'big',
     'serialize' => TRUE,
   ));
+}
+
+/**
+ * Add field `gc_import_status` to `node` table.
+ */
+function gc_update_7002() {
+  db_add_field('node', 'gc_import_status', array(
+    'definition' => 'The ID of content in GatherContent.',
+    'type' => 'text',
+  ));
+}
+
+/**
+ * Set `gc_urlkey` variable.
+ */
+function gc_update_7003() {
+  // Load all accounts.
+  $acc_obj = new GatherContent\Account();
+  $accounts = $acc_obj->getAccounts();
+  // Load local account and extract account id.
+  $local_account = variable_get('gc_account');
+  reset($local_account);
+  $local_account_id = key($local_account);
+  // Find urlkey for local account id and store it in variable.
+  foreach ($accounts as $account) {
+    if ($local_account_id === $account->id) {
+      variable_set('gc_urlkey', $account->urlkey);
+      break;
+    }
+  }
+}
+
+/**
+ * Remove `updated_gc` field from DB.
+ */
+function gc_update_7004() {
+  db_drop_field('gc_mapping', 'updated_gc');
 }

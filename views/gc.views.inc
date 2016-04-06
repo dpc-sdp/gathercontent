@@ -23,3 +23,77 @@ function gc_views_data() {
   );
   return $data;
 }
+
+/**
+ * Implements hook_views_data_alter().
+ */
+function gc_views_data_alter(&$data) {
+  $data['node']['gc_id'] = array(
+    'title' => t('GC ID'),
+    'help' => t('The ID of content in GatherContent'),
+    'field' => array(
+      'handler' => 'views_handler_field_numeric',
+    ),
+  );
+  $data['node']['gc_mapping_id'] = array(
+    'title' => t('GC Mapping ID'),
+    'help' => t('The ID of GatherContent mapping'),
+    'field' => array(
+      'handler' => 'views_handler_field_numeric',
+    ),
+    'relationship' => array(
+      'base' => 'gc_mapping',
+      'base field' => 'id',
+      'field' => 'gc_mapping_id',
+      'handler' => 'views_handler_relationship',
+      'label' => t('Mapping used for GatherContent.'),
+      'title' => t('Mapping used for GatherContent.'),
+      'help' => t('Mapping used for GatherContent.'),
+    ),
+  );
+  $data['node']['gc_import_status'] = array(
+    'title' => t('GC Import status'),
+    'help' => t('Status of import from GatherContent'),
+    'field' => array(
+      'handler' => 'views_handler_field',
+    ),
+  );
+  $data['node']['gc_status'] = array(
+    'title' => t('GC Status'),
+    'help' => t('Status of content in GatherContent'),
+    'field' => array(
+      'handler' => 'views_handler_field_node_gc_status',
+    ),
+  );
+  $data['node']['gc_title'] = array(
+    'title' => t('GC Title'),
+    'help' => t('Title of content in GatherContent'),
+    'field' => array(
+      'handler' => 'views_handler_field_node_gc_title',
+    ),
+  );
+  $data['node']['gc_link'] = array(
+    'title' => t('GC Link'),
+    'help' => t('Link to content in GatherContent'),
+    'field' => array(
+      'handler' => 'views_handler_field_node_gc_link',
+      'click sortable' => FALSE,
+    ),
+  );
+  $data['node']['gc_updated'] = array(
+    'title' => t('Last updated in GatherContent'),
+    'help' => t('Last updated in GatherContent'),
+    'field' => array(
+      'handler' => 'views_handler_field_node_gc_updated',
+      'click sortable' => TRUE,
+    ),
+  );
+  $data['gc_mapping']['gc_updated'] = array(
+    'title' => t('Last updated in GatherContent'),
+    'help' => t('Last updated in GatherContent'),
+    'field' => array(
+      'handler' => 'views_handler_field_mapping_gc_updated',
+      'click sortable' => TRUE,
+    ),
+  );
+}

@@ -248,31 +248,52 @@ function gc_import_form_select_submit($form, &$form_state) {
  */
 function gc_import_form_confirm($form, &$form_state) {
   $form['title'] = array(
-    '#markup' => '<h2>Do you really want to import following items?</h2>',
+    '#markup' => '<h2>' . format_plural(count($form_state['object']->nodes),
+        'Confirm import selection (@count item)',
+        'Confirm import selection (@count items)')
+      . '</h2><p>' . t('Please review your import selection before importing.') . '</p>',
   );
 
   $header = array(
     'status' => t('Status'),
-    'title' => t('Title'),
-    'updated' => t('Updated in GatherContent'),
+    'title' => t('Item name'),
+    'template' => t('GatherContent Template'),
   );
 
   $options = array();
+
+  $tmp_obj = new Template();
+  $templates = $tmp_obj->getTemplates($form_state['object']->project_id);
 
   foreach ($form_state['object']->nodes as $node) {
     $content_obj = new Content();
     $content = $content_obj->getContent($node);
 
     $options[$content->id] = array(
-      'status' => $content->status->data->name,
+      'status' => '<div style="width:20px; height: 20px; float: left; margin-right: 5px; background: ' . $content->status->data->color . ';"></div>' . $content->status->data->name,
       'title' => $content->name,
-      'updated' => $content->updated_at->date,
+      'template' => $templates[$content->template_id],
     );
   }
 
   $table = theme('table', array('header' => $header, 'rows' => $options));
   $form['table'] = array(
     '#markup' => render($table),
+  );
+
+
+  $options = array();
+  $project_obj = new Project();
+  $statuses = $project_obj->getStatuses($form_state['object']->project_id);
+  foreach ($statuses as $status) {
+    $options[$status->id] = $status->name;
+  }
+
+  $form['status'] = array(
+    '#type' => 'select',
+    '#options' => $options,
+    '#title' => t('After successful import change status to:'),
+    '#empty_option' => t("- Don't change status -"),
   );
 
   return $form;
@@ -284,10 +305,15 @@ function gc_import_form_confirm($form, &$form_state) {
  * @inheritdoc
  */
 function gc_import_form_confirm_submit($form, &$form_state) {
+  $form_state['object']->status = $form_state['values']['status'];
+
   $operations = array();
 
   foreach ($form_state['object']->nodes as $value) {
-    $operations[] = array('gc_import_process', array($value));
+    $operations[] = array(
+      'gc_import_process',
+      array($value, $form_state['object']->status),
+    );
   }
 
   $batch = array(
@@ -310,8 +336,7 @@ function gc_import_form_confirm_submit($form, &$form_state) {
  *
  * @inheritdoc
  */
-function gc_import_wizard_finish($form, &$form_state) {
-}
+function gc_import_wizard_finish($form, &$form_state) {}
 
 /**
  * Batch operation callback.
@@ -321,8 +346,15 @@ function gc_import_wizard_finish($form, &$form_state) {
  * @param int $content_id
  *   ID of content we want to import.
  */
-function gc_import_process($content_id, &$context) {
-  _gc_fetcher($content_id);
+function gc_import_process($content_id, $status_id, &$context) {
+  if (($nid = _gc_fetcher($content_id)) !== FALSE) {
+    if ($status_id != 0) {
+      // Change status.
+      $content_obj = new Content();
+      $content_obj->updateStatus($content_id, $status_id);
+    }
+    $context['results'][] = $nid;
+  };
 }
 
 /**
@@ -332,12 +364,9 @@ function gc_import_process($content_id, &$context) {
  */
 function gc_import_finished($success, $results, $operations) {
   if ($success) {
-    drupal_set_message(t('Content was updated successfuly"'));
-    drupal_goto('/admin/content');
+    drupal_goto('admin/config/gc/import/result/' . implode('+', $results));
   }
   else {
-    // An error occurred.
-    // $operations contains the operations that remained unprocessed.
     $error_operation = reset($operations);
     drupal_set_message(
       t('An error occurred while processing @operation with arguments : @args',

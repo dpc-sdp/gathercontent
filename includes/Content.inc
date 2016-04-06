@@ -9,7 +9,6 @@ namespace GatherContent;
 
 
 use GuzzleHttp\Client;
-use GuzzleHttp\Message\Request;
 
 /**
  * Class Account.
@@ -59,7 +58,42 @@ class Content {
   }
 
   /**
+   * Update status of content.
+   *
+   * @param int $content_id
+   *   ID of content we want to update.
+   * @param int $status_id
+   *   Status ID.
+   *
+   * @return bool
+   *   Return TRUE on success.
+   */
+  public function updateStatus($content_id, $status_id) {
+    try {
+      $response = $this->client->post('/items/' . $content_id . '/choose_status', array(
+        'body' => array(
+          'status_id' => $status_id,
+        ),
+      ));
+      if ($response->getStatusCode() === 202) {
+        return TRUE;
+      }
+      else {
+        return FALSE;
+      }
+    }
+    catch (\Exception $e) {
+      drupal_set_message($e->getMessage(), 'error');
+      watchdog('gathercontent', $e->getMessage(), array(), WATCHDOG_ERROR);
+      return FALSE;
+    }
+  }
+
+  /**
    * Get list of content.
+   *
+   * @param int $project_id
+   *   ID of project we want items from.
    *
    * @return array
    *   Array with accounts.
@@ -89,6 +123,9 @@ class Content {
   /**
    * Get single piece of content.
    *
+   * @param int $content_id
+   *   ID of content, we want to fetch.
+   *
    * @return array
    *   Array with accounts.
    */
@@ -116,6 +153,9 @@ class Content {
 
   /**
    * Get list of files.
+   *
+   * @param int $content_id
+   *   ID of content, we want to fetch files for.
    *
    * @return array
    *   Array with accounts.
