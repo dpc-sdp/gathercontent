@@ -23,7 +23,7 @@
 
       var counter = 0;
       $("#gc-mapping-form-templates input[type='checkbox']").change(function() {
-        if($(this).prop('checked')) {
+        if($(this).attr('checked')) {
           counter++;
         }
         else {
