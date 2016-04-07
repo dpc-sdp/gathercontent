@@ -20,7 +20,6 @@
     attach: function (context, settings) {
 
       // Create mapping page template counter.
-
       var counter = 0;
       $("#gc-mapping-form-templates input[type='checkbox']").change(function() {
         if($(this).attr('checked')) {
@@ -33,8 +32,7 @@
       });
 
       // Import widgets.
-
-      $('#gc-mapping-form-templates .vertical-tab-button.last').append("<a><span class='selected-templates'></span> Templates selected </a>");
+      $('#gc-mapping-form-templates .vertical-tab-button.last').append("<a href='#'><span class='selected-templates'></span> Templates selected </a>");
       $("#gc-mapping-form-templates .vertical-tab-button.last .selected-templates").append(counter);
 
 
@@ -43,10 +41,10 @@
 
         $(".gc-import-filter-processed").tablesorter();
 
-        $('.form-select-import .form-item-project').append(" <div class='gc-import-filters project-status'><label for='ga-form-select-status'>Status</label>  <select id='ga-form-select-status' class='form-select'><option value='all'>All</option></select></div>");
-        $('.form-select-import .form-item-project').append(" <div class='gc-import-filters'><label for='ga-form-select-template'>GatherContent Template Name</label>  <select id='ga-form-select-template' class='form-select'><option value='all'>All</option></select></div>");
+        $('.form-select-import .form-item-project').append("<div class='gc-import-filters project-status'><label for='ga-form-select-status'>Status</label>  <select id='ga-form-select-status' class='form-select'><option value='all'>All</option></select></div>");
+        $('.form-select-import .form-item-project').append("<div class='gc-import-filters'><label for='ga-form-select-template'>GatherContent Template Name</label>  <select id='ga-form-select-template' class='form-select'><option value='all'>All</option></select></div>");
 
-        $('.form-select-import .form-item-project').append(" <div class='gc-import-filters'><label for='ga-form-select-search'>Search</label>  <input placeholder='Filter by Item Name' type='text' id='ga-form-select-search' class='form-text' value=''></div>");
+        $('.form-select-import .form-item-project').append("<div class='gc-import-filters'><label for='ga-form-select-search'>Search</label>  <input placeholder='Filter by Item Name' type='text' id='ga-form-select-search' class='form-text' value=''></div>");
 
 
         // I collects the status values of the select box.
