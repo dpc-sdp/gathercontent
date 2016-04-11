@@ -80,7 +80,7 @@ function gc_views_data_alter(&$data) {
       'click sortable' => FALSE,
     ),
   );
-  $data['node']['gc_updated'] = array(
+  $data['node']['gc_updated1'] = array(
     'title' => t('Last updated in GatherContent'),
     'help' => t('Last updated in GatherContent'),
     'field' => array(

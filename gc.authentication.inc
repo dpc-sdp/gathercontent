@@ -135,6 +135,6 @@ function gc_authentication_test_page() {
     return t('Connection successful');
   }
   else {
-    return t('Connection wasn\'t successful');
+    return t("Connection wasn't successful");
   }
 }

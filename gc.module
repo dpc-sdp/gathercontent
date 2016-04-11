@@ -13,20 +13,6 @@ use GatherContent\Project;
 use GatherContent\Template;
 
 /**
- * Implements hook_form_FORM_ID_alter().
- */
-function gc_form_gc_import_form_select_alter(&$form) {
-  $form['#attributes']['class'][] = 'form-select-import';
-}
-
-/**
- * Implements hook_form_FORM_ID_alter().
- */
-function gc_form_gc_mapping_edit_form_alter(&$form) {
-  $form['#attributes']['class'][] = 'form-gc-mapping';
-}
-
-/**
  * Implements hook_permission().
  */
 function gc_permission() {
@@ -84,15 +70,7 @@ function gc_menu() {
     'access arguments' => array(
       'administer gathercontent',
     ),
-    'file' => 'gc.mapping.inc',
-  );
-  $items['admin/config/gc/import'] = array(
-    'title' => 'Import Content',
-    'page callback' => 'gc_import_form',
-    'access arguments' => array(
-      'administer gathercontent',
-    ),
-    'file' => 'gc.import.inc',
+    'file' => 'forms/gc.mapping-create.inc',
   );
   $items['admin/config/gc/mapping/%/delete'] = array(
     'title' => 'Delete GatherContent Mapping',
@@ -102,7 +80,7 @@ function gc_menu() {
       'administer gathercontent',
     ),
     'type' => MENU_CALLBACK,
-    'file' => 'gc.mapping.inc',
+    'file' => 'forms/gc.mapping-delete.inc',
   );
   $items['admin/config/gc/mapping/%/edit'] = array(
     'title' => 'Edit GatherContent Mapping',
@@ -112,9 +90,37 @@ function gc_menu() {
       'administer gathercontent',
     ),
     'type' => MENU_CALLBACK,
-    'file' => 'gc.mapping.inc',
+    'file' => 'forms/gc.mapping-edit.inc',
+  );
+  $items['admin/config/gc/import'] = array(
+    'title' => 'Import Content',
+    'page callback' => 'gc_import_form',
+    'access arguments' => array(
+      'administer gathercontent',
+    ),
+    'file' => 'gc.import.inc',
   );
   return $items;
+}
+
+/**
+ * Implements hook_menu_local_tasks_alter().
+ */
+function gc_menu_local_tasks_alter(&$data, $router_item, $root_path) {
+  if ($root_path === 'admin/config/gc/mapping') {
+    $data['actions']['output'][] = array(
+      '#theme' => 'menu_local_task',
+      '#link' => array(
+        'title' => t('Add new mapping'),
+        'href' => 'admin/config/gc/mapping/create',
+        'localized_options' => array(
+          'attributes' => array(
+            'title' => t('Add new mapping'),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /**
@@ -254,12 +260,23 @@ function gc_action_info() {
       'vbo_configurable' => FALSE,
       'pass rows' => TRUE,
     ),
+    'gc_upload' => array(
+      'type' => 'entity',
+      'label' => t('Upload to GatherContent'),
+      'configurable' => FALSE,
+      'triggers' => array('any'),
+      'behavior' => array('create_property'),
+      'vbo_configurable' => FALSE,
+      'pass rows' => TRUE,
+    ),
   );
 }
 
 /**
  * Callback for `gc_update` action.
  *
+ * This function is never called, because we are using separated method for
+ * execution for this functionality.
  * Update content from GatherContent.
  *
  * @param object $entity
@@ -270,7 +287,26 @@ function gc_action_info() {
  * @see gc_action_info
  */
 function gc_update(&$entity, &$context) {
-  _gc_fetcher($entity->gc_id, $entity);
+  // This will be never called.
+}
+
+/**
+ * Callback for `gc_upload` action.
+ *
+ * This function is never called, because we are using separated method for
+ * execution for this functionality.
+ *
+ * Upload content to GatherContent.
+ *
+ * @param object $entity
+ *   Entity, we want to upload.
+ * @param array $context
+ *   Context of action.
+ *
+ * @see gc_action_info
+ */
+function gc_upload(&$entity, &$context) {
+  // This will be never called.
 }
 
 /**
@@ -289,6 +325,7 @@ function _gc_fetcher($gc_id, $entity = NULL) {
   $content_obj = new Content();
   $content = $content_obj->getContent($gc_id);
 
+  // Check if mapping exists.
   $query = new EntityFieldQuery();
   if (is_null($entity)) {
     $result = $query->entityCondition('entity_type', 'gc_mapping')
@@ -303,11 +340,15 @@ function _gc_fetcher($gc_id, $entity = NULL) {
   }
 
   if (isset($result['gc_mapping'])) {
+    // If mapping exists, start mapping remote fields to local ones.
     $mapping_ids = array_keys($result['gc_mapping']);
     $entities = entity_load('gc_mapping', $mapping_ids);
     $mapping = reset($entities);
 
     $mapping_data = unserialize($mapping->data);
+
+    $mapping_data_copy = $mapping_data;
+    $first = array_shift($mapping_data_copy);
 
     if (is_null($entity)) {
       $entity = entity_create('node', array(
@@ -315,120 +356,181 @@ function _gc_fetcher($gc_id, $entity = NULL) {
         'gc_mapping_id' => $mapping->id,
         'gc_id' => $content->id,
         'uid' => $user->uid,
+        'language' => $first['language'],
       ));
     }
 
     if ($entity !== FALSE) {
       $node = entity_metadata_wrapper('node', $entity);
-
       $files = $content_obj->getFiles($gc_id);
-      foreach ($content->config as $pane) {
-        foreach ($pane->elements as $field) {
-          if (isset($mapping_data[$field->name]) && !empty($mapping_data[$field->name])) {
-            switch ($field->type) {
-              case 'files':
-                foreach ($files as $file) {
-                  if ($file->field === $field->name) {
-                    $node->{$mapping_data[$field->name]}->info();
-                    $found = FALSE;
-                    foreach ($node->{$mapping_data[$field->name]}->value() as $file) {
-                      if ($file['gc_id'] === $file->id) {
-                        $found = TRUE;
+
+      try {
+        foreach ($content->config as $pane) {
+          $is_translatable = module_exists('entity_translation')
+            && entity_translation_node_supported_type($mapping->content_type)
+            && ($mapping_data[$pane->name]['language'] != LANGUAGE_NONE);
+          foreach ($pane->elements as $field) {
+            if (isset($mapping_data[$pane->name]['elements'][$field->name]) && !empty($mapping_data[$pane->name]['elements'][$field->name])) {
+              if ($mapping_data[$pane->name]['type'] === 'content') {
+                $is_translatable = $is_translatable && field_is_translatable('node', $mapping_data[$pane->name]['elements'][$field->name]);
+                switch ($field->type) {
+                  case 'files':
+                    foreach ($files as $file) {
+                      if ($file->field === $field->name) {
+                        $found = FALSE;
+                        foreach ($node->{$mapping_data[$pane->name]['elements'][$field->name]}->value() as $file) {
+                          if ($file['gc_id'] === $file->id) {
+                            $found = TRUE;
+                          }
+                        }
+
+                        if (!$found) {
+                          $local_file = file_save_data(file_get_contents($file->url), 'public://' . $file->filename);
+                          $local_file->gc_id = $file->id;
+                          file_save($local_file);
+                          if ($is_translatable) {
+                            $node->language($mapping_data[$pane->name]['language'])->{$mapping_data[$pane->name]['elements'][$field->name]}[] = array('fid' => $local_file->fid);
+                          }
+                          else {
+                            $node->{$mapping_data[$pane->name]['elements'][$field->name]}[] = array('fid' => $local_file->fid);
+                          }
+                        }
                       }
                     }
+                    break;
 
-                    if (!$found) {
-                      $local_file = file_save_data(file_get_contents($file->url), 'public://' . $file->filename);
-                      $local_file->gc_id = $file->id;
-                      file_save($local_file);
-                      $node->{$mapping_data[$field->name]}[] = array('fid' => $local_file->fid);
+                  case 'choice_radio':
+                    foreach ($field->options as $option) {
+                      if ($option->selected) {
+                        if (isset($option->value)) {
+                          if ($is_translatable) {
+                            $node->language($mapping_data[$pane->name]['language'])->{$mapping_data[$pane->name]['elements'][$field->name]}->set($option->value);
+                          }
+                          else {
+                            $node->{$mapping_data[$pane->name]['elements'][$field->name]}->set($option->value);
+                          }
+                        }
+                        else {
+                          if ($is_translatable) {
+                            $node->language($mapping_data[$pane->name]['language'])->{$mapping_data[$pane->name]['elements'][$field->name]}->set($option->name);
+                          }
+                          else {
+                            $node->{$mapping_data[$pane->name]['elements'][$field->name]}->set($option->name);
+                          }
+                        }
+                      }
                     }
-                  }
-                }
-                break;
+                    break;
 
-              case 'choice_radio':
-                foreach ($field->options as $option) {
-                  if ($option->selected) {
-                    if (isset($option->value)) {
-                      $node->{$mapping_data[$field->name]}->set($option->value);
+                  case 'choice_checkbox':
+                    foreach ($node->{$mapping_data[$pane->name]['elements'][$field->name]}->getIterator() as $delta => $item) {
+                      $node->{$mapping_data[$pane->name]['elements'][$field->name]}->set(array(NULL));
+                    }
+                    $node->save(TRUE);
+                    foreach ($field->options as $option) {
+                      if ($option->selected) {
+                        if ($is_translatable) {
+                          $node->language($mapping_data[$pane->name]['language'])->{$mapping_data[$pane->name]['elements'][$field->name]}[] = $option->name;
+                        }
+                        else {
+                          $node->{$mapping_data[$pane->name]['elements'][$field->name]}[] = $option->name;
+                        }
+                      }
+                    }
+                    break;
+
+                  case 'section':
+                    if ($is_translatable) {
+                      $node->language($mapping_data[$pane->name]['language'])->{$mapping_data[$pane->name]['elements'][$field->name]}->set(array(
+                        'value' => '<h3>' . $field->title . '</h3>' . $field->subtitle,
+                        'format' => 'filtered_html',
+                      ));
                     }
                     else {
-                      $node->{$mapping_data[$field->name]}->set($option->name);
+                      $node->{$mapping_data[$pane->name]['elements'][$field->name]}->set(array(
+                        'value' => '<h3>' . $field->title . '</h3>' . $field->subtitle,
+                        'format' => 'filtered_html',
+                      ));
                     }
-                  }
-                }
-                break;
+                    break;
 
-              case 'choice_checkbox':
-                foreach ($node->{$mapping_data[$field->name]}->getIterator() as $delta => $item) {
-                  $node->{$mapping_data[$field->name]}->set(array(NULL));
+                  default:
+                    if ($mapping_data[$pane->name]['elements'][$field->name] === 'title') {
+                      $node->title->set($field->value);
+                    }
+                    else {
+                      if ($is_translatable) {
+                        $node->language($mapping_data[$pane->name]['language'])->{$mapping_data[$pane->name]['elements'][$field->name]}->set(array(
+                          'value' => $field->value,
+                          'format' => ($field->plain_text ? 'plain_text' : 'filtered_html'),
+                        ));
+                      }
+                      else {
+                        $node->{$mapping_data[$pane->name]['elements'][$field->name]}->set(array(
+                          'value' => $field->value,
+                          'format' => ($field->plain_text ? 'plain_text' : 'filtered_html'),
+                        ));
+                      }
+                    }
+                    break;
                 }
-                $node->save(TRUE);
-                foreach ($field->options as $option) {
-                  if ($option->selected) {
-                    $node->{$mapping_data[$field->name]}[] = $option->name;
-                  }
-                }
-                break;
-
-              case 'section':
-                $node->{$mapping_data[$field->name]}->set(array(
-                  'value' => '<h3>' . $field->title . '</h3>' . $field->subtitle,
-                  'format' => 'filtered_html',
-                ));
-                break;
-
-              default:
-                if ($mapping_data[$field->name] === 'title') {
-                  $node->title->set($field->value);
+              }
+              elseif ($mapping_data[$pane->name]['type'] === 'metatag' && module_exists('metatag') && metatag_entity_supports_metatags('node', $mapping->content_type)) {
+                if ($is_translatable) {
+                  $node->language($mapping_data[$pane->name]['language'])->metatags->{$mapping_data[$pane->name]['elements'][$field->name]}->set($field->value);
                 }
                 else {
-                  $node->{$mapping_data[$field->name]}->set(array(
-                    'value' => $field->value,
-                    'format' => ($field->plain_text ? 'plain_text' : 'filtered_html'),
-                  ));
+                  $node->metatags->{$mapping_data[$pane->name]['elements'][$field->name]}->set($field->value);
                 }
-                break;
+              }
             }
           }
+          // We need to create new translation if is translatable.
+          if ($is_translatable && (!isset($node->language) || empty($node->language))) {
+            $node->language->set($mapping_data[$pane->name]['language']);
+            $node->save(TRUE);
+          }
+          elseif ($is_translatable && (isset($node->language) || !empty($node->language))) {
+            $handler = entity_translation_get_handler('node', $entity);
+            $translation = array(
+              'translate' => 0,
+              'status' => 1,
+              'language' => $mapping_data[$pane->name]['language'],
+              'source' => ($mapping_data[$pane->name]['language'] === $node->language->value() ? '' : $node->language->value()),
+            );
+            $handler->setTranslation($translation, $node->value());
+          }
         }
+        $node->save(TRUE);
+        return $entity->nid;
       }
-      $node->save(TRUE);
-      return $entity->nid;
+      catch (\Exception $e) {
+        watchdog('gc_import', print_r($e, TRUE), array(), WATCHDOG_ERROR);
+        $entity->gc_import_status = "Mapping doesn't match";
+        entity_save('node', $entity);
+        return FALSE;
+      }
     }
     else {
       return FALSE;
     }
   }
-}
-
-/**
- * Implements hook_menu_local_tasks_alter().
- */
-function gc_menu_local_tasks_alter(&$data, $router_item, $root_path) {
-  if ($root_path === 'admin/config/gc/mapping') {
-    $data['actions']['output'][] = array(
-      '#theme' => 'menu_local_task',
-      '#link' => array(
-        'title' => t('Add new mapping'),
-        'href' => 'admin/config/gc/mapping/create',
-        'localized_options' => array(
-          'attributes' => array(
-            'title' => t('Add new mapping'),
-          ),
-        ),
-      ),
-    );
+  else {
+    if (!is_null($entity)) {
+      $entity->gc_import_status = "Mapping doesn't exist";
+      $entity->save(TRUE);
+    }
+    return FALSE;
   }
 }
 
-
 /**
  * Implements hook_views_pre_render().
+ *
+ * Show real-time data in views resources "effective" way.
  */
 function gc_views_pre_render(&$view) {
-  if ($view->name == 'update') {
+  if ($view->name == 'update' || $view->name == 'import_result_page') {
     $results = &$view->result;
     $used_mappings = array();
     $nids = array();
@@ -480,25 +582,55 @@ function gc_views_pre_render(&$view) {
 
 /**
  * Implements hook_views_bulk_operations_form_alter().
+ *
+ * Alter VBO confirm form for gc_update action and replace submit callback,
+ * so we can use custom batch.
  */
 function gc_views_bulk_operations_form_alter(&$form, &$form_state, $vbo) {
-  if ($form_state['step'] === 'views_bulk_operations_confirm_form' && $form_state['values']['operation'] === 'action::gc_update') {
-    $array = array(implode('+', array_filter($form_state['values']['views_bulk_operations'])));
-    $view = views_get_view('update');
-    $view->set_display("block_1");
-    $view->set_arguments($array);
-    $view->preview();
-    $content = $view->render();
-    $form['description']['#markup'] = '<p>' . t('Please review your import selection before updating.') . '</p>' . $content;
-    $form['#vbo_confirm_form_title'] = format_plural(count(array_filter($form_state['values']['views_bulk_operations'])),
-      'Confirm update selection (@count item)',
-      'Confirm update selection (@count items)');
+  if ($form_state['step'] === 'views_bulk_operations_confirm_form') {
+    switch ($form_state['values']['operation']) {
+      case 'action::gc_update':
+        $array = array(implode('+', array_filter($form_state['values']['views_bulk_operations'])));
+        $view = views_get_view('update');
+        $view->set_display("block_1");
+        $view->set_arguments($array);
+        $view->preview();
+        $content = $view->render();
+        $form['description']['#markup'] = '<p>' . t('Please review your selection before updating.') . '</p>' . $content;
+        $form['#vbo_confirm_form_title'] = format_plural(count(array_filter($form_state['values']['views_bulk_operations'])),
+          'Confirm update selection (@count item)',
+          'Confirm update selection (@count items)');
 
-    $form['actions']['submit']['#submit'] = array('gc_views_vbo_redirect');
+        $form['actions']['submit']['#submit'] = array('gc_views_vbo_update');
+        break;
+
+      case 'action::gc_upload':
+        $array = array(implode('+', array_filter($form_state['values']['views_bulk_operations'])));
+        $view = views_get_view('update');
+        $view->set_display("block_1");
+        $view->set_arguments($array);
+        $view->preview();
+        $content = $view->render();
+        $form['description']['#markup'] = '<p>' . t('Please review your selection before upload.') . '</p>' . $content;
+        $form['#vbo_confirm_form_title'] = format_plural(count(array_filter($form_state['values']['views_bulk_operations'])),
+          'Confirm update selection (@count item)',
+          'Confirm update selection (@count items)');
+
+        $form['actions']['submit']['#submit'] = array('gc_views_vbo_upload');
+        break;
+    }
   }
 }
 
-function gc_views_vbo_redirect($form, &$form_state) {
+/**
+ * Submit callback for `views_bulk_operations_confirm_form`.
+ *
+ * This callback is used for `gc_update` action and it is substitution for VBO
+ * in order to redirect to custom view after operation is completed.
+ *
+ * @inheritdoc
+ */
+function gc_views_vbo_update($form, &$form_state) {
   $operations = array();
   $nodes = node_load_multiple($form_state['selection']);
   foreach ($nodes as $node) {
@@ -554,5 +686,177 @@ function gc_update_finished($success, $results, $operations) {
       ),
       'error'
     );
+  }
+}
+
+
+function gc_views_vbo_upload($form, &$form_state) {
+  $operations = array();
+  $nodes = node_load_multiple($form_state['selection']);
+  foreach ($nodes as $node) {
+    $operations[] = array(
+      'gc_upload_process',
+      array($node),
+    );
+  }
+
+  $batch = array(
+    'title' => t('Uploading content ...'),
+    'operations' => $operations,
+    'finished' => 'gc_upload_finished',
+    'init_message' => t('Upload is starting ...'),
+    'progress_message' => t('Processed @current out of @total.'),
+    'error_message' => t('An error occurred during processing'),
+  );
+
+  batch_set($batch);
+}
+
+/**
+ * Batch operation callback.
+ *
+ * We are doing real upload thing here.
+ *
+ * @param object $node
+ *   Object of content we want to upload.
+ */
+function gc_upload_process($node, &$context) {
+//  if (_gc_fetcher($node->gc_id, $node) !== FALSE) {
+//    $context['results'][] = $node->nid;
+//  };
+//  1. Load template from remote
+//  2. Compare local and remote template
+//  3. If templates are same, load node from remote.
+//  4. Set values based on mapping.
+
+  $mapping = entity_load('gc_mapping', array($node->gc_mapping_id));
+  $mapping = reset($mapping);
+
+  $tmp_obj = new GatherContent\Template();
+  $remote_template = $tmp_obj->getTemplate($mapping->gc_project_id);
+
+  if ($remote_template === unserialize($mapping->template)) {
+    $cont_obj = new GatherContent\Content();
+    $remote_node = $cont_obj->getContent($node->gc_id);
+    $config = $remote_node->config;
+    $mapping_data = unserialize($mapping->data);
+
+    foreach ($config as &$pane) {
+      foreach ($pane->elements as &$field) {
+        if (isset($mapping_data[$field->name]) && !empty($mapping_data[$field->name])) {
+          switch ($field->type) {
+            case 'files':
+              break;
+
+            case 'choice_radio':
+              $option_names = array();
+              foreach ($field->options as &$option) {
+                // Set selected to false for each option.
+                $option->selected = FALSE;
+                $option_names[] = $option->name;
+              }
+              // Fetch local selected option.
+              $selected = $node->{$mapping_data[$field->name]}->get();
+
+              if (!in_array($selected, $option_names)) {
+                // If it's other, then find that option in remote.
+                foreach ($field->options as &$option) {
+                  if (isset($option->value)) {
+                    $option->selected = TRUE;
+                    $option->value = $selected;
+                  }
+                }
+              }
+              else {
+                // If it's checkbox, find it by remote option name,
+                // which should be same.
+                foreach ($field->options as &$option) {
+                  if ($option->name == $selected) {
+                    $option->selected = TRUE;
+                  }
+                }
+              }
+              break;
+
+            case
+            'choice_checkbox':
+              foreach ($node->{$mapping_data[$field->name]}->getIterator() as $delta => $item) {
+                $node->{$mapping_data[$field->name]}->set(array(NULL));
+              }
+              $node->save(TRUE);
+              foreach ($field->options as $option) {
+                if ($option->selected) {
+                  $node->{$mapping_data[$field->name]}[] = $option->name;
+                }
+              }
+              break;
+
+            case 'section':
+              $node->{$mapping_data[$field->name]}->set(array(
+                'value' => '<h3>' . $field->title . '</h3>' . $field->subtitle,
+                'format' => 'filtered_html',
+              ));
+              break;
+
+            default:
+              if ($mapping_data[$field->name] === 'title') {
+                $node->title->set($field->value);
+              }
+              else {
+                $node->{$mapping_data[$field->name]}->set(array(
+                  'value' => $field->value,
+                  'format' => ($field->plain_text ? 'plain_text' : 'filtered_html'),
+                ));
+              }
+              break;
+          }
+        }
+      }
+    }
+
+  }
+
+  else {
+    $node->gc_import_status = 'Mappings are not same, please update your local template.';
+  }
+}
+
+/**
+ * Finished callback.
+ *
+ * @inheritdoc
+ */
+function gc_upload_finished($success, $results, $operations) {
+  if ($success) {
+    drupal_goto('admin/content/update/result/' . implode('+', $results));
+  }
+  else {
+    $error_operation = reset($operations);
+    drupal_set_message(
+      t('An error occurred while processing @operation with arguments : @args',
+        array(
+          '@operation' => $error_operation[0],
+          '@args' => print_r($error_operation[0], TRUE),
+        )
+      ),
+      'error'
+    );
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ *
+ * We are adding some classes here.
+ */
+function gc_form_alter(&$form, &$form_state, $form_id) {
+  switch ($form_id) {
+    case 'gc_import_form_select':
+      $form['#attributes']['class'][] = 'form-select-import';
+      break;
+
+    case 'gc_mapping_edit_form':
+      $form['#attributes']['class'][] = 'form-gc-mapping';
+      break;
   }
 }
