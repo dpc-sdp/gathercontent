@@ -20,7 +20,6 @@ class views_handler_field_mapping_gc_updated extends views_handler_field_date {
     $template = $this->view->field['gc_updated']->templates;
     $gc_template_id = $values->{$this->aliases['gc_template_id']};
     $value = $template[$gc_template_id]['updated_at'];
-//    dsm($value);
 
     $format = $this->options['date_format'];
     if (in_array($format, array('custom', 'raw time ago', 'time ago', 'today time ago', 'raw time hence', 'time hence', 'raw time span', 'time span', 'raw time span', 'inverse time span', 'time span'))) {
