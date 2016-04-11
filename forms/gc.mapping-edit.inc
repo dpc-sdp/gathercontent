@@ -133,7 +133,6 @@ function gc_mapping_edit_form($form, &$form_state, $id) {
     );
 
     if (isset($form_state['values']['content_type'])) {
-      dsm($form_state['triggering_element']);
       foreach ($template->config as $i => $fieldset) {
         if ($fieldset->hidden === FALSE) {
           $form['mapping'][$fieldset->name] = array(
