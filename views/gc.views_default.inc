@@ -313,11 +313,12 @@ function gc_views_default_views() {
   $handler->display->display_options['fields']['changed']['label'] = 'Last updated in Drupal';
   $handler->display->display_options['fields']['changed']['date_format'] = 'long';
   $handler->display->display_options['fields']['changed']['second_date_format'] = 'long';
-  /* Field: Broken/missing handler */
-  $handler->display->display_options['fields']['gc_updated']['id'] = 'gc_updated';
-  $handler->display->display_options['fields']['gc_updated']['table'] = 'node';
-  $handler->display->display_options['fields']['gc_updated']['field'] = 'gc_updated';
-  $handler->display->display_options['fields']['gc_updated']['label'] = 'Last updated in GatherContent';
+  /* Field: Content: Last updated in GatherContent */
+  $handler->display->display_options['fields']['gc_updated1']['id'] = 'gc_updated1';
+  $handler->display->display_options['fields']['gc_updated1']['table'] = 'node';
+  $handler->display->display_options['fields']['gc_updated1']['field'] = 'gc_updated1';
+  $handler->display->display_options['fields']['gc_updated1']['date_format'] = 'long';
+  $handler->display->display_options['fields']['gc_updated1']['second_date_format'] = 'long';
   /* Field: Mapping: Content type name */
   $handler->display->display_options['fields']['content_type_name']['id'] = 'content_type_name';
   $handler->display->display_options['fields']['content_type_name']['table'] = 'gc_mapping';
@@ -554,6 +555,44 @@ function gc_views_default_views() {
   $handler->display->display_options['filters']['status']['group'] = 1;
   $handler->display->display_options['filters']['status']['expose']['operator'] = FALSE;
   $handler->display->display_options['path'] = 'admin/content/update/result/%';
+  $translatables['update'] = array(
+    t('Master'),
+    t('Update result'),
+    t('more'),
+    t('Apply'),
+    t('Reset'),
+    t('Sort by'),
+    t('Asc'),
+    t('Desc'),
+    t('Items per page'),
+    t('- All -'),
+    t('Offset'),
+    t('« first'),
+    t('‹ previous'),
+    t('next ›'),
+    t('last »'),
+    t('Mapping used for GatherContent.'),
+    t('Content'),
+    t('- Choose an operation -'),
+    t('Status'),
+    t('GatherContent Project'),
+    t('Drupal Item Name'),
+    t('GatherContent Item name'),
+    t('Last updated in Drupal'),
+    t('Last updated in GatherContent'),
+    t('Content type name'),
+    t('GatherContent Template'),
+    t('Open in Drupal'),
+    t('Open'),
+    t('Open in GatherContent'),
+    t('Filter by item name'),
+    t('Page'),
+    t('Update'),
+    t('Block'),
+    t('All'),
+    t('Item Name'),
+    t('Import status'),
+  );
 
   $views[$view->name] = $view;
 
