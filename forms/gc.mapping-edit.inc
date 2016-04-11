@@ -169,7 +169,7 @@ function gc_mapping_edit_form($form, &$form_state, $id) {
                 'metatag' => t('Metatag'),
               ),
               '#title' => t('Type'),
-              '#default_value' => isset($form_state['values'][$fieldset->name]['type']) ? $form_state['values'][$fieldset->name]['type'] : NULL,
+              '#default_value' => isset($form_state['values'][$fieldset->name]['type']) ? $form_state['values'][$fieldset->name]['type'] : 'content',
               '#ajax' => array(
                 'callback' => 'gc_mapping_form_mapping_get_table',
                 'wrapper' => 'edit-mapping',
@@ -184,12 +184,12 @@ function gc_mapping_edit_form($form, &$form_state, $id) {
               '#type' => 'select',
               '#options' => array('und' => t('None')) + locale_language_list('name'),
               '#title' => t('Language'),
-              '#default_value' => isset($form_state['values'][$fieldset->name]['language']) ? $form_state['values'][$fieldset->name]['language'] : NULL,
+              '#default_value' => isset($form_state['values'][$fieldset->name]['language']) ? $form_state['values'][$fieldset->name]['language'] : 'und',
             );
           }
 
           foreach ($fieldset->elements as $gc_field) {
-            if (isset($form_state['values']['type'])) {
+            if (isset($form_state['values']['type']) && $form_state['triggering_element']['#name'] !== 'content_type') {
               if ($form_state['triggering_element']['#array_parents'][1] === $fieldset->name && $form_state['values']['type'] === 'content') {
                 $d_fields = _filter_fields($gc_field, $form_state['values']['content_type']);
               }
