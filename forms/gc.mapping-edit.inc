@@ -53,6 +53,12 @@ function gc_mapping_edit_form($form, &$form_state, $id) {
       '#type' => 'value',
       '#value' => $template->updated_at,
     );
+
+    $form['mapping'] = array(
+      '#prefix' => '<div id="edit-mapping">',
+      '#suffix' => '</div>',
+    );
+
     foreach ($template->config as $i => $fieldset) {
       if ($fieldset->hidden === FALSE) {
         $form['mapping'][$fieldset->name] = array(
@@ -71,7 +77,13 @@ function gc_mapping_edit_form($form, &$form_state, $id) {
               'meta' => t('Metatag'),
             ),
             '#title' => t('Type'),
-            '#default_value' => isset($mapping_data[$fieldset->name]['type']) ? $mapping_data[$fieldset->name]['type'] : NULL,
+            '#default_value' => (isset($mapping_data[$fieldset->name]['type']) || isset($form_state['values'][$fieldset->name]['type'])) ? (isset($form_state['values'][$fieldset->name]['type']) ? $form_state['values'][$fieldset->name]['type'] : $mapping_data[$fieldset->name]['type']) : NULL,
+            '#ajax' => array(
+              'callback' => 'gc_mapping_form_mapping_get_table',
+              'wrapper' => 'edit-mapping',
+              'method' => 'replace',
+              'effect' => 'fade',
+            ),
           );
         }
 
@@ -177,11 +189,11 @@ function gc_mapping_edit_form($form, &$form_state, $id) {
           }
 
           foreach ($fieldset->elements as $gc_field) {
-            if (isset($form_state['values'][$fieldset->name]['type'])) {
-              if ($form_state['triggering_element']['#array_parents'][1] === $fieldset->name && $form_state['values'][$fieldset->name]['type'] === 'content') {
+            if (isset($form_state['values']['type'])) {
+              if ($form_state['triggering_element']['#array_parents'][1] === $fieldset->name && $form_state['values']['type'] === 'content') {
                 $d_fields = _filter_fields($gc_field, $form_state['values']['content_type']);
               }
-              elseif ($form_state['triggering_element']['#array_parents'][1] === $fieldset->name && $form_state['values'][$fieldset->name]['type'] === 'metatag') {
+              elseif ($form_state['triggering_element']['#array_parents'][1] === $fieldset->name && $form_state['values']['type'] === 'metatag') {
                 $d_fields = _filter_metatag($gc_field);
               }
             }
