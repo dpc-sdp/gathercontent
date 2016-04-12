@@ -343,9 +343,6 @@ function _gc_fetcher($gc_id, $entity = NULL) {
     // If mapping exists, start mapping remote fields to local ones.
     $mapping_ids = array_keys($result['gc_mapping']);
     $entities = entity_load('gc_mapping', $mapping_ids);
-    if (empty($entities)) {
-      return FALSE;
-    }
     $mapping = reset($entities);
 
     $mapping_data = unserialize($mapping->data);
@@ -361,6 +358,12 @@ function _gc_fetcher($gc_id, $entity = NULL) {
         'uid' => $user->uid,
         'language' => $first['language'],
       ));
+    }
+
+    if (empty($mapping_data)) {
+      $entity->gc_import_status = "Mapping doesn't exist";
+      entity_save('node', $entity);
+      return FALSE;
     }
 
     if ($entity !== FALSE) {
