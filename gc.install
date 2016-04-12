@@ -197,7 +197,7 @@ function gc_update_7003() {
   // Find urlkey for local account id and store it in variable.
   foreach ($accounts as $account) {
     if ($local_account_id === $account->id) {
-      variable_set('gc_urlkey', $account->urlkey);
+      variable_set('gc_urlkey', $account->slug);
       break;
     }
   }

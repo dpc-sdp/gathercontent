@@ -39,8 +39,7 @@ function gc_authentication_form($form, &$form_state) {
     '#description' => l(t('Click to find out where you can generate your API Key'),
       'https://gathercontent.com/developers/authentication/'),
   );
-
-  if (!isset($_SESSION['accounts'])) {
+  if (empty($form_state['input']) || $form_state['submitted']) {
     $account = variable_get('gc_account');
     $account = array_pop($account);
     if (!empty($account)) {
@@ -58,10 +57,18 @@ function gc_authentication_form($form, &$form_state) {
     );
   }
 
-  if (isset($_SESSION['accounts'])) {
+  if (!empty($form_state['input'])) {
+    $account_obj = new Account();
+    $data = $account_obj->getAccounts();
+    $accounts = array();
+
+    foreach ($data as $account) {
+      $accounts[$account->id] = $account->name;
+    }
+
     $form['account'] = array(
       '#type' => 'select',
-      '#options' => $_SESSION['accounts'],
+      '#options' => $accounts,
       '#title' => t('Select GatherContent Account'),
       '#required' => TRUE,
       '#description' => t('Multiple accounts will be listed if the GatherContent
@@ -88,16 +95,6 @@ function gc_authentication_form($form, &$form_state) {
 function gc_authentication_form_verify($form, &$form_state) {
   variable_set('gc_username', $form_state['values']['gc_username']);
   variable_set('gc_api_key', $form_state['values']['gc_api_key']);
-
-  $account_obj = new Account();
-  $data = $account_obj->getAccounts();
-  $accounts = array();
-
-  foreach ($data as $account) {
-    $accounts[$account->id] = $account->name;
-  }
-
-  $_SESSION['accounts'] = $data;
 }
 
 /**
@@ -109,16 +106,17 @@ function gc_authentication_form_verify($form, &$form_state) {
  *   Array with form values and state.
  */
 function gc_authentication_form_submit($form, &$form_state) {
-  foreach ($_SESSION['accounts'] as $account) {
+  $account_obj = new Account();
+  $data = $account_obj->getAccounts();
+  foreach ($data as $account) {
     if ($account->id === $form_state['values']['account']) {
       $account_name = $account->name;
-      variable_set('gc_urlkey', $account->urlkey);
+      variable_set('gc_urlkey', $account->slug);
       break;
     }
   }
   variable_set('gc_account', array($form_state['values']['account'] => $account_name));
   drupal_set_message(t("Credentials and project were saved."));
-  unset($_SESSION['accounts']);
 }
 
 /**
