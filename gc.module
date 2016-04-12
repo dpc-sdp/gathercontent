@@ -347,6 +347,10 @@ function _gc_fetcher($gc_id, $entity = NULL) {
 
     $mapping_data = unserialize($mapping->data);
 
+    if (empty($mapping_data)) {
+      return FALSE;
+    }
+
     $mapping_data_copy = $mapping_data;
     $first = array_shift($mapping_data_copy);
 
@@ -358,12 +362,6 @@ function _gc_fetcher($gc_id, $entity = NULL) {
         'uid' => $user->uid,
         'language' => $first['language'],
       ));
-    }
-
-    if (empty($mapping_data)) {
-      $entity->gc_import_status = "Mapping doesn't exist";
-      entity_save('node', $entity);
-      return FALSE;
     }
 
     if ($entity !== FALSE) {
