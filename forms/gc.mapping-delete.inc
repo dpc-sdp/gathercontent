@@ -39,6 +39,6 @@ function gc_mapping_delete_form($form, &$form_state, $id) {
 function gc_mapping_delete_form_submit($form, &$form_state) {
   // @TODO: remove mapping from nodes, if used.
   entity_delete('gc_mapping', $form_state['values']['id']);
-  drupal_set_message(t('You removed mapping #@id', array('@id' => $form_state['values']['id'])));
+  drupal_set_message(t('You removed mapping'));
   $form_state['redirect'] = 'admin/config/gc/mapping';
 }
