@@ -74,7 +74,7 @@ function gc_mapping_edit_form($form, &$form_state, $id) {
             '#type' => 'select',
             '#options' => array(
               'content' => t('Content'),
-              'meta' => t('Metatag'),
+              'metatag' => t('Metatag'),
             ),
             '#title' => t('Type'),
             '#default_value' => (isset($mapping_data[$fieldset->name]['type']) || isset($form_state['values'][$fieldset->name]['type'])) ? (isset($form_state['values'][$fieldset->name]['type']) ? $form_state['values'][$fieldset->name]['type'] : $mapping_data[$fieldset->name]['type']) : NULL,
@@ -97,7 +97,17 @@ function gc_mapping_edit_form($form, &$form_state, $id) {
         }
 
         foreach ($fieldset->elements as $gc_field) {
-          $d_fields = _filter_fields($gc_field, $mapping->content_type);
+          if (isset($form_state['values'][$fieldset->name]['type']) && $form_state['triggering_element']['#name'] !== 'content_type') {
+            if ($form_state['triggering_element']['#array_parents'][1] === $fieldset->name && $form_state['values'][$fieldset->name]['type'] === 'content') {
+              $d_fields = _filter_fields($gc_field, $mapping->content_type);
+            }
+            elseif ($form_state['triggering_element']['#array_parents'][1] === $fieldset->name && $form_state['values'][$fieldset->name]['type'] === 'metatag') {
+              $d_fields = _filter_metatag($gc_field);
+            }
+          }
+          else {
+            $d_fields = _filter_fields($gc_field, $mapping->content_type);
+          }
           $form['mapping'][$fieldset->name]['elements'][$gc_field->name] = array(
             '#type' => 'select',
             '#options' => $d_fields,
@@ -430,5 +440,4 @@ function _filter_metatag($gc_field) {
       'keywords' => t('Keywords'),
     );
   }
-  return array();
 }
