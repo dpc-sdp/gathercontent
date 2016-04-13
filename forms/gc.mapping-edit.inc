@@ -335,11 +335,11 @@ function gc_mapping_edit_form_submit($form, &$form_state) {
       }
     }
     if ($new) {
-      drupal_set_message(t('Mapping #@id has been created.',
+      drupal_set_message(t('Mapping has been created.',
         array('@id' => $form_state['values']['id'])));
     }
     else {
-      drupal_set_message(t('Mapping #@id has been updated.',
+      drupal_set_message(t('Mapping has been updated.',
         array('@id' => $form_state['values']['id'])));
     }
   }
