@@ -135,8 +135,11 @@ function gc_import_wizard_next(&$form_state) {
  * @inheritdoc
  */
 function gc_import_form_select($form, &$form_state) {
-  $project_obj = new Project();
-  $projects = $project_obj->getProjects();
+  $query = db_select('gc_mapping', 'm')
+    ->distinct()
+    ->fields('m', array('gc_project', 'gc_project_id'))
+    ->execute();
+  $projects = $query-> fetchAllKeyed(1,0);
 
   $form['project'] = array(
     '#type' => 'select',
