@@ -28,7 +28,19 @@ function gc_mapping_form_templates($form, &$form_state) {
   );
 
   foreach ($projects as $project_id => $project) {
-    $templates = $template_obj->getTemplates($project_id);
+    $remote_templates = $template_obj->getTemplates($project_id);
+    $query = db_select('gc_mapping', 'm')
+      ->distinct()
+      ->fields('m', array('gc_template', 'gc_template_id'))
+      ->execute();
+    $local_templates = $query->fetchAllKeyed(1, 0);
+
+    $templates = array_diff_assoc($remote_templates, $local_templates);
+
+    if (empty($templates)) {
+      continue;
+    }
+
     $form['p' . $project_id] = array(
       '#type' => 'fieldset',
       '#title' => $project,
