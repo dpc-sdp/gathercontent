@@ -138,8 +138,9 @@ function gc_import_form_select($form, &$form_state) {
   $query = db_select('gc_mapping', 'm')
     ->distinct()
     ->fields('m', array('gc_project', 'gc_project_id'))
+    ->isNotNull('data')
     ->execute();
-  $projects = $query-> fetchAllKeyed(1,0);
+  $projects = $query->fetchAllKeyed(1, 0);
 
   $form['project'] = array(
     '#type' => 'select',
@@ -198,7 +199,7 @@ function gc_import_form_select($form, &$form_state) {
               'class' => array('status-item'),
             ),
             'title' => $item->name,
-            'updated' => $item->updated_at->date,
+            'updated' => date('F d, Y - H:i', strtotime($item->updated_at->date)),
             'template' => array(
               'data' => $templates[$item->template_id],
               'class' => array('template-name-item'),
@@ -218,6 +219,8 @@ function gc_import_form_select($form, &$form_state) {
         '#type' => 'tableselect',
         '#header' => $header,
         '#options' => $content_table,
+        '#empty' => t('No content available.'),
+        '#js_select' => FALSE,
       );
     }
   }
@@ -339,7 +342,8 @@ function gc_import_form_confirm_submit($form, &$form_state) {
  *
  * @inheritdoc
  */
-function gc_import_wizard_finish($form, &$form_state) {}
+function gc_import_wizard_finish($form, &$form_state) {
+}
 
 /**
  * Batch operation callback.
