@@ -153,7 +153,7 @@ function gc_views_default_views() {
       'empty_column' => 0,
     ),
     'gc_updated' => array(
-      'sortable' => 1,
+      'sortable' => 0,
       'default_sort_order' => 'asc',
       'align' => '',
       'separator' => '',
@@ -205,15 +205,16 @@ function gc_views_default_views() {
   $handler->display->display_options['fields']['gc_updated']['id'] = 'gc_updated';
   $handler->display->display_options['fields']['gc_updated']['table'] = 'gc_mapping';
   $handler->display->display_options['fields']['gc_updated']['field'] = 'gc_updated';
-  $handler->display->display_options['fields']['gc_updated']['date_format'] = 'long';
+  $handler->display->display_options['fields']['gc_updated']['date_format'] = 'custom';
+  $handler->display->display_options['fields']['gc_updated']['custom_date_format'] = 'F d, Y - H:i';
   $handler->display->display_options['fields']['gc_updated']['second_date_format'] = 'long';
   /* Field: Mapping: Updated (Drupal) */
   $handler->display->display_options['fields']['updated_drupal']['id'] = 'updated_drupal';
   $handler->display->display_options['fields']['updated_drupal']['table'] = 'gc_mapping';
   $handler->display->display_options['fields']['updated_drupal']['field'] = 'updated_drupal';
   $handler->display->display_options['fields']['updated_drupal']['empty'] = 'Never';
-  $handler->display->display_options['fields']['updated_drupal']['date_format'] = 'short';
-  $handler->display->display_options['fields']['updated_drupal']['custom_date_format'] = 'd.m.Y H:i:s';
+  $handler->display->display_options['fields']['updated_drupal']['date_format'] = 'custom';
+  $handler->display->display_options['fields']['updated_drupal']['custom_date_format'] = 'F d, Y - H:i';
   $handler->display->display_options['fields']['updated_drupal']['second_date_format'] = 'long';
   /* Field: Mapping: Edit link */
   $handler->display->display_options['fields']['edit_mapping']['id'] = 'edit_mapping';
@@ -236,6 +237,33 @@ function gc_views_default_views() {
   $handler->display->display_options['menu']['name'] = 'management';
   $handler->display->display_options['menu']['context'] = 0;
   $handler->display->display_options['menu']['context_only_inline'] = 0;
+  $translatables['mapping'] = array(
+    t('Master'),
+    t('Mappings'),
+    t('more'),
+    t('Apply'),
+    t('Reset'),
+    t('Sort by'),
+    t('Asc'),
+    t('Desc'),
+    t('Items per page'),
+    t('- All -'),
+    t('Offset'),
+    t('« first'),
+    t('‹ previous'),
+    t('next ›'),
+    t('last »'),
+    t('No mappings were created.'),
+    t('Project'),
+    t('GatherContent Template'),
+    t('Content type'),
+    t('None'),
+    t('Last updated in GatherContent'),
+    t('Updated (Drupal)'),
+    t('Never'),
+    t('Operations'),
+    t('Page'),
+  );
 
   $views[$view->name] = $view;
 
