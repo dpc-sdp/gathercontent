@@ -339,13 +339,15 @@ function gc_views_default_views() {
   $handler->display->display_options['fields']['changed']['table'] = 'node';
   $handler->display->display_options['fields']['changed']['field'] = 'changed';
   $handler->display->display_options['fields']['changed']['label'] = 'Last updated in Drupal';
-  $handler->display->display_options['fields']['changed']['date_format'] = 'long';
+  $handler->display->display_options['fields']['changed']['date_format'] = 'custom';
+  $handler->display->display_options['fields']['changed']['custom_date_format'] = 'F d, Y - H:i';
   $handler->display->display_options['fields']['changed']['second_date_format'] = 'long';
   /* Field: Content: Last updated in GatherContent */
   $handler->display->display_options['fields']['gc_updated1']['id'] = 'gc_updated1';
   $handler->display->display_options['fields']['gc_updated1']['table'] = 'node';
   $handler->display->display_options['fields']['gc_updated1']['field'] = 'gc_updated1';
-  $handler->display->display_options['fields']['gc_updated1']['date_format'] = 'long';
+  $handler->display->display_options['fields']['gc_updated1']['date_format'] = 'custom';
+  $handler->display->display_options['fields']['gc_updated1']['custom_date_format'] = 'F d, Y - H:i';
   $handler->display->display_options['fields']['gc_updated1']['second_date_format'] = 'long';
   /* Field: Mapping: Content type name */
   $handler->display->display_options['fields']['content_type_name']['id'] = 'content_type_name';
@@ -468,11 +470,13 @@ function gc_views_default_views() {
   $handler->display->display_options['fields']['changed']['label'] = 'Last updated in Drupal';
   $handler->display->display_options['fields']['changed']['date_format'] = 'long';
   $handler->display->display_options['fields']['changed']['second_date_format'] = 'long';
-  /* Field: Broken/missing handler */
-  $handler->display->display_options['fields']['gc_updated']['id'] = 'gc_updated';
-  $handler->display->display_options['fields']['gc_updated']['table'] = 'node';
-  $handler->display->display_options['fields']['gc_updated']['field'] = 'gc_updated';
-  $handler->display->display_options['fields']['gc_updated']['label'] = 'Last updated in GatherContent';
+  /* Field: Content: Last updated in GatherContent */
+  $handler->display->display_options['fields']['gc_updated1']['id'] = 'gc_updated1';
+  $handler->display->display_options['fields']['gc_updated1']['table'] = 'node';
+  $handler->display->display_options['fields']['gc_updated1']['field'] = 'gc_updated1';
+  $handler->display->display_options['fields']['gc_updated1']['date_format'] = 'custom';
+  $handler->display->display_options['fields']['gc_updated1']['custom_date_format'] = 'F d, Y - H:i';
+  $handler->display->display_options['fields']['gc_updated1']['second_date_format'] = 'long';
   /* Field: Mapping: Content type name */
   $handler->display->display_options['fields']['content_type_name']['id'] = 'content_type_name';
   $handler->display->display_options['fields']['content_type_name']['table'] = 'gc_mapping';
@@ -541,7 +545,7 @@ function gc_views_default_views() {
   $handler->display->display_options['fields']['gc_import_status']['id'] = 'gc_import_status';
   $handler->display->display_options['fields']['gc_import_status']['table'] = 'node';
   $handler->display->display_options['fields']['gc_import_status']['field'] = 'gc_import_status';
-  $handler->display->display_options['fields']['gc_import_status']['label'] = 'Import status';
+  $handler->display->display_options['fields']['gc_import_status']['label'] = 'Update status';
   /* Field: Mapping: GC Template */
   $handler->display->display_options['fields']['gc_template']['id'] = 'gc_template';
   $handler->display->display_options['fields']['gc_template']['table'] = 'gc_mapping';
@@ -619,7 +623,7 @@ function gc_views_default_views() {
     t('Block'),
     t('All'),
     t('Item Name'),
-    t('Import status'),
+    t('Update status'),
   );
 
   $views[$view->name] = $view;
