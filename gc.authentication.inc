@@ -40,7 +40,7 @@ function gc_authentication_form($form, &$form_state) {
       'https://gathercontent.com/developers/authentication/'),
   );
 
-  if (empty($form_state['input']) || $form_state['submitted']) {
+  if (!$form_state['submitted']) {
     $account = variable_get('gc_account', array());
     if (!empty($account)) {
       $account = array_pop($account);
@@ -52,7 +52,7 @@ function gc_authentication_form($form, &$form_state) {
     }
   }
 
-  if (!empty($form_state['input'])) {
+  if ($form_state['submitted']) {
     $account_obj = new Account();
     $data = $account_obj->getAccounts();
     $accounts = array();
@@ -74,7 +74,7 @@ function gc_authentication_form($form, &$form_state) {
 
   $form['submit'] = array(
     '#type' => 'submit',
-    '#value' => (empty($form_state['input']) || $form_state['submitted']) ? (!empty($account) ? t('Change GatherContent Account') : t('Verify')) : t('Save'),
+    '#value' => (!$form_state['submitted']) ? (!empty($account) ? t('Change GatherContent Account') : t('Verify')) : t('Save'),
   );
 
   return $form;
@@ -92,6 +92,8 @@ function gc_authentication_form_submit($form, &$form_state) {
   if (!isset($form_state['values']['account'])) {
     variable_set('gc_username', $form_state['values']['gc_username']);
     variable_set('gc_api_key', $form_state['values']['gc_api_key']);
+    $form_state['submitted'] = TRUE;
+    $form_state['rebuild'] = TRUE;
   }
   else {
     $account_obj = new Account();
