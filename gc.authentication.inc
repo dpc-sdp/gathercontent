@@ -39,22 +39,17 @@ function gc_authentication_form($form, &$form_state) {
     '#description' => l(t('Click to find out where you can generate your API Key'),
       'https://gathercontent.com/developers/authentication/'),
   );
+
   if (empty($form_state['input']) || $form_state['submitted']) {
-    $account = variable_get('gc_account');
-    $account = array_pop($account);
+    $account = variable_get('gc_account', array());
     if (!empty($account)) {
+      $account = array_pop($account);
       $form['current_account'] = array(
         '#prefix' => '<div>',
         '#markup' => t('Current account is <strong>@account</strong>.', array('@account' => $account)),
         '#suffix' => '</div>',
       );
     }
-
-    $form['verify'] = array(
-      '#type' => 'submit',
-      '#value' => (!empty($account) ? t('Change GatherContent Account') : t('Verify')),
-      '#submit' => array('gc_authentication_form_verify'),
-    );
   }
 
   if (!empty($form_state['input'])) {
@@ -72,29 +67,17 @@ function gc_authentication_form($form, &$form_state) {
       '#title' => t('Select GatherContent Account'),
       '#required' => TRUE,
       '#description' => t('Multiple accounts will be listed if the GatherContent
-       user has more than one account. Please select the account you want to 
+       user has more than one account. Please select the account you want to
        import and update content from.'),
     );
-
-    $form['submit'] = array(
-      '#type' => 'submit',
-      '#value' => t('Save'),
-    );
   }
-  return $form;
-}
 
-/**
- * Submit callback for verify action of `gc_authentication_form`.
- *
- * @param array $form
- *   Array with form elements.
- * @param array $form_state
- *   Array with form values and state.
- */
-function gc_authentication_form_verify($form, &$form_state) {
-  variable_set('gc_username', $form_state['values']['gc_username']);
-  variable_set('gc_api_key', $form_state['values']['gc_api_key']);
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => (empty($form_state['input']) || $form_state['submitted']) ? (!empty($account) ? t('Change GatherContent Account') : t('Verify')) : t('Save'),
+  );
+
+  return $form;
 }
 
 /**
@@ -106,17 +89,23 @@ function gc_authentication_form_verify($form, &$form_state) {
  *   Array with form values and state.
  */
 function gc_authentication_form_submit($form, &$form_state) {
-  $account_obj = new Account();
-  $data = $account_obj->getAccounts();
-  foreach ($data as $account) {
-    if ($account->id === $form_state['values']['account']) {
-      $account_name = $account->name;
-      variable_set('gc_urlkey', $account->slug);
-      break;
-    }
+  if (!isset($form_state['values']['account'])) {
+    variable_set('gc_username', $form_state['values']['gc_username']);
+    variable_set('gc_api_key', $form_state['values']['gc_api_key']);
   }
-  variable_set('gc_account', array($form_state['values']['account'] => $account_name));
-  drupal_set_message(t("Credentials and project were saved."));
+  else {
+    $account_obj = new Account();
+    $data = $account_obj->getAccounts();
+    foreach ($data as $account) {
+      if ($account->id === $form_state['values']['account']) {
+        $account_name = $account->name;
+        variable_set('gc_urlkey', $account->slug);
+        break;
+      }
+    }
+    variable_set('gc_account', array($form_state['values']['account'] => $account_name));
+    drupal_set_message(t("Credentials and project were saved."));
+  }
 }
 
 /**
