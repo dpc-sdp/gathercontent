@@ -11,8 +11,6 @@ dependencies[] = views_bulk_operations
 dependencies[] = select_or_other
 dependencies[] = composer_manager
 
-scripts[] = js/filter.js
-scripts[] = js/jquery.tablesorter.js
 stylesheets[all][] = css/gc_style.css
 
 files[] = "includes/Account.inc"
