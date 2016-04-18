@@ -135,6 +135,7 @@ function gc_import_wizard_next(&$form_state) {
  * @inheritdoc
  */
 function gc_import_form_select($form, &$form_state) {
+  $gc_module_path = drupal_get_path('module', 'gc');
   $query = db_select('gc_mapping', 'm')
     ->distinct()
     ->fields('m', array('gc_project', 'gc_project_id'))
@@ -159,6 +160,30 @@ function gc_import_form_select($form, &$form_state) {
   $form['import'] = array(
     '#prefix' => '<div id="edit-import">',
     '#suffix' => '</div>',
+    'gc_header' => array(
+      '#type' => 'container',
+      '#attributes' => array(
+        'class' => array('gc-import--header'),
+      ),
+      'filter_wrapper' => array(
+        '#type' => 'container',
+        '#attributes' => array(
+          'class' => array('gc-import--filter-wrapper', 'clearfix'),
+        ),
+      ),
+      'counter_wrapper' => array(
+        '#type' => 'container',
+        '#attributes' => array(
+          'class' => array('gc-import--counter', 'clearfix'),
+        ),
+      ),
+    ),
+    '#attached' => array(
+      'js' => array(
+        $gc_module_path . '/js/filter.js',
+        $gc_module_path . '/js/jquery.tablesorter.js',
+      ),
+    ),
   );
 
   if (isset($form_state['values']['project'])) {
