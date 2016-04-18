@@ -1,56 +1,64 @@
-.gc-import-filters {
-  display: inline-block;
-  padding: 20px;
+/**
+ * @file
+ * Styles Gather Content admin UI.
+ */
+
+.form-item.form-item--gc-import--filter {
+  float: left;
+  padding-right: 20px;
 }
-#edit-project {
-  display: block;
-}
-.gc-import-filters.project-status {
-  padding-left: 0;
-}
+
 .form-gc-mapping .form-type-select label {
   background: url("../images/arrow.png") no-repeat right center;
   min-width: 400px;
   padding-right: 100px;
 }
+
 .form-gc-mapping .form-type-select select {
   min-width: 150px;
   margin-left: 100px;
 }
+
 .form-gc-mapping .form-type-select label,
 .form-gc-mapping .form-type-select select {
   display: inline-block;
 }
-#ga-form-select-search,
-#ga-form-select-status,
-#ga-form-select-template {
+
+.form-select--gc-import,
+.form-text-gx-import {
   min-width: 145px;
 }
+
 .gather-content,
 .drupal-content-type {
   display: inline-block;
 }
+
 .drupal-content-type {
   padding-left: 100px;
 }
+
 .form-item.form-item-content-type {
   display: inline-block;
   padding-left: 50px;
 }
+
 .form-item.form-item-content-type label {
   background: none;
   min-width: unset;
 }
+
 .form-item.form-item-content-type select {
   margin-left: 50px;
   min-width: 150px;
 }
+
 .gc-import-filter-processed thead tr .headerSortUp {
   background-image: url("../images/desc.gif");
 }
+
 .gc-import-filter-processed thead tr .headerSortDown {
   background-image: url("../images/asc.gif");
-
 }
 
 .gc-import-filter-processed thead tr th {
@@ -59,6 +67,7 @@
   background-repeat: no-repeat;
   cursor: pointer;
 }
+
 .gc-import-filter-processed thead tr th.select-all {
   background-image: none;
 }
