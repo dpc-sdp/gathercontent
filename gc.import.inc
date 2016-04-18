@@ -181,7 +181,9 @@ function gc_import_form_select($form, &$form_state) {
       $mappings = entity_load('gc_mapping', $mapping_ids);
       $mapping_array = array();
       foreach ($mappings as $mapping) {
-        $mapping_array[] = $mapping->gc_template_id;
+        if (!empty($mapping->data)) {
+          $mapping_array[$mapping->gc_template_id] = $mapping->gc_template;
+        }
       }
 
       $tmp_obj = new Template();
@@ -191,7 +193,7 @@ function gc_import_form_select($form, &$form_state) {
         // isn't synced yet.
         if (!is_null($item->template_id)
           && $item->template_id != 'null'
-          && in_array($item->template_id, $mapping_array)
+          && isset($mapping_array[$item->template_id])
         ) {
           $content_table[$item->id] = array(
             'status' => array(
@@ -201,7 +203,7 @@ function gc_import_form_select($form, &$form_state) {
             'title' => $item->name,
             'updated' => date('F d, Y - H:i', strtotime($item->updated_at->date)),
             'template' => array(
-              'data' => $templates[$item->template_id],
+              'data' => $mapping_array[$item->template_id],
               'class' => array('template-name-item'),
             ),
           );
