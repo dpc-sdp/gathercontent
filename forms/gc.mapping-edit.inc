@@ -5,8 +5,6 @@
  * Multistep mapping form.
  */
 
-//include_once "../includes/Template.inc";
-
 use GatherContent\Template;
 
 /**
@@ -439,5 +437,8 @@ function _filter_metatag($gc_field) {
       'abstract' => t('Abstract'),
       'keywords' => t('Keywords'),
     );
+  }
+  else {
+    return array();
   }
 }
