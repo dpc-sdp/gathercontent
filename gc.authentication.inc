@@ -77,6 +77,13 @@ function gc_authentication_form($form, &$form_state) {
     '#value' => (!$form_state['submitted']) ? (!empty($account) ? t('Change GatherContent Account') : t('Verify')) : t('Save'),
   );
 
+  if (!empty($account)) {
+    $form['reset'] = array(
+      '#type' => 'submit',
+      '#value' => t('Reset credentials'),
+    );
+  }
+
   return $form;
 }
 
@@ -89,24 +96,32 @@ function gc_authentication_form($form, &$form_state) {
  *   Array with form values and state.
  */
 function gc_authentication_form_submit($form, &$form_state) {
-  if (!isset($form_state['values']['account'])) {
-    variable_set('gc_username', $form_state['values']['gc_username']);
-    variable_set('gc_api_key', $form_state['values']['gc_api_key']);
-    $form_state['submitted'] = TRUE;
-    $form_state['rebuild'] = TRUE;
-  }
-  else {
-    $account_obj = new Account();
-    $data = $account_obj->getAccounts();
-    foreach ($data as $account) {
-      if ($account->id === $form_state['values']['account']) {
-        $account_name = $account->name;
-        variable_set('gc_urlkey', $account->slug);
-        break;
-      }
+  if ($form_state['triggering_element']['#id'] === 'edit-submit') {
+    if (!isset($form_state['values']['account'])) {
+      variable_set('gc_username', $form_state['values']['gc_username']);
+      variable_set('gc_api_key', $form_state['values']['gc_api_key']);
+      $form_state['submitted'] = TRUE;
+      $form_state['rebuild'] = TRUE;
     }
-    variable_set('gc_account', array($form_state['values']['account'] => $account_name));
-    drupal_set_message(t("Credentials and project were saved."));
+    else {
+      $account_obj = new Account();
+      $data = $account_obj->getAccounts();
+      foreach ($data as $account) {
+        if ($account->id === $form_state['values']['account']) {
+          $account_name = $account->name;
+          variable_set('gc_urlkey', $account->slug);
+          break;
+        }
+      }
+      variable_set('gc_account', array($form_state['values']['account'] => $account_name));
+      drupal_set_message(t("Credentials and project were saved."));
+    }
+  }
+  elseif ($form_state['triggering_element']['#id'] === 'edit-reset') {
+    variable_del('gc_username');
+    variable_del('gc_api_key');
+    variable_del('gc_account');
+    variable_del('gc_urlkey');
   }
 }
 
