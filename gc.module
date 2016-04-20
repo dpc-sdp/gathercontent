@@ -4,9 +4,10 @@
  * Main module file for GatherContent module.
  */
 
-include_once "includes/Content.inc";
-include_once "includes/Project.inc";
-include_once "includes/Template.inc";
+include_once 'includes/Content.inc';
+include_once 'includes/Project.inc';
+include_once 'includes/Template.inc';
+include_once 'gc.theme.inc';
 
 use GatherContent\Content;
 use GatherContent\Project;
@@ -286,7 +287,7 @@ function gc_action_info() {
  *
  * @see gc_action_info
  */
-function gc_update(&$entity, &$context) {
+function gc_update(&$entity, array &$context) {
   // This will be never called.
 }
 
@@ -305,7 +306,7 @@ function gc_update(&$entity, &$context) {
  *
  * @see gc_action_info
  */
-function gc_upload(&$entity, &$context) {
+function gc_upload(&$entity, array &$context) {
   // This will be never called.
 }
 
@@ -693,7 +694,9 @@ function gc_update_finished($success, $results, $operations) {
   }
 }
 
-
+/**
+ * @TODO: function comment!!!
+ */
 function gc_views_vbo_upload($form, &$form_state) {
   $operations = array();
   $nodes = node_load_multiple($form_state['selection']);
@@ -725,14 +728,10 @@ function gc_views_vbo_upload($form, &$form_state) {
  *   Object of content we want to upload.
  */
 function gc_upload_process($node, &$context) {
-//  if (_gc_fetcher($node->gc_id, $node) !== FALSE) {
-//    $context['results'][] = $node->nid;
-//  };
-//  1. Load template from remote
-//  2. Compare local and remote template
-//  3. If templates are same, load node from remote.
-//  4. Set values based on mapping.
-
+  // 1. Load template from remote
+  // 2. Compare local and remote template
+  // 3. If templates are same, load node from remote.
+  // 4. Set values based on mapping.
   $mapping = entity_load('gc_mapping', array($node->gc_mapping_id));
   $mapping = reset($mapping);
 
@@ -863,4 +862,43 @@ function gc_form_alter(&$form, &$form_state, $form_id) {
       $form['#attributes']['class'][] = 'form-gc-mapping';
       break;
   }
+}
+
+/**
+ * Implements hook_libraries_info().
+ */
+function gc_libraries_info() {
+  $libraries['tablesorter-mottie'] = array(
+    'name' => "Mottie's tablesorter",
+    'vendor url' => 'https://github.com/Mottie/tablesorter',
+    'download url' => 'https://github.com/Mottie/tablesorter/archive/master.zip',
+    'version callback' => '_gc_tablesorter_mottie_version',
+    'files' => array(
+      'js' => array('dist/js/jquery.tablesorter.min.js'),
+    ),
+  );
+
+  return $libraries;
+}
+
+/**
+ * Custom version callback for tablesorter jquery plugin library.
+ *
+ * @return string
+ *   Version of the installed jquery.tablesorter plugin.
+ */
+function _gc_tablesorter_mottie_version() {
+  $lib_version = FALSE;
+  $lib_path = libraries_get_path('tablesorter-mottie');
+  $lib_packages_json = file_get_contents($lib_path . '/package.json');
+
+  if ($lib_packages_json !== FALSE) {
+    $lib_packages_info = json_decode($lib_packages_json, TRUE);
+
+    if (is_array($lib_packages_info) && isset($lib_packages_info['version'])) {
+      $lib_version = $lib_packages_info['version'];
+    }
+  }
+
+  return $lib_version;
 }

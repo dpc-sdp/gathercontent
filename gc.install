@@ -5,9 +5,12 @@
  * Install and uninstall script for GatherContent module.
  */
 
-require_once "includes/Account.inc";
-require_once "includes/Template.inc";
+require_once 'includes/Account.inc';
+require_once 'includes/Template.inc';
 
+/**
+ * Implements hook_install().
+ */
 function gc_install() {
   db_add_field(
     'node',
@@ -235,4 +238,43 @@ function gc_update_7006() {
       $mapping->save();
     }
   }
+}
+
+/**
+ * Implements hook_requirements().
+ */
+function gc_requirements($phase) {
+  if ($phase !== 'runtime') {
+    return array();
+  }
+
+  $t = get_t();
+  $requirements = array(
+    'gc_tablesorter' => array(
+      'title' => $t('GatherContent: Tablesorter plugin'),
+      'value' => $t('Unavailable.'),
+      'description' => $t('Install <a href="@libraries-page">Libraries</a> module.', array(
+        '@libraries-page' => 'https://www.drupal.org/project/libraries',
+      )),
+      'severity' => REQUIREMENT_INFO,
+    ),
+  );
+
+  if (module_exists('libraries')) {
+    $tablesorter_lib_info = libraries_detect('tablesorter-mottie');
+
+    if ($tablesorter_lib_info['installed'] && $tablesorter_lib_info['version']) {
+      $requirements['gc_tablesorter']['value'] = $tablesorter_lib_info['version'];
+      $requirements['gc_tablesorter']['severity'] = REQUIREMENT_OK;
+      unset($requirements['gc_tablesorter']['description']);
+    }
+    else {
+      $requirements['gc_tablesorter']['description'] = $t('Download <a href="@tablesorter-github">Mottie\'s tablesorter plugin</a> to <code>sites/all/libraries</code> toget sortable table headers at GatherContent admin UI. Rename it\'s folder to <code>tablesorter-mottie</code>.',
+        array(
+          '@tablesorter-github' => 'https://github.com/Mottie/tablesorter/archive/v2.25.8.zip',
+        ));
+    }
+  }
+
+  return $requirements;
 }

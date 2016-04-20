@@ -3,15 +3,32 @@
  * Styles Gather Content admin UI.
  */
 
-.form-item.form-item--gc-import--filter {
+/**
+ * Colored square in status column.
+ */
+.gc-item--status--color {
+  width: 20px;
+  height: 20px;
+  margin-right: 5px;
   float: left;
-  padding-right: 20px;
 }
 
+/**
+ * Themes client-side filters at Import Content.
+ */
+.form-item.gc-filter {
+  padding-right: 20px;
+  float: left;
+}
+
+/******************************************************************************
+ * Mapping.
+ ******************************************************************************/
+
 .form-gc-mapping .form-type-select label {
-  background: url("../images/arrow.png") no-repeat right center;
   min-width: 400px;
   padding-right: 100px;
+  background: url(../images/arrow.png) no-repeat right center;
 }
 
 .form-gc-mapping .form-type-select select {
@@ -25,7 +42,7 @@
 }
 
 .form-select--gc-import,
-.form-text-gx-import {
+.form-text-gc-import {
   min-width: 145px;
 }
 
@@ -44,30 +61,41 @@
 }
 
 .form-item.form-item-content-type label {
+  min-width: 0;
   background: none;
-  min-width: unset;
 }
 
 .form-item.form-item-content-type select {
-  margin-left: 50px;
   min-width: 150px;
+  margin-left: 50px;
 }
 
-.gc-import-filter-processed thead tr .headerSortUp {
-  background-image: url("../images/desc.gif");
-}
+/******************************************************************************
+ * Tablesorter
+ *
+ * Themes sortable table's header cells.
+ ******************************************************************************/
 
-.gc-import-filter-processed thead tr .headerSortDown {
-  background-image: url("../images/asc.gif");
-}
-
-.gc-import-filter-processed thead tr th {
+.tablesorter-header {
   background-image: url("../images/bg.gif");
   background-position: right center;
   background-repeat: no-repeat;
   cursor: pointer;
 }
 
-.gc-import-filter-processed thead tr th.select-all {
+.tablesorter-header.sort-up {
+  background-image: url("../images/desc.gif");
+}
+
+.tablesorter-header.sort-down {
+  background-image: url("../images/asc.gif");
+}
+
+/**
+ * Tablesorter 2.10 > applies cssHeader class anyway which breaks CSS modularity.
+ * That's why we have to remove styling this ugly way.
+ */
+.tablesorter-header.sorter-false {
   background-image: none;
+  cursor: auto;
 }
