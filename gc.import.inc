@@ -1,8 +1,12 @@
 <?php
+/**
+ * @file
+ * Content importing for GatherContent module.
+ */
 
-include_once "includes/Project.inc";
-include_once "includes/Content.inc";
-include_once "includes/Template.inc";
+include_once 'includes/Project.inc';
+include_once 'includes/Content.inc';
+include_once 'includes/Template.inc';
 
 use GatherContent\Content;
 use GatherContent\Project;
@@ -160,28 +164,9 @@ function gc_import_form_select($form, &$form_state) {
   $form['import'] = array(
     '#prefix' => '<div id="edit-import">',
     '#suffix' => '</div>',
-    'gc_header' => array(
-      '#type' => 'container',
-      '#attributes' => array(
-        'class' => array('gc-import--header'),
-      ),
-      'filter_wrapper' => array(
-        '#type' => 'container',
-        '#attributes' => array(
-          'class' => array('gc-import--filter-wrapper', 'clearfix'),
-        ),
-      ),
-      'counter_wrapper' => array(
-        '#type' => 'container',
-        '#attributes' => array(
-          'class' => array('gc-import--counter', 'clearfix'),
-        ),
-      ),
-    ),
     '#attached' => array(
       'js' => array(
-        $gc_module_path . '/js/filter.js',
-        $gc_module_path . '/js/jquery.tablesorter.js',
+        $gc_module_path . '/js/gc-filter.js',
       ),
     ),
   );
@@ -222,11 +207,17 @@ function gc_import_form_select($form, &$form_state) {
         ) {
           $content_table[$item->id] = array(
             'status' => array(
-              'data' => '<div style="width:20px; height: 20px; float: left; margin-right: 5px; background: ' . $item->status->data->color . ';"></div>' . $item->status->data->name,
-              'class' => array('status-item'),
+              'data' => '<div class="gc-item--status--color" style="background: ' . $item->status->data->color . ';"></div>' . $item->status->data->name,
+              'class' => array('gc-item', 'status-item'),
             ),
-            'title' => $item->name,
-            'updated' => date('F d, Y - H:i', strtotime($item->updated_at->date)),
+            'title' => array(
+              'data' => $item->name,
+              'class' => array('gc-item', 'gc-item--name'),
+            ),
+            'updated' => array(
+              'data' => date('F d, Y - H:i', strtotime($item->updated_at->date)),
+              'class' => array('gc-item', 'gc-item-date'),
+            ),
             'template' => array(
               'data' => $mapping_array[$item->template_id],
               'class' => array('template-name-item'),
@@ -243,11 +234,14 @@ function gc_import_form_select($form, &$form_state) {
       );
 
       $form['import']['content'] = array(
-        '#type' => 'tableselect',
+        '#type' => 'gc_tableselect',
         '#header' => $header,
         '#options' => $content_table,
         '#empty' => t('No content available.'),
-        '#js_select' => FALSE,
+        '#filterwrapper' => array(
+          'filter_wrapper' => array('gc-table--filter-wrapper', 'clearfix'),
+          'counter_wrapper' => array('gc-table--counter', 'clearfix'),
+        ),
       );
     }
   }
@@ -281,10 +275,19 @@ function gc_import_form_select_submit($form, &$form_state) {
  */
 function gc_import_form_confirm($form, &$form_state) {
   $form['title'] = array(
-    '#markup' => '<h2>' . format_plural(count($form_state['object']->nodes),
+    'form_title' => array(
+      '#type' => 'html_tag',
+      '#tag' => 'h2',
+      '#value' => format_plural(count($form_state['object']->nodes),
         'Confirm import selection (@count item)',
-        'Confirm import selection (@count items)')
-      . '</h2><p>' . t('Please review your import selection before importing.') . '</p>',
+        'Confirm import selection (@count items)'
+      ),
+    ),
+    'form_description' => array(
+      '#type' => 'html_tag',
+      '#tag' => 'p',
+      '#value' => t('Please review your import selection before importing.'),
+    ),
   );
 
   $header = array(
@@ -313,7 +316,6 @@ function gc_import_form_confirm($form, &$form_state) {
   $form['table'] = array(
     '#markup' => render($table),
   );
-
 
   $options = array();
   $project_obj = new Project();
