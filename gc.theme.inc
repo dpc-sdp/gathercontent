@@ -12,14 +12,37 @@ function gc_element_info() {
     'gc_tableselect' => array(
       '#input' => TRUE,
       '#js_select' => TRUE,
-      '#tablesorter' => TRUE,
-      '#filterwrapper' => array(),
       '#multiple' => TRUE,
       '#process' => array('form_process_tableselect'),
       '#options' => array(),
       '#empty' => '',
       '#theme' => 'gc_tableselect',
       '#type' => 'tableselect',
+      //
+      // Additional options compared to tableselect form element.
+      //
+      // Whether to add tablesorter plugin or not (if it's available).
+      '#tablesorter' => TRUE,
+      // DIV elements which have to be added to the table as prefix, array of
+      // class arrays keyed by an (internal) element name.
+      // These elements will be wrapped into a DIV with class gc-table--header.
+      //
+      // Example:
+      // @code
+      // $element['#filterwrapper'] = array(
+      //   'element_one' => array('class1', 'class2'),
+      //   'element_two' => array('class3', 'class4'),
+      // );
+      // @endcode
+      //
+      // Sample output in the case above:
+      // @code
+      // <div class="gc-table-header">
+      //   <div class="class1 class2"></div>
+      //   <div class="class3 class4"></div>
+      // </div>
+      // @endcode
+      '#filterwrapper' => array(),
     ),
   );
 }
