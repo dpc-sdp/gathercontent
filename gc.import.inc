@@ -217,6 +217,7 @@ function gc_import_form_select($form, &$form_state) {
             'updated' => array(
               'data' => date('F d, Y - H:i', strtotime($item->updated_at->date)),
               'class' => array('gc-item', 'gc-item-date'),
+              'data-date' => date('Y-m-d.H:i:s', strtotime($item->updated_at->date)),
             ),
             'template' => array(
               'data' => $mapping_array[$item->template_id],
