@@ -6,8 +6,13 @@
 (function ($, Drupal) {
   'use strict';
 
+  //
+  // Attaches tablesorter plugin.
+  //
   Drupal.behaviors.gcTableSorter = {
     attach: function (context) {
+      // Adds custom data-date attr filter parser if tablesorter plugin is
+      // available.
       if (typeof $.tablesorter !== 'undefined') {
         $.tablesorter.addParser({
           // Setting a unique id.
@@ -30,20 +35,37 @@
         });
       }
 
+      //
+      // Sets tablesorter plugin on tables with class tablesorter-enabled.
+      //
       $('table.tablesorter-enabled', context).once('gc-tablesorter', function () {
         $(this).tablesorter({
           cssAsc: 'sort-down',
           cssDesc: 'sort-up',
           widgets: ['zebra']
+        })
+
+        // Keeps sticky table cell classes up-to-date.
+        // Makes sticky header's tablesorter classes follow the main table's
+        // ones.
+        .bind('sortEnd', function (event) {
+          if ($(this).is('table + table')) {
+            var $baseTable = $('table + table');
+            var $stickyTable = $baseTable.prev('table.sticky-header');
+
+            if ($baseTable.length && $stickyTable.length) {
+              var $baseTableHeaderCells = $baseTable.find('thead th');
+              var $stickyTableHeaderCells = $stickyTable.find('thead th');
+              var baseTableHeaderNum = $baseTableHeaderCells.length;
+
+              for (var i = 0; i < baseTableHeaderNum; i += 1) {
+                var baseTableHeaderCellClasses = $($baseTableHeaderCells[i]).attr('class');
+                $($stickyTableHeaderCells[i]).attr('class', baseTableHeaderCellClasses);
+              }
+            }
+          }
         });
       });
-    },
-    detach: function (context) {
-      $('table.tablesorter-enabled', context).trigger('destroy')
-      .find('tbody tr:visible')
-        // Weird, I know, but that's how Drupal works by default.
-        .filter(':even').addClass('odd').end()
-        .filter(':odd').addClass('even');
     }
   };
 })(jQuery, Drupal);

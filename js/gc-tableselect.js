@@ -8,11 +8,50 @@
  * Used by gc_tableselect form type.
  */
 
-(function ($, Drupal) {
+(function ($, Drupal, window) {
   'use strict';
 
+  Drupal.behaviors.gcStickySizeFix = {
+    attach: function () {
+      $('table.sticky-enabled').once('gc-sticky-table-resizer', function () {
+        var timeout;
+        var $originalTable = $(this);
+        var $originalHeaderCells = $originalTable.children('thead').find('> tr > th');
+
+        $(window).bind('resize.gcUpdateSticky', function () {
+
+          var $that = null;
+          var $stickyCell = null;
+          var cellWidth = null;
+          var $stickyTable = $originalTable.prev('table.sticky-header');
+          var $stickyHeaderCells = $stickyTable.find(' thead tr > th');
+
+          window.clearTimeout(timeout);
+          timeout = window.setTimeout(function () {
+            // Resize header and its cell widths.
+            // Only apply width to visible table cells. This prevents the header from
+            // displaying incorrectly when the sticky header is no longer visible.
+            for (var i = 0, il = $originalHeaderCells.length; i < il; i += 1) {
+              $that = $($originalHeaderCells[i]);
+              $stickyCell = $stickyHeaderCells.eq($that.index());
+              cellWidth = $that.css('width');
+
+              // Exception for IE7.
+              if (cellWidth === 'auto') {
+                cellWidth = $that[0].clientWidth + 'px';
+              }
+              $stickyCell.css('width', cellWidth);
+            }
+
+            $stickyTable.css('width', $originalTable.outerWidth());
+          }, 200);
+        });
+      });
+    }
+  };
+
   Drupal.behaviors.gcTableSelect = {
-    attach: function (context, settings) {
+    attach: function (context) {
       // Select the inner-most table in case of nested tables.
       $('th.select-all', context).closest('table').once('gc-table-select', Drupal.gcTableSelect);
     }
@@ -20,7 +59,7 @@
 
   Drupal.gcTableSelect = function () {
     // Do not add a "Select all" checkbox if there are no rows with checkboxes
-    // in the table
+    // in the table.
     if ($('td input:checkbox', this).length === 0) {
       return;
     }
@@ -121,4 +160,4 @@
     }
   };
 
-})(jQuery, Drupal);
+})(jQuery, Drupal, window);
