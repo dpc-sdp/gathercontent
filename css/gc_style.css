@@ -77,18 +77,19 @@
  ******************************************************************************/
 
 .tablesorter-header {
-  background-image: url("../images/bg.gif");
+  padding-right: 20px;
+  background-image: url(../images/bg.gif);
   background-position: right center;
   background-repeat: no-repeat;
   cursor: pointer;
 }
 
 .tablesorter-header.sort-up {
-  background-image: url("../images/desc.gif");
+  background-image: url(../images/desc.gif);
 }
 
 .tablesorter-header.sort-down {
-  background-image: url("../images/asc.gif");
+  background-image: url(../images/asc.gif);
 }
 
 /**
@@ -96,6 +97,7 @@
  * That's why we have to remove styling this ugly way.
  */
 .tablesorter-header.sorter-false {
+  padding-right: 10px;
   background-image: none;
   cursor: auto;
 }

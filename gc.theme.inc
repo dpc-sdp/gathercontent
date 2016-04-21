@@ -114,21 +114,22 @@ function theme_gc_tableselect(array $variables) {
       }
       $rows[] = $row;
     }
-    // Add an empty header or a "Select all" checkbox to provide room for the
-    // checkboxes/radios in the first table column.
-    if ($element['#js_select']) {
-      // Add a "Select all" checkbox.
-      drupal_add_js($gc_module_path . '/js/gc-tableselect.js');
-      array_unshift($header, array(
-        'class' => array('select-all'),
-        'data-sorter' => 'false',
-      ));
-    }
-    else {
-      // Add an empty header when radio buttons are displayed or a "Select all"
-      // checkbox is not desired.
-      array_unshift($header, '');
-    }
+  }
+
+  // Add an empty header or a "Select all" checkbox to provide room for the
+  // checkboxes/radios in the first table column.
+  if ($element['#js_select']) {
+    // Add a "Select all" checkbox.
+    drupal_add_js($gc_module_path . '/js/gc-tableselect.js');
+    array_unshift($header, array(
+      'class' => array('select-all'),
+      'data-sorter' => 'false',
+    ));
+  }
+  else {
+    // Add an empty header when radio buttons are displayed or a "Select all"
+    // checkbox is not desired.
+    array_unshift($header, '');
   }
 
   if (!empty($element['#filterwrapper']) && is_array($element['#filterwrapper'])) {

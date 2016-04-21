@@ -3,7 +3,7 @@
  * Client-side filtering for GatherContent module.
  */
 
-(function ($, Drupal) {
+(function ($, Drupal, window) {
   'use strict';
 
   Drupal.behaviors.gcImportSelectedCounter = {
@@ -17,21 +17,26 @@
             .appendTo('.gc-table--counter');
         });
 
-        var totalCount = $('#edit-import tbody input:checkbox').length;
-        self.updateCount(totalCount);
+        self.updateCount();
 
-        $('#edit-import table:not(.sticky-header)', context).delegate('input:checkbox', 'change', function () {
-          self.updateCount(totalCount);
+        $('#edit-import table', context).delegate('input:checkbox', 'change', function () {
+          self.updateCount();
         });
       }
     },
-    updateCount: function (totalCount) {
+    updateCount: function () {
       var checkedCount = $('#edit-import tbody input:checkbox:checked').length;
+      var visibleCount = $('#edit-import tbody input:checkbox:visible').length;
+      var totalCount = $('#edit-import tbody input:checkbox').length;
+
       $('.select-counter').html(Drupal.formatPlural(
-        totalCount,
-        '@selectedcount of @count item selected.',
-        '@selectedcount of @count items selected.',
-        {'@selectedcount': checkedCount}
+        visibleCount,
+        '@selectedcount of @count item selected (@totalcount total).',
+        '@selectedcount of @count items selected (@totalcount total).',
+        {
+          '@selectedcount': checkedCount,
+          '@totalcount': totalCount
+        }
       ));
     }
   };
@@ -130,6 +135,12 @@
         self.fixZebra('#edit-import table');
         // Update select all checkbox value.
         self.fixSelectAll('#edit-import table');
+        // Trigger counter update.
+        $('#edit-import table input:checkbox').trigger('change');
+        // Trigger 'resize' on window for sticky table (avoiding messed sticky
+        // header cells). Sticky header and it's cells dimensions will be
+        // recalculated.
+        $(window).trigger('resize');
       });
     },
     fixZebra: function (context) {
@@ -148,4 +159,4 @@
       $(context).find('th.select-all input:checkbox').attr('checked', selectAllChecked);
     }
   };
-})(jQuery, Drupal);
+})(jQuery, Drupal, window);
