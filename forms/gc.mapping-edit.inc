@@ -95,6 +95,7 @@ function gc_mapping_edit_form($form, &$form_state, $id) {
         }
 
         foreach ($fieldset->elements as $gc_field) {
+          $d_fields = array();
           if (isset($form_state['values'][$fieldset->name]['type']) && $form_state['triggering_element']['#name'] !== 'content_type') {
             if ($form_state['triggering_element']['#array_parents'][1] === $fieldset->name && $form_state['values'][$fieldset->name]['type'] === 'content') {
               $d_fields = _filter_fields($gc_field, $mapping->content_type);
@@ -197,6 +198,7 @@ function gc_mapping_edit_form($form, &$form_state, $id) {
           }
 
           foreach ($fieldset->elements as $gc_field) {
+            $d_fields = array();
             if (isset($form_state['values']['type']) && $form_state['triggering_element']['#name'] !== 'content_type') {
               if ($form_state['triggering_element']['#array_parents'][1] === $fieldset->name && $form_state['values']['type'] === 'content') {
                 $d_fields = _filter_fields($gc_field, $form_state['values']['content_type']);
@@ -430,7 +432,7 @@ function _filter_fields($gc_field, $content_type) {
  *   Array of supported metatag fields.
  */
 function _filter_metatag($gc_field) {
-  if ($gc_field->plain_text) {
+  if ($gc_field->type === 'text' && $gc_field->plain_text) {
     return array(
       'title' => t('Title'),
       'description' => t('Description'),
