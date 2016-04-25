@@ -14,8 +14,6 @@ use GatherContent\Template;
 /**
  * Edit mapping form.
  *
- * @TODO: validation, if at least one field is mapped.
- *
  * @inheritdoc
  */
 function gc_mapping_edit_form($form, &$form_state, $id) {
@@ -25,11 +23,18 @@ function gc_mapping_edit_form($form, &$form_state, $id) {
   $tmp = new Template();
   $template = $tmp->getTemplate($mapping->gc_template_id);
   $new = empty($mapping->data);
+  $form = array();
+  $form['form_description'] = array(
+    '#type' => 'html_tag',
+    '#tag' => 'i',
+    '#value' => t('Please map your GatherContent Template fields to your Drupal 
+    Content Type Fields. Please note that a GatherContent field can only be 
+    mapped to a single Drupal field. So each field can only be mapped to once.'),
+  );
   if (!$new) {
     $mapping_data = unserialize($mapping->data);
     $content_type = $content_types[$mapping->content_type];
 
-    $form = array();
     $form['info'] = array(
       '#markup' =>
         '<div class="project-name">' .
@@ -85,7 +90,10 @@ function gc_mapping_edit_form($form, &$form_state, $id) {
           );
         }
 
-        if (module_exists('entity_translation') && entity_translation_node_supported_type($mapping->content_type)) {
+        if (module_exists('entity_translation') && module_exists('title')
+          && entity_translation_node_supported_type($mapping->content_type)
+          && title_field_replacement_enabled('node', $mapping->content_type, 'title')
+        ) {
           $form['mapping'][$fieldset->name]['language'] = array(
             '#type' => 'select',
             '#options' => array('und' => t('None')) + locale_language_list('name'),
@@ -161,6 +169,7 @@ function gc_mapping_edit_form($form, &$form_state, $id) {
             '#title' => $fieldset->label,
             '#collapsible' => TRUE,
             '#collapsed' => ($i === 0 ? FALSE : TRUE),
+            '#tree' => TRUE,
           );
 
           if ($i === 0) {
@@ -188,7 +197,10 @@ function gc_mapping_edit_form($form, &$form_state, $id) {
             );
           }
 
-          if (module_exists('entity_translation') && entity_translation_node_supported_type($form_state['values']['content_type'])) {
+          if (module_exists('entity_translation') && module_exists('title')
+            && entity_translation_node_supported_type($form_state['values']['content_type'])
+            && title_field_replacement_enabled('node', $form_state['values']['content_type'], 'title')
+          ) {
             $form['mapping'][$fieldset->name]['language'] = array(
               '#type' => 'select',
               '#options' => array('und' => t('None')) + locale_language_list('name'),
@@ -245,6 +257,99 @@ function gc_mapping_edit_form($form, &$form_state, $id) {
  */
 function gc_mapping_form_mapping_get_table($form, &$form_state) {
   return $form['mapping'];
+}
+
+/**
+ * Validation callback for edit mapping form.
+ *
+ * In this function, we validate if:
+ * - title of title_field is mapped
+ * - each field is used only once, if we are mapping single language
+ * content type or page
+ * OR
+ * - each field is used only once per fieldset, if we are mapping multilingual
+ * - each language is used only once except `und`.
+ *
+ * @inheritdoc
+ */
+function gc_mapping_edit_form_validate($form, &$form_state) {
+  // @TODO: check, if title is mapped.
+  if ($form_state['triggering_element']['#id'] == 'edit-submit') {
+    $form_definition_elements = array(
+      'return',
+      'form_build_id',
+      'form_token',
+      'form_id',
+      'op',
+    );
+    $non_data_elements = array_merge($form_definition_elements, array(
+      'gc_template',
+      'content_type',
+      'id',
+      'updated',
+    ));
+
+    $mapping_data = array();
+    foreach ($form_state['values'] as $key => $value) {
+      if (!in_array($key, $non_data_elements) && substr_compare($key, 'tab', 0, 3) === 0) {
+        $mapping_data[$key] = $value;
+      }
+    }
+    // Check if is translatable.
+    $mapping_entity = entity_load('gc_mapping', array($form_state['values']['id']));
+    $mapping = reset($mapping_entity);
+    $content_type = (empty($mapping->content_type) ? $form_state['values']['content_type'] : $mapping->content_type);
+    $translatable = module_exists('entity_translation') && module_exists('title')
+      && entity_translation_node_supported_type($content_type)
+      && title_field_replacement_enabled('node', $content_type, 'title');
+    // If translatable, check, if each language if used only once.
+    $content_lang = array();
+    $metatag_lang = array();
+    if ($translatable) {
+      foreach ($mapping_data as $tab_id => $tab) {
+        if ($tab['language'] != 'und') {
+          if (!in_array($tab['language'], ${$tab['type'] . '_lang'})) {
+            ${$tab['type'] . '_type'}[] = $tab['language'];
+          }
+          else {
+            form_set_error($tab_id . '[language]', t('Each language can be used only once'));
+          }
+        }
+      }
+    }
+
+    $content_fields = array();
+    $metatag_fields = array();
+    if ($translatable) {
+      foreach ($content_lang as $lang) {
+        $content_fields[$lang] = array();
+      }
+      foreach ($metatag_lang as $lang) {
+        $metatag_fields[$lang] = array();
+      }
+      $content_fields['und'] = $metatag_fields['und'] = array();
+    }
+    foreach ($mapping_data as $tab_id => $tab) {
+      foreach ($tab['elements'] as $k => $element) {
+        if ($translatable) {
+          if (!in_array($element, ${$tab['type'] . '_fields'}[$tab['language']])) {
+            ${$tab['type'] . '_fields'}[$tab['language']][] = $element;
+          }
+          else {
+            form_set_error($tab_id, t('Each field can be mapped only once.'));
+          }
+        }
+        else {
+          if (!in_array($element, ${$tab['type'] . '_fields'})) {
+            ${$tab['type'] . '_fields'}[] = $element;
+          }
+          else {
+            form_set_error($tab_id, t('Each field can be mapped only once.'));
+          }
+        }
+      }
+    }
+  }
 }
 
 /**
@@ -415,7 +520,10 @@ function _filter_fields($gc_field, $content_type) {
     }
   }
 
-  if ($gc_field->type === 'text' && $gc_field->plain_text) {
+  if ($gc_field->type === 'text'
+    && $gc_field->plain_text
+    && (!module_exists('title') || !title_field_replacement_enabled('node', $content_type, 'title'))
+  ) {
     $fields['title'] = 'Title';
   }
 
