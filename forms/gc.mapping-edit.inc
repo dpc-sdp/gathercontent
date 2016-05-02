@@ -309,7 +309,7 @@ function gc_mapping_edit_form_validate($form, &$form_state) {
       foreach ($mapping_data as $tab_id => $tab) {
         if ($tab['language'] != 'und') {
           if (!in_array($tab['language'], ${$tab['type'] . '_lang'})) {
-            ${$tab['type'] . '_type'}[] = $tab['language'];
+            ${$tab['type'] . '_lang'}[] = $tab['language'];
           }
           else {
             form_set_error($tab_id . '[language]', t('Each language can be used only once'));
@@ -331,6 +331,10 @@ function gc_mapping_edit_form_validate($form, &$form_state) {
     }
     foreach ($mapping_data as $tab_id => $tab) {
       foreach ($tab['elements'] as $k => $element) {
+        if (empty($element)) {
+          continue;
+        }
+
         if ($translatable) {
           if (!in_array($element, ${$tab['type'] . '_fields'}[$tab['language']])) {
             ${$tab['type'] . '_fields'}[$tab['language']][] = $element;
