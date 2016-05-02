@@ -3,7 +3,6 @@
 namespace GatherContent;
 
 use GuzzleHttp\Client;
-use GuzzleHttp\Message\Request;
 
 /**
  * Class Template.
@@ -105,8 +104,11 @@ class Template {
   /**
    * TBD.
    *
-   * @param $template_id
-   * @return null
+   * @param int $template_id
+   *   ID of template.
+   *
+   * @return object
+   *   Object of template
    */
   public function getTemplate($template_id) {
     $template = NULL;

@@ -152,6 +152,32 @@ class Content {
   }
 
   /**
+   * Update content in GatherContent.
+   *
+   * @param int $content_id
+   *   ID of content we want to update.
+   * @param array $config
+   *   Configration array.
+   *
+   * @return bool
+   *   Return boolean value.
+   */
+  public function postContent($content_id, array $config) {
+    try {
+      $response = $this->client->post('/items/' . $content_id . '/save', array('body' => array('config' => base64_encode(json_encode($config)))));
+      if ($response->getStatusCode() === 202) {
+        return TRUE;
+      }
+      else {
+        return FALSE;
+      }
+    }
+    catch (\Exception $e) {
+      return FALSE;
+    }
+  }
+
+  /**
    * Get list of files.
    *
    * @param int $content_id
@@ -181,4 +207,5 @@ class Content {
 
     return $accounts;
   }
+
 }

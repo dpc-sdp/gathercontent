@@ -488,21 +488,21 @@ function _gc_fetcher($gc_id, $uuid, $status = NULL, $entity = NULL, $parent_menu
               $local_field_name = $mapping_data[$pane->name]['elements'][$field->name];
               if ($mapping_data[$pane->name]['type'] === 'content') {
                 gc_gc_process_content_pane($node, $gc_id, $local_field_name, $field, $mapping->content_type, $is_translatable, $language, $parent_menu_item, $entity->nid, $tsid);
-                          }
+              }
               elseif ($mapping_data[$pane->name]['type'] === 'metatag') {
                 gc_gc_process_metatag_pane($node, $gc_id, $local_field_name, $field, $mapping->content_type, $is_translatable, $language);
-                        }
-                          }
-                          else {
+              }
+            }
+            else {
               $operation_item->status = "Field with requested name doesn't exist.";
               entity_save('gc_operation_item', $operation_item);
-                          }
-                        }
+            }
+          }
           // We need to create new translation if is translatable.
           if ($is_translatable && (!isset($node->language) || empty($node->language))) {
             $node->language->set($language);
             $node->save(TRUE);
-                      }
+          }
           elseif ($is_translatable && (isset($node->language) || !empty($node->language))) {
             $handler = entity_translation_get_handler('node', $entity);
             $translation = array(
@@ -525,15 +525,15 @@ function _gc_fetcher($gc_id, $uuid, $status = NULL, $entity = NULL, $parent_menu
         $operation_item->status = "Mapping doesn't match";
         entity_save('gc_operation_item', $operation_item);
         return FALSE;
-                    }
-                          }
-                          else {
+      }
+    }
+    else {
       $operation_item->status = "System error, please contact you administrator.";
       entity_save('gc_operation_item', $operation_item);
       return FALSE;
-                          }
-                        }
-                        else {
+    }
+  }
+  else {
     $operation_item->status = "Mapping doesn't exist";
     entity_save('gc_operation_item', $operation_item);
     return FALSE;
@@ -560,18 +560,18 @@ function _gc_fetcher($gc_id, $uuid, $status = NULL, $entity = NULL, $parent_menu
  */
 function gc_gc_process_metatag_pane(EntityMetadataWrapper &$node, $gc_id, $local_field_name, $field, $content_type, $is_translatable = FALSE, $language = LANGUAGE_NONE) {
   if (module_exists('metatag') && metatag_entity_supports_metatags('node', $content_type)) {
-                          if ($is_translatable) {
+    if ($is_translatable) {
       $node->language($language)->metatags->{$local_field_name}->set($field->value);
-                          }
-                          else {
+    }
+    else {
       $node->metatags->{$local_field_name}->set($field->value);
-                          }
-                        }
+    }
+  }
   else {
     throw new Exception("Metatag module not enabled or entity doesn't support 
     metatags while trying to map values woth metatag content.");
-                      }
-                    }
+  }
+}
 
 /**
  * @param EntityMetadataWrapper $node
@@ -601,9 +601,9 @@ function gc_gc_process_content_pane(EntityMetadataWrapper &$node, $gc_id, $local
 
     case 'choice_radio':
       gc_gc_process_choice_radio_field($node, $local_field_name, $field->name, $is_translatable, $language, $field->options);
-                    break;
+      break;
 
-                  case 'choice_checkbox':
+    case 'choice_checkbox':
       gc_gc_process_choice_checkbox_field($node, $local_field_name, $field->name, $is_translatable, $language, $field->options);
       break;
 
@@ -615,9 +615,9 @@ function gc_gc_process_content_pane(EntityMetadataWrapper &$node, $gc_id, $local
       if ($local_field_name === 'title') {
         $node->title->set($field->value);
         gc_create_menu_link($nid, $field->value, $plid);
-                    }
+      }
       else {
-                        if ($is_translatable) {
+        if ($is_translatable) {
           if (title_field_replacement_enabled('node', $content_type, 'title')
             && title_field_replacement_info('node', 'title')['field']['field_name'] === $local_field_name
           ) {
@@ -632,22 +632,22 @@ function gc_gc_process_content_pane(EntityMetadataWrapper &$node, $gc_id, $local
               $node->language($language)->{$local_field_name}->set($field->value);
             }
             gc_create_menu_link($nid, $field->value, $plid, $language, $tsid);
-                        }
-                        else {
+          }
+          else {
             $node->language($language)->{$local_field_name}->set(array(
               'value' => $field->value,
               'format' => ($field->plain_text ? 'plain_text' : 'filtered_html'),
             ));
-                        }
-                      }
+          }
+        }
         else {
           $node->{$local_field_name}->set(array(
             'value' => $field->value,
             'format' => ($field->plain_text ? 'plain_text' : 'filtered_html'),
           ));
         }
-                    }
-                    break;
+      }
+      break;
   }
 }
 
@@ -728,18 +728,18 @@ function gc_create_menu_link($nid, $title, $plid, $lang = NULL, &$tsid = NULL) {
  *   Object with field attributes.
  */
 function gc_gc_process_section_field(EntityMetadataWrapper &$node, $local_field_name, $gc_field_name, $is_translatable = FALSE, $language = 'und', $field) {
-                    if ($is_translatable) {
+  if ($is_translatable) {
     $node->language($language)->$local_field_name->set(array(
-                        'value' => '<h3>' . $field->title . '</h3>' . $field->subtitle,
-                        'format' => 'filtered_html',
-                      ));
-                    }
-                    else {
+      'value' => '<h3>' . $field->title . '</h3>' . $field->subtitle,
+      'format' => 'filtered_html',
+    ));
+  }
+  else {
     $node->$local_field_name->set(array(
-                        'value' => '<h3>' . $field->title . '</h3>' . $field->subtitle,
-                        'format' => 'filtered_html',
-                      ));
-                    }
+      'value' => '<h3>' . $field->title . '</h3>' . $field->subtitle,
+      'format' => 'filtered_html',
+    ));
+  }
 }
 
 /**
@@ -765,15 +765,15 @@ function gc_gc_process_choice_checkbox_field(EntityMetadataWrapper &$node, $loca
   foreach ($options as $option) {
     if ($option->selected) {
       $selected_options[] = $option->name;
-                    }
-                      if ($is_translatable) {
+    }
+    if ($is_translatable) {
       $node->language($language)->$local_field_name = $selected_options;
-                      }
-                      else {
+    }
+    else {
       $node->$local_field_name = $selected_options;
-                      }
-                    }
-              }
+    }
+  }
+}
 
 /**
  * @param EntityMetadataWrapper $node
@@ -793,24 +793,24 @@ function gc_gc_process_choice_radio_field(EntityMetadataWrapper &$node, $local_f
   foreach ($options as $option) {
     if ($option->selected) {
       if (isset($option->value)) {
-                if ($is_translatable) {
+        if ($is_translatable) {
           $node->language($language)->$local_field_name->set($option->value);
-                }
-                else {
+        }
+        else {
           $node->$local_field_name->set($option->value);
-                }
-              }
+        }
+      }
       else {
         if ($is_translatable) {
           $node->language($language)->$local_field_name->set($option->name);
-            }
+        }
         else {
           $node->$local_field_name->set($option->name);
-          }
-          }
-          }
         }
       }
+    }
+  }
+}
 
 /**
  *
@@ -835,17 +835,17 @@ function gc_gc_process_files_field(EntityMetadataWrapper &$node, $local_field_na
       foreach ($node->$local_field_name->value() as $file) {
         if ($file['gc_id'] === $file->id) {
           $found = TRUE;
+        }
       }
-    }
 
       if (!$found) {
         $local_file = file_save_data(file_get_contents($file->url), 'public://' . $file->filename);
         $local_file->gc_id = $file->id;
         file_save($local_file);
         $found_files[] = array('fid' => $local_file->fid);
+      }
     }
   }
-    }
   if ($is_translatable) {
     $node->language($language)->$local_field_name = $found_files;
   }
@@ -1033,12 +1033,20 @@ function gc_update_finished($success, $results, $operations) {
  * @TODO: function comment!!!
  */
 function gc_views_vbo_upload($form, &$form_state) {
+  $uuid = _gc_uuid_generate();
+
+  $operation = entity_create('gc_operation', array(
+    'uuid' => $uuid,
+    'type' => 'upload',
+  ));
+  entity_save('gc_operation', $operation);
+
   $operations = array();
   $nodes = node_load_multiple($form_state['selection']);
   foreach ($nodes as $node) {
     $operations[] = array(
       'gc_upload_process',
-      array($node),
+      array($node, $uuid),
     );
   }
 
@@ -1057,106 +1065,194 @@ function gc_views_vbo_upload($form, &$form_state) {
 /**
  * Batch operation callback.
  *
- * We are doing real upload thing here.
+ * We are doing upload operation here.
  *
  * @param object $node
  *   Object of content we want to upload.
  */
-function gc_upload_process($node, &$context) {
+function gc_upload_process($entity, $uuid, &$context) {
   // 1. Load template from remote
   // 2. Compare local and remote template
   // 3. If templates are same, load node from remote.
   // 4. Set values based on mapping.
-  $mapping = entity_load('gc_mapping', array($node->gc_mapping_id));
+  $mapping = entity_load('gc_mapping', array($entity->gc_mapping_id));
   $mapping = reset($mapping);
 
   $tmp_obj = new GatherContent\Template();
-  $remote_template = $tmp_obj->getTemplate($mapping->gc_project_id);
+  $remote_template = $tmp_obj->getTemplate($mapping->gc_template_id);
 
-  if ($remote_template === unserialize($mapping->template)) {
-    $cont_obj = new GatherContent\Content();
-    $remote_node = $cont_obj->getContent($node->gc_id);
-    $config = $remote_node->config;
-    $mapping_data = unserialize($mapping->data);
+  $cont_obj = new GatherContent\Content();
+  $remote_node = $cont_obj->getContent($entity->gc_id);
+  $config = $remote_node->config;
+  $mapping_data = unserialize($mapping->data);
 
-    foreach ($config as &$pane) {
-      foreach ($pane->elements as &$field) {
-        if (isset($mapping_data[$field->name]) && !empty($mapping_data[$field->name])) {
-          switch ($field->type) {
-            case 'files':
-              break;
+  $operation_item = entity_create('gc_operation_item', array(
+    'operation_uuid' => $uuid,
+    'item_status' => $remote_node->status->data->name,
+    'item_status_color' => $remote_node->status->data->color,
+    'template_name' => $remote_template->name,
+    'item_name' => $remote_node->name,
+    'gc_id' => $entity->gc_id,
+    'nid' => $entity->nid,
+  ));
 
-            case 'choice_radio':
-              $option_names = array();
-              foreach ($field->options as &$option) {
-                // Set selected to false for each option.
-                $option->selected = FALSE;
-                $option_names[] = $option->name;
-              }
-              // Fetch local selected option.
-              $selected = $node->{$mapping_data[$field->name]}->get();
+  if ($remote_template->config == unserialize($mapping->template)->config) {
+    $node = entity_metadata_wrapper('node', $entity);
+    try {
+      foreach ($config as &$pane) {
+        $is_translatable = module_exists('entity_translation')
+          && entity_translation_node_supported_type($mapping->content_type)
+          && ($mapping_data[$pane->name]['language'] != LANGUAGE_NONE);
+        if ($is_translatable) {
+          $language = $mapping_data[$pane->name]['language'];
+        }
+        else {
+          $language = LANGUAGE_NONE;
+        }
+        foreach ($pane->elements as &$field) {
+          if (isset($mapping_data[$pane->name]['elements'][$field->name])
+            && !empty($mapping_data[$pane->name]['elements'][$field->name])
+          ) {
+            $local_field_name = $mapping_data[$pane->name]['elements'][$field->name];
+            if ($mapping_data[$pane->name]['type'] === 'content') {
+              $field_info = field_info_field($local_field_name);
+              $is_translatable = $is_translatable && $field_info['translatable'];
+              switch ($field->type) {
+                case 'files':
+                  // There is currently no API for manipulating with files.
+                  break;
 
-              if (!in_array($selected, $option_names)) {
-                // If it's other, then find that option in remote.
-                foreach ($field->options as &$option) {
-                  if (isset($option->value)) {
-                    $option->selected = TRUE;
-                    $option->value = $selected;
+                case 'choice_radio':
+                  $option_names = array();
+                  foreach ($field->options as &$option) {
+                    // Set selected to false for each option.
+                    $option->selected = FALSE;
+                    $option_names[] = $option->name;
                   }
+
+                  // Fetch local selected option.
+                  if ($is_translatable) {
+                    $selected = $node->language($language)->$local_field_name->value();
+                  }
+                  else {
+                    $selected = $node->$local_field_name->value();
+                  }
+
+                  if (!in_array($selected, $option_names)) {
+                    // If it's other, then find that option in remote.
+                    foreach ($field->options as &$option) {
+                      if (isset($option->value)) {
+                        $option->selected = TRUE;
+                        $option->value = $selected;
+                      }
+                    }
+                  }
+                  else {
+                    // If it's checkbox, find it by remote option name,
+                    // which should be same.
+                    foreach ($field->options as &$option) {
+                      if ($option->name == $selected) {
+                        $option->selected = TRUE;
+                      }
+                    }
+                  }
+                  break;
+
+                case 'choice_checkbox':
+                  foreach ($field->options as &$option) {
+                    // Set selected to false for each option.
+                    $option->selected = FALSE;
+                  }
+
+                  // Fetch local selected option.
+                  if ($is_translatable) {
+                    $selected = $node->language($language)->$local_field_name->value();
+                  }
+                  else {
+                    $selected = $node->$local_field_name->value();
+                  }
+
+                  // If it's checkbox, find it by remote option name,
+                  // which should be same.
+                  foreach ($field->options as &$option) {
+                    if (isset($selected[$option->name])) {
+                      $option->selected = TRUE;
+                    }
+                  }
+                  break;
+
+                case 'section':
+                  // We don't upload this because this field shouldn't be
+                  // edited.
+                  break;
+
+                default:
+                  if ($local_field_name === 'title') {
+                    $field->value = $node->title->value();
+                  }
+                  else {
+                    if ($is_translatable) {
+                      if (title_field_replacement_enabled('node', $mapping->content_type, 'title')
+                        && title_field_replacement_info('node', 'title')['field']['field_name'] === $local_field_name
+                      ) {
+                        $field->value = $node->language($language)->{$local_field_name}->value();
+                      }
+                      else {
+                        $field->value = $node->language($language)->{$local_field_name}->value->value();
+                      }
+                    }
+                    else {
+                      $field->value = $node->{$local_field_name}->value->value();
+                    }
+                  }
+                  break;
+              }
+
+            }
+            elseif ($mapping_data[$pane->name]['type'] === 'metatag') {
+              if (module_exists('metatag') && metatag_entity_supports_metatags('node', $mapping->content_type)) {
+                if ($is_translatable) {
+                  $field->value = $node->language($language)->metatags->{$local_field_name}->value();
+                }
+                else {
+                  $field->value = $node->metatags->{$local_field_name}->value();
                 }
               }
               else {
-                // If it's checkbox, find it by remote option name,
-                // which should be same.
-                foreach ($field->options as &$option) {
-                  if ($option->name == $selected) {
-                    $option->selected = TRUE;
-                  }
-                }
+                throw new Exception("Metatag module not enabled or entity doesn't support 
+    metatags while trying to map values woth metatag content.");
               }
-              break;
-
-            case
-            'choice_checkbox':
-              foreach ($node->{$mapping_data[$field->name]}->getIterator() as $delta => $item) {
-                $node->{$mapping_data[$field->name]}->set(array(NULL));
-              }
-              $node->save(TRUE);
-              foreach ($field->options as $option) {
-                if ($option->selected) {
-                  $node->{$mapping_data[$field->name]}[] = $option->name;
-                }
-              }
-              break;
-
-            case 'section':
-              $node->{$mapping_data[$field->name]}->set(array(
-                'value' => '<h3>' . $field->title . '</h3>' . $field->subtitle,
-                'format' => 'filtered_html',
-              ));
-              break;
-
-            default:
-              if ($mapping_data[$field->name] === 'title') {
-                $node->title->set($field->value);
-              }
-              else {
-                $node->{$mapping_data[$field->name]}->set(array(
-                  'value' => $field->value,
-                  'format' => ($field->plain_text ? 'plain_text' : 'filtered_html'),
-                ));
-              }
-              break;
+            }
+          }
+          else {
+            $operation_item->status = "System error, please contact you administrator.";
+            entity_save('gc_operation_item', $operation_item);
           }
         }
       }
+
+      if ($cont_obj->postContent($entity->gc_id, $config)) {
+        $operation_item->status = "Success";
+        entity_save('gc_operation_item', $operation_item);
+      }
+      else {
+        $operation_item->status = 'Mapping doesn\'t match';
+        entity_save('gc_operation_item', $operation_item);
+      }
+
     }
-
+    catch (\Exception $e) {
+      watchdog('gc_import', print_r($e, TRUE), array(), WATCHDOG_ERROR);
+      $operation_item->status = 'Mapping doesn\'t match';
+      entity_save('gc_operation_item', $operation_item);
+    }
   }
-
   else {
-    $node->gc_import_status = 'Mappings are not same, please update your local template.';
+    $operation_item->status = 'Mapping doesn\'t match';
+    entity_save('gc_operation_item', $operation_item);
   }
+
+  $context['results']['uuid'] = $uuid;
 }
 
 /**
