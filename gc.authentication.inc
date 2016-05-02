@@ -56,26 +56,32 @@ function gc_authentication_form($form, &$form_state) {
     $account_obj = new Account();
     $data = $account_obj->getAccounts();
     $accounts = array();
+    if (!is_null($data)) {
+      foreach ($data as $account) {
+        $accounts[$account->id] = $account->name;
+      }
 
-    foreach ($data as $account) {
-      $accounts[$account->id] = $account->name;
-    }
-
-    $form['account'] = array(
-      '#type' => 'select',
-      '#options' => $accounts,
-      '#title' => t('Select GatherContent Account'),
-      '#required' => TRUE,
-      '#description' => t('Multiple accounts will be listed if the GatherContent
+      $form['account'] = array(
+        '#type' => 'select',
+        '#options' => $accounts,
+        '#title' => t('Select GatherContent Account'),
+        '#required' => TRUE,
+        '#description' => t('Multiple accounts will be listed if the GatherContent
        user has more than one account. Please select the account you want to
        import and update content from.'),
+      );
+    }
+    $form['submit'] = array(
+      '#type' => 'submit',
+      '#value' => (is_null($data)) ? t('Verify') : t('Save'),
     );
   }
-
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => (!$form_state['submitted']) ? (!empty($account) ? t('Change GatherContent Account') : t('Verify')) : t('Save'),
-  );
+  else {
+    $form['submit'] = array(
+      '#type' => 'submit',
+      '#value' => (!empty($account) ? t('Change GatherContent Account') : t('Verify')),
+    );
+  }
 
   if (!empty($account)) {
     $form['reset'] = array(

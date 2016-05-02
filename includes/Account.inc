@@ -75,11 +75,13 @@ class Account {
       }
       else {
         drupal_set_message(t("User with provided credentials wasn't found."), 'error');
+        $accounts = NULL;
       }
     }
     catch (\Exception $e) {
-      drupal_set_message($e->getMessage(), 'error');
       watchdog('gathercontent', $e->getMessage(), array(), WATCHDOG_ERROR);
+      drupal_set_message(t("User with provided credentials wasn't found."), 'error');
+      $accounts = NULL;
     }
 
     return $accounts;
