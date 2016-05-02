@@ -122,6 +122,83 @@ function gc_schema() {
     'primary key' => array('id'),
   );
 
+  $schema['gc_operation'] = array(
+    'description' => 'The base table for the GC Operation entity',
+    'fields' => array(
+      'uuid' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'type' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+    ),
+    'primary key' => array('uuid'),
+  );
+
+  $schema['gc_operation_item'] = array(
+    'description' => 'The base table for the GC Operation Item entity',
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'operation_uuid' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'item_status' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'item_status_color' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'item_name' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'template_name' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'status' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'gc_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'nid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => FALSE,
+      ),
+    ),
+    'primary key' => array('id'),
+  );
+
   return $schema;
 }
 
@@ -238,6 +315,14 @@ function gc_update_7006() {
       $mapping->save();
     }
   }
+}
+
+/**
+ * Create tables for gc_operation and gc_operation_item entities.
+ */
+function gc_update_7007() {
+  db_create_table('gc_operation', drupal_get_schema_unprocessed('gc', 'gc_operation'));
+  db_create_table('gc_operation_item', drupal_get_schema_unprocessed('gc', 'gc_operation_item'));
 }
 
 /**

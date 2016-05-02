@@ -144,6 +144,33 @@ function gc_entity_info() {
     'fieldable' => FALSE,
   );
 
+  $info['gc_operation'] = array(
+    'label' => t('GC Operation'),
+    'base table' => 'gc_operation',
+    'entity keys' => array(
+      'id' => 'uuid',
+      'label' => 'uuid',
+    ),
+    'module' => 'gc',
+    'entity class' => 'Entity',
+    'controller class' => 'EntityAPIController',
+    'views controller class' => 'EntityDefaultViewsController',
+    'fieldable' => FALSE,
+  );
+
+  $info['gc_operation_item'] = array(
+    'label' => t('GC Operation Item'),
+    'base table' => 'gc_operation_item',
+    'entity keys' => array(
+      'id' => 'id',
+    ),
+    'module' => 'gc',
+    'entity class' => 'Entity',
+    'controller class' => 'EntityAPIController',
+    'views controller class' => 'EntityDefaultViewsController',
+    'fieldable' => FALSE,
+  );
+
   return $info;
 }
 
@@ -231,6 +258,61 @@ function gc_entity_property_info() {
     'type' => 'integer',
     'description' => t("The ID of file in GatherContent"),
   );
+  $info['gc_operation']['properties']['uuid'] = array(
+    'label' => t('Operation UUID'),
+    'type' => 'text',
+    'schema field' => 'uuid',
+  );
+  $info['gc_operation']['properties']['type'] = array(
+    'label' => t('Operation Type'),
+    'type' => 'text',
+    'schema field' => 'type',
+  );
+  $info['gc_operation_item']['properties']['id'] = array(
+    'label' => t('Operation Item ID'),
+    'type' => 'integer',
+    'schema field' => 'id',
+  );
+  $info['gc_operation_item']['properties']['operation_uuid'] = array(
+    'label' => t('Operation UUID'),
+    'type' => 'text',
+    'schema field' => 'operation_uuid',
+  );
+  $info['gc_operation_item']['properties']['item_status'] = array(
+    'label' => t('Operation Item Status'),
+    'type' => 'text',
+    'schema field' => 'item_status',
+  );
+  $info['gc_operation_item']['properties']['item_status_color'] = array(
+    'label' => t('Operation Item Status Color'),
+    'type' => 'text',
+    'schema field' => 'item_status_color',
+  );
+  $info['gc_operation_item']['properties']['item_name'] = array(
+    'label' => t('Operation Item Name'),
+    'type' => 'text',
+    'schema field' => 'item_name',
+  );
+  $info['gc_operation_item']['properties']['template_name'] = array(
+    'label' => t('Operation Item Template Name'),
+    'type' => 'text',
+    'schema field' => 'template_name',
+  );
+  $info['gc_operation_item']['properties']['status'] = array(
+    'label' => t('Operation Item Operation Status'),
+    'type' => 'text',
+    'schema field' => 'status',
+  );
+  $info['gc_operation_item']['properties']['gc_id'] = array(
+    'label' => t('Operation Item GC ID'),
+    'type' => 'integer',
+    'schema field' => 'gc_id',
+  );
+  $info['gc_operation_item']['properties']['nid'] = array(
+    'label' => t('Operation Item NID'),
+    'type' => 'integer',
+    'schema field' => 'nid',
+  );
 
   return $info;
 }
@@ -305,6 +387,7 @@ function gc_update(&$entity, array &$context) {
  *   Context of action.
  *
  * @see gc_action_info
+ * @see gc_views_vbo_upload
  */
 function gc_upload(&$entity, array &$context) {
   // This will be never called.
@@ -321,10 +404,30 @@ function gc_upload(&$entity, array &$context) {
  * @return int|FALSE
  *   Return nid if operation was successful.
  */
-function _gc_fetcher($gc_id, $entity = NULL) {
+function _gc_fetcher($gc_id, $uuid, $status = NULL, $entity = NULL, $parent_menu_item = NULL) {
   global $user;
+
+  $tsid = NULL;
+
   $content_obj = new Content();
   $content = $content_obj->getContent($gc_id);
+
+  if (!empty($status)) {
+    $status_obj = new Project();
+    $status = $status_obj->getStatus($content->project_id, $status);
+  }
+
+  $temp_obj = new Template();
+  $template = $temp_obj->getTemplate($content->template_id);
+
+  $operation_item = entity_create('gc_operation_item', array(
+    'operation_uuid' => $uuid,
+    'item_status' => (!empty($status) ? $status->name : $content->status->data->name),
+    'item_status_color' => (!empty($status) ? $status->color : $content->status->data->color),
+    'template_name' => $template->name,
+    'item_name' => $content->name,
+    'gc_id' => $gc_id,
+  ));
 
   // Check if mapping exists.
   $query = new EntityFieldQuery();
@@ -363,169 +466,391 @@ function _gc_fetcher($gc_id, $entity = NULL) {
         'uid' => $user->uid,
         'language' => $first['language'],
       ));
+      entity_save('node', $entity);
     }
 
     if ($entity !== FALSE) {
       $node = entity_metadata_wrapper('node', $entity);
-      $files = $content_obj->getFiles($gc_id);
 
       try {
         foreach ($content->config as $pane) {
           $is_translatable = module_exists('entity_translation')
             && entity_translation_node_supported_type($mapping->content_type)
             && ($mapping_data[$pane->name]['language'] != LANGUAGE_NONE);
+          if ($is_translatable) {
+            $language = $mapping_data[$pane->name]['language'];
+          }
+          else {
+            $language = LANGUAGE_NONE;
+          }
           foreach ($pane->elements as $field) {
             if (isset($mapping_data[$pane->name]['elements'][$field->name]) && !empty($mapping_data[$pane->name]['elements'][$field->name])) {
+              $local_field_name = $mapping_data[$pane->name]['elements'][$field->name];
               if ($mapping_data[$pane->name]['type'] === 'content') {
-                $is_translatable = $is_translatable && field_is_translatable('node', $mapping_data[$pane->name]['elements'][$field->name]);
-                switch ($field->type) {
-                  case 'files':
-                    foreach ($files as $file) {
-                      if ($file->field === $field->name) {
-                        $found = FALSE;
-                        foreach ($node->{$mapping_data[$pane->name]['elements'][$field->name]}->value() as $file) {
-                          if ($file['gc_id'] === $file->id) {
-                            $found = TRUE;
+                gc_gc_process_content_pane($node, $gc_id, $local_field_name, $field, $mapping->content_type, $is_translatable, $language, $parent_menu_item, $entity->nid, $tsid);
                           }
+              elseif ($mapping_data[$pane->name]['type'] === 'metatag') {
+                gc_gc_process_metatag_pane($node, $gc_id, $local_field_name, $field, $mapping->content_type, $is_translatable, $language);
                         }
-
-                        if (!$found) {
-                          $local_file = file_save_data(file_get_contents($file->url), 'public://' . $file->filename);
-                          $local_file->gc_id = $file->id;
-                          file_save($local_file);
-                          if ($is_translatable) {
-                            $node->language($mapping_data[$pane->name]['language'])->{$mapping_data[$pane->name]['elements'][$field->name]}[] = array('fid' => $local_file->fid);
                           }
                           else {
-                            $node->{$mapping_data[$pane->name]['elements'][$field->name]}[] = array('fid' => $local_file->fid);
+              $operation_item->status = "Field with requested name doesn't exist.";
+              entity_save('gc_operation_item', $operation_item);
                           }
                         }
-                      }
-                    }
-                    break;
-
-                  case 'choice_radio':
-                    foreach ($field->options as $option) {
-                      if ($option->selected) {
-                        if (isset($option->value)) {
-                          if ($is_translatable) {
-                            $node->language($mapping_data[$pane->name]['language'])->{$mapping_data[$pane->name]['elements'][$field->name]}->set($option->value);
-                          }
-                          else {
-                            $node->{$mapping_data[$pane->name]['elements'][$field->name]}->set($option->value);
-                          }
-                        }
-                        else {
-                          if ($is_translatable) {
-                            $node->language($mapping_data[$pane->name]['language'])->{$mapping_data[$pane->name]['elements'][$field->name]}->set($option->name);
-                          }
-                          else {
-                            $node->{$mapping_data[$pane->name]['elements'][$field->name]}->set($option->name);
-                          }
-                        }
-                      }
-                    }
-                    break;
-
-                  case 'choice_checkbox':
-                    foreach ($node->{$mapping_data[$pane->name]['elements'][$field->name]}->getIterator() as $delta => $item) {
-                      $node->{$mapping_data[$pane->name]['elements'][$field->name]}->set(array(NULL));
-                    }
-                    $node->save(TRUE);
-                    foreach ($field->options as $option) {
-                      if ($option->selected) {
-                        if ($is_translatable) {
-                          $node->language($mapping_data[$pane->name]['language'])->{$mapping_data[$pane->name]['elements'][$field->name]}[] = $option->name;
-                        }
-                        else {
-                          $node->{$mapping_data[$pane->name]['elements'][$field->name]}[] = $option->name;
-                        }
-                      }
-                    }
-                    break;
-
-                  case 'section':
-                    if ($is_translatable) {
-                      $node->language($mapping_data[$pane->name]['language'])->{$mapping_data[$pane->name]['elements'][$field->name]}->set(array(
-                        'value' => '<h3>' . $field->title . '</h3>' . $field->subtitle,
-                        'format' => 'filtered_html',
-                      ));
-                    }
-                    else {
-                      $node->{$mapping_data[$pane->name]['elements'][$field->name]}->set(array(
-                        'value' => '<h3>' . $field->title . '</h3>' . $field->subtitle,
-                        'format' => 'filtered_html',
-                      ));
-                    }
-                    break;
-
-                  default:
-                    if ($mapping_data[$pane->name]['elements'][$field->name] === 'title') {
-                      $node->title->set($field->value);
-                    }
-                    else {
-                      if ($is_translatable) {
-                        $node->language($mapping_data[$pane->name]['language'])->{$mapping_data[$pane->name]['elements'][$field->name]}->set(array(
-                          'value' => $field->value,
-                          'format' => ($field->plain_text ? 'plain_text' : 'filtered_html'),
-                        ));
-                      }
-                      else {
-                        $node->{$mapping_data[$pane->name]['elements'][$field->name]}->set(array(
-                          'value' => $field->value,
-                          'format' => ($field->plain_text ? 'plain_text' : 'filtered_html'),
-                        ));
-                      }
-                    }
-                    break;
-                }
-              }
-              elseif ($mapping_data[$pane->name]['type'] === 'metatag' && module_exists('metatag') && metatag_entity_supports_metatags('node', $mapping->content_type)) {
-                if ($is_translatable) {
-                  $node->language($mapping_data[$pane->name]['language'])->metatags->{$mapping_data[$pane->name]['elements'][$field->name]}->set($field->value);
-                }
-                else {
-                  $node->metatags->{$mapping_data[$pane->name]['elements'][$field->name]}->set($field->value);
-                }
-              }
-            }
-          }
           // We need to create new translation if is translatable.
           if ($is_translatable && (!isset($node->language) || empty($node->language))) {
-            $node->language->set($mapping_data[$pane->name]['language']);
+            $node->language->set($language);
             $node->save(TRUE);
-          }
+                      }
           elseif ($is_translatable && (isset($node->language) || !empty($node->language))) {
             $handler = entity_translation_get_handler('node', $entity);
             $translation = array(
               'translate' => 0,
               'status' => 1,
-              'language' => $mapping_data[$pane->name]['language'],
-              'source' => ($mapping_data[$pane->name]['language'] === $node->language->value() ? '' : $node->language->value()),
+              'language' => $language,
+              'source' => ($language === $node->language->value() ? '' : $node->language->value()),
             );
             $handler->setTranslation($translation, $node->value());
           }
         }
         $node->save(TRUE);
+        $operation_item->status = "Success";
+        $operation_item->nid = $entity->nid;
+        entity_save('gc_operation_item', $operation_item);
         return $entity->nid;
       }
       catch (\Exception $e) {
         watchdog('gc_import', print_r($e, TRUE), array(), WATCHDOG_ERROR);
-        $entity->gc_import_status = "Mapping doesn't match";
-        entity_save('node', $entity);
+        $operation_item->status = "Mapping doesn't match";
+        entity_save('gc_operation_item', $operation_item);
         return FALSE;
+                    }
+                          }
+                          else {
+      $operation_item->status = "System error, please contact you administrator.";
+      entity_save('gc_operation_item', $operation_item);
+      return FALSE;
+                          }
+                        }
+                        else {
+    $operation_item->status = "Mapping doesn't exist";
+    entity_save('gc_operation_item', $operation_item);
+    return FALSE;
+  }
+}
+
+/**
+ * @param EntityMetadataWrapper $node
+ *   Object of node.
+ * @param int $gc_id
+ *   ID of item in GatherContent.
+ * @param string $local_field_name
+ *   Name of local Drupal field.
+ * @param object $field
+ *   Object of GatherContent field.
+ * @param string $content_type
+ *   Name of Content type, we are mapping to.
+ * @param bool $is_translatable
+ *   Indicator if node is translatable.
+ * @param string $language
+ *   Language of translation if applicable.
+ *
+ * @throws \Exception
+ */
+function gc_gc_process_metatag_pane(EntityMetadataWrapper &$node, $gc_id, $local_field_name, $field, $content_type, $is_translatable = FALSE, $language = LANGUAGE_NONE) {
+  if (module_exists('metatag') && metatag_entity_supports_metatags('node', $content_type)) {
+                          if ($is_translatable) {
+      $node->language($language)->metatags->{$local_field_name}->set($field->value);
+                          }
+                          else {
+      $node->metatags->{$local_field_name}->set($field->value);
+                          }
+                        }
+  else {
+    throw new Exception("Metatag module not enabled or entity doesn't support 
+    metatags while trying to map values woth metatag content.");
+                      }
+                    }
+
+/**
+ * @param EntityMetadataWrapper $node
+ *   Object of node.
+ * @param int $gc_id
+ *   ID of item in GatherContent.
+ * @param string $local_field_name
+ *   Name of local Drupal field.
+ * @param object $field
+ *   Object of GatherContent field.
+ * @param string $content_type
+ *   Name of Content type, we are mapping to.
+ * @param bool $is_translatable
+ *   Indicator if node is translatable.
+ * @param string $language
+ *   Language of translation if applicable.
+ */
+function gc_gc_process_content_pane(EntityMetadataWrapper &$node, $gc_id, $local_field_name, $field, $content_type, $is_translatable = FALSE, $language = LANGUAGE_NONE, $plid = NULL, $nid = NULL, &$tsid = NULL) {
+  $field_info = field_info_field($local_field_name);
+  $is_translatable = $is_translatable && $field_info['translatable'];
+  switch ($field->type) {
+    case 'files':
+      $content_obj = new Content();
+      $files = $content_obj->getFiles($gc_id);
+      gc_gc_process_files_field($node, $local_field_name, $field->name, $is_translatable, $language, $files);
+      break;
+
+    case 'choice_radio':
+      gc_gc_process_choice_radio_field($node, $local_field_name, $field->name, $is_translatable, $language, $field->options);
+                    break;
+
+                  case 'choice_checkbox':
+      gc_gc_process_choice_checkbox_field($node, $local_field_name, $field->name, $is_translatable, $language, $field->options);
+      break;
+
+    case 'section':
+      gc_gc_process_section_field($node, $local_field_name, $field->name, $is_translatable, $language, $field);
+      break;
+
+    default:
+      if ($local_field_name === 'title') {
+        $node->title->set($field->value);
+        gc_create_menu_link($nid, $field->value, $plid);
+                    }
+      else {
+                        if ($is_translatable) {
+          if (title_field_replacement_enabled('node', $content_type, 'title')
+            && title_field_replacement_info('node', 'title')['field']['field_name'] === $local_field_name
+          ) {
+            // If we are setting title for default language,
+            // we set it just into title attribute and
+            // it's synced automatically.
+            // @see http://andrejgaluf.com/blog/2015-11-27/drupal-7-setting-title-module-field-programmatically
+            if ($language === $node->language->value()) {
+              $node->title->set($field->value);
+            }
+            else {
+              $node->language($language)->{$local_field_name}->set($field->value);
+            }
+            gc_create_menu_link($nid, $field->value, $plid, $language, $tsid);
+                        }
+                        else {
+            $node->language($language)->{$local_field_name}->set(array(
+              'value' => $field->value,
+              'format' => ($field->plain_text ? 'plain_text' : 'filtered_html'),
+            ));
+                        }
+                      }
+        else {
+          $node->{$local_field_name}->set(array(
+            'value' => $field->value,
+            'format' => ($field->plain_text ? 'plain_text' : 'filtered_html'),
+          ));
+        }
+                    }
+                    break;
+  }
+}
+
+/**
+ * @param \EntityMetadataWrapper $node
+ * @param $field
+ * @param $plid
+ */
+function gc_create_menu_link($nid, $title, $plid, $lang = NULL, &$tsid = NULL) {
+  if (!empty($plid)) {
+    if (is_null($lang)) {
+      // Single language node.
+      list($menu_name, $mlid) = explode(':', $plid);
+      $link = array(
+        'link_path' => 'node/' . $nid,
+        'link_title' => $title,
+        'menu_name' => $menu_name,
+        'plid' => $mlid,
+      );
+      menu_link_save($link);
+    }
+    elseif (module_exists('i18n_menu')) {
+      if (!is_null($lang) && is_null($tsid)) {
+        // Multi language node - first language.
+        $menu_translation_set = i18n_translation_set_create('menu_link');
+        list($menu_name, $mlid) = explode(':', $plid);
+        $link = array(
+          'link_path' => 'node/' . $nid,
+          'link_title' => $title,
+          'menu_name' => $menu_name,
+          'plid' => $mlid,
+          'language' => $lang,
+        );
+        menu_link_save($link);
+
+        $menu_translation_set->add_item($link);
+        $menu_translation_set->save_translations();
+
+        $tsid = $menu_translation_set->tsid;
+      }
+      elseif (!is_null($lang) && !is_null($tsid)) {
+        // Multi language node - other language.
+        $menu_translation_set = i18n_translation_set_load($tsid);
+        list($menu_name, $mlid) = explode(':', $plid);
+        // Load parent translation.
+        $item = menu_link_load($mlid);
+        $translation_set = i18n_translation_set_load($item['i18n_tsid']);
+        $translations = $translation_set->get_translations();
+        $link = array(
+          'link_path' => 'node/' . $nid,
+          'link_title' => $title,
+          'menu_name' => $menu_name,
+          'plid' => $translations[$lang]['mlid'],
+          'language' => $lang,
+        );
+
+        menu_link_save($link);
+
+        $menu_translation_set->add_item($link);
+        $menu_translation_set->save_translations();
       }
     }
-    else {
-      return FALSE;
+  }
+}
+
+/**
+ * @param EntityMetadataWrapper $node
+ *   Object of node.
+ * @param string $local_field_name
+ *   Local field name.
+ * @param string $gc_field_name
+ *   Name of field in GatherContent.
+ * @param bool $is_translatable
+ *   Indicator if node is translatable.
+ * @param string $language
+ *   Language of translation if applicable.
+ * @param object $field
+ *   Object with field attributes.
+ */
+function gc_gc_process_section_field(EntityMetadataWrapper &$node, $local_field_name, $gc_field_name, $is_translatable = FALSE, $language = 'und', $field) {
+                    if ($is_translatable) {
+    $node->language($language)->$local_field_name->set(array(
+                        'value' => '<h3>' . $field->title . '</h3>' . $field->subtitle,
+                        'format' => 'filtered_html',
+                      ));
+                    }
+                    else {
+    $node->$local_field_name->set(array(
+                        'value' => '<h3>' . $field->title . '</h3>' . $field->subtitle,
+                        'format' => 'filtered_html',
+                      ));
+                    }
+}
+
+/**
+ * @param EntityMetadataWrapper $node
+ *   Object of node.
+ * @param string $local_field_name
+ *   Local field name.
+ * @param string $gc_field_name
+ *   Name of field in GatherContent.
+ * @param bool $is_translatable
+ *   Indicator if node is translatable.
+ * @param string $language
+ *   Language of translation if applicable.
+ * @param array $options
+ *   Array of options.
+ */
+function gc_gc_process_choice_checkbox_field(EntityMetadataWrapper &$node, $local_field_name, $gc_field_name, $is_translatable = FALSE, $language = 'und', $options) {
+  foreach ($node->$local_field_name->getIterator() as $delta => $item) {
+    $node->$local_field_name->set(array(NULL));
+  }
+  $node->save(TRUE);
+  $selected_options = array();
+  foreach ($options as $option) {
+    if ($option->selected) {
+      $selected_options[] = $option->name;
+                    }
+                      if ($is_translatable) {
+      $node->language($language)->$local_field_name = $selected_options;
+                      }
+                      else {
+      $node->$local_field_name = $selected_options;
+                      }
+                    }
+              }
+
+/**
+ * @param EntityMetadataWrapper $node
+ *   Object of node.
+ * @param string $local_field_name
+ *   Local field name.
+ * @param string $gc_field_name
+ *   Name of field in GatherContent.
+ * @param bool $is_translatable
+ *   Indicator if node is translatable.
+ * @param string $language
+ *   Language of translation if applicable.
+ * @param array $options
+ *   Array of options.
+ */
+function gc_gc_process_choice_radio_field(EntityMetadataWrapper &$node, $local_field_name, $gc_field_name, $is_translatable = FALSE, $language = 'und', $options) {
+  foreach ($options as $option) {
+    if ($option->selected) {
+      if (isset($option->value)) {
+                if ($is_translatable) {
+          $node->language($language)->$local_field_name->set($option->value);
+                }
+                else {
+          $node->$local_field_name->set($option->value);
+                }
+              }
+      else {
+        if ($is_translatable) {
+          $node->language($language)->$local_field_name->set($option->name);
+            }
+        else {
+          $node->$local_field_name->set($option->name);
+          }
+          }
+          }
+        }
+      }
+
+/**
+ *
+ * @param EntityMetadataWrapper $node
+ *   Object of node.
+ * @param string $local_field_name
+ *   Local field name.
+ * @param string $gc_field_name
+ *   Name of field in GatherContent.
+ * @param bool $is_translatable
+ *   Indicator if node is translatable.
+ * @param string $language
+ *   Language of translation if applicable.
+ * @param array $files
+ *   Array of remote files.
+ */
+function gc_gc_process_files_field(EntityMetadataWrapper &$node, $local_field_name, $gc_field_name, $is_translatable = FALSE, $language = 'und', $files) {
+  $found_files = array();
+  foreach ($files as $file) {
+    if ($file->field === $gc_field_name) {
+      $found = FALSE;
+      foreach ($node->$local_field_name->value() as $file) {
+        if ($file['gc_id'] === $file->id) {
+          $found = TRUE;
+      }
+    }
+
+      if (!$found) {
+        $local_file = file_save_data(file_get_contents($file->url), 'public://' . $file->filename);
+        $local_file->gc_id = $file->id;
+        file_save($local_file);
+        $found_files[] = array('fid' => $local_file->fid);
     }
   }
-  else {
-    if (!is_null($entity)) {
-      $entity->gc_import_status = "Mapping doesn't exist";
-      $entity->save(TRUE);
     }
-    return FALSE;
+  if ($is_translatable) {
+    $node->language($language)->$local_field_name = $found_files;
+  }
+  else {
+    $node->$local_field_name = $found_files;
   }
 }
 
@@ -535,7 +860,7 @@ function _gc_fetcher($gc_id, $entity = NULL) {
  * Show real-time data in views resources "effective" way.
  */
 function gc_views_pre_render(&$view) {
-  if ($view->name == 'update' || $view->name == 'import_result_page') {
+  if ($view->name == 'update') {
     $results = &$view->result;
     $used_mappings = array();
     $nids = array();
@@ -636,12 +961,22 @@ function gc_views_bulk_operations_form_alter(&$form, &$form_state, $vbo) {
  * @inheritdoc
  */
 function gc_views_vbo_update($form, &$form_state) {
+
+  $uuid = _gc_uuid_generate();
+
+  $operation = entity_create('gc_operation', array(
+    'uuid' => $uuid,
+    'type' => 'update',
+  ));
+  entity_save('gc_operation', $operation);
+
   $operations = array();
+
   $nodes = node_load_multiple($form_state['selection']);
   foreach ($nodes as $node) {
     $operations[] = array(
       'gc_update_process',
-      array($node),
+      array($node, $uuid),
     );
   }
 
@@ -665,9 +1000,9 @@ function gc_views_vbo_update($form, &$form_state) {
  * @param object $node
  *   Object of content we want to update.
  */
-function gc_update_process($node, &$context) {
-  if (_gc_fetcher($node->gc_id, $node) !== FALSE) {
-    $context['results'][] = $node->nid;
+function gc_update_process($node, $uuid, &$context) {
+  if (_gc_fetcher($node->gc_id, $uuid, NULL, $node) !== FALSE) {
+    $context['results']['uuid'] = $uuid;
   };
 }
 
@@ -678,7 +1013,7 @@ function gc_update_process($node, &$context) {
  */
 function gc_update_finished($success, $results, $operations) {
   if ($success) {
-    drupal_goto('admin/content/update/result/' . implode('+', $results));
+    drupal_goto('admin/content/update/result/' . $results['uuid']);
   }
   else {
     $error_operation = reset($operations);
@@ -901,4 +1236,34 @@ function _gc_tablesorter_mottie_version() {
   }
 
   return $lib_version;
+}
+
+/**
+ * UUID Generator.
+ *
+ * @see http://php.net/manual/en/function.uniqid.php#94959
+ *
+ * @return string
+ *   UUID.
+ */
+function _gc_uuid_generate() {
+  return sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+    // 32 bits for "time_low".
+    mt_rand(0, 0xffff), mt_rand(0, 0xffff),
+
+    // 16 bits for "time_mid".
+    mt_rand(0, 0xffff),
+
+    // 16 bits for "time_hi_and_version",
+    // four most significant bits holds version number 4.
+    mt_rand(0, 0x0fff) | 0x4000,
+
+    // 16 bits, 8 bits for "clk_seq_hi_res",
+    // 8 bits for "clk_seq_low",
+    // two most significant bits holds zero and one for variant DCE1.1.
+    mt_rand(0, 0x3fff) | 0x8000,
+
+    // 48 bits for "node".
+    mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
+  );
 }

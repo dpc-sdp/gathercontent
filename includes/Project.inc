@@ -156,4 +156,36 @@ class Project {
       watchdog('gathercontent', 'Object Project created as local, but trying to reach remote data.', NULL, WATCHDOG_ALERT);
     }
   }
+
+  /**
+   * Description.
+   *
+   * @param int $project_id
+   *   Project ID.
+   *
+   * @param int $status_id
+   *   Status ID.
+   *
+   * @return array
+   *   Description.
+   */
+  public function getStatus($project_id, $status_id) {
+    if (!$this->local) {
+      try {
+        $response = $this->client->get('/projects/' . $project_id . '/statuses/' . $status_id);
+        if ($response->getStatusCode() === 200) {
+          $data = json_decode($response->getBody());
+          return $data->data;
+        }
+      }
+      catch (\Exception $e) {
+        drupal_set_message($e->getMessage(), 'error');
+        watchdog('gathercontent', $e->getMessage(), array(), WATCHDOG_ERROR);
+      }
+    }
+    else {
+      drupal_set_message(t('Error occured, please contact your system administrator'), 'error');
+      watchdog('gathercontent', 'Object Project created as local, but trying to reach remote data.', NULL, WATCHDOG_ALERT);
+    }
+  }
 }

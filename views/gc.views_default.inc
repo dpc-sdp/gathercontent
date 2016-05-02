@@ -8,8 +8,8 @@ function gc_views_default_views() {
   $view->name = 'import_result_page';
   $view->description = '';
   $view->tag = 'default';
-  $view->base_table = 'node';
-  $view->human_name = 'Import result page';
+  $view->base_table = 'gc_operation_item';
+  $view->human_name = 'Result page';
   $view->core = 7;
   $view->api_version = '3.0';
   $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
@@ -18,85 +18,172 @@ function gc_views_default_views() {
   $handler = $view->new_display('default', 'Master', 'default');
   $handler->display->display_options['title'] = 'Import result page';
   $handler->display->display_options['use_more_always'] = FALSE;
-  $handler->display->display_options['access']['type'] = 'perm';
+  $handler->display->display_options['access']['type'] = 'none';
   $handler->display->display_options['cache']['type'] = 'none';
   $handler->display->display_options['query']['type'] = 'views_query';
   $handler->display->display_options['exposed_form']['type'] = 'basic';
   $handler->display->display_options['pager']['type'] = 'none';
   $handler->display->display_options['style_plugin'] = 'table';
-  /* Relationship: Content: Mapping used for GatherContent. */
-  $handler->display->display_options['relationships']['gc_mapping_id']['id'] = 'gc_mapping_id';
-  $handler->display->display_options['relationships']['gc_mapping_id']['table'] = 'node';
-  $handler->display->display_options['relationships']['gc_mapping_id']['field'] = 'gc_mapping_id';
-  $handler->display->display_options['relationships']['gc_mapping_id']['label'] = 'Default label for relationship';
-  /* Field: Content: GC Status */
-  $handler->display->display_options['fields']['gc_status']['id'] = 'gc_status';
-  $handler->display->display_options['fields']['gc_status']['table'] = 'node';
-  $handler->display->display_options['fields']['gc_status']['field'] = 'gc_status';
-  $handler->display->display_options['fields']['gc_status']['label'] = 'Status';
-  /* Field: Content: Title */
-  $handler->display->display_options['fields']['title']['id'] = 'title';
-  $handler->display->display_options['fields']['title']['table'] = 'node';
-  $handler->display->display_options['fields']['title']['field'] = 'title';
-  $handler->display->display_options['fields']['title']['label'] = 'Item name';
-  $handler->display->display_options['fields']['title']['alter']['word_boundary'] = FALSE;
-  $handler->display->display_options['fields']['title']['alter']['ellipsis'] = FALSE;
-  $handler->display->display_options['fields']['title']['link_to_node'] = FALSE;
-  /* Field: Content: GC Import status */
-  $handler->display->display_options['fields']['gc_import_status']['id'] = 'gc_import_status';
-  $handler->display->display_options['fields']['gc_import_status']['table'] = 'node';
-  $handler->display->display_options['fields']['gc_import_status']['field'] = 'gc_import_status';
-  $handler->display->display_options['fields']['gc_import_status']['label'] = 'Import status';
-  $handler->display->display_options['fields']['gc_import_status']['empty'] = 'Import succesful';
-  /* Field: Mapping: GC Template */
-  $handler->display->display_options['fields']['gc_template']['id'] = 'gc_template';
-  $handler->display->display_options['fields']['gc_template']['table'] = 'gc_mapping';
-  $handler->display->display_options['fields']['gc_template']['field'] = 'gc_template';
-  $handler->display->display_options['fields']['gc_template']['relationship'] = 'gc_mapping_id';
-  $handler->display->display_options['fields']['gc_template']['label'] = 'Template name';
-  /* Field: Content: GC Link */
+  $handler->display->display_options['style_options']['columns'] = array(
+    'item_status_color' => 'item_status',
+    'item_status' => 'item_status',
+    'item_name' => 'item_name',
+    'status' => 'status',
+    'template_name' => 'template_name',
+  );
+  $handler->display->display_options['style_options']['default'] = '-1';
+  $handler->display->display_options['style_options']['info'] = array(
+    'item_status_color' => array(
+      'align' => '',
+      'separator' => '',
+      'empty_column' => 0,
+    ),
+    'item_status' => array(
+      'sortable' => 0,
+      'default_sort_order' => 'asc',
+      'align' => '',
+      'separator' => '',
+      'empty_column' => 0,
+    ),
+    'item_name' => array(
+      'sortable' => 0,
+      'default_sort_order' => 'asc',
+      'align' => '',
+      'separator' => '',
+      'empty_column' => 0,
+    ),
+    'status' => array(
+      'sortable' => 0,
+      'default_sort_order' => 'asc',
+      'align' => '',
+      'separator' => '',
+      'empty_column' => 0,
+    ),
+    'template_name' => array(
+      'sortable' => 0,
+      'default_sort_order' => 'asc',
+      'align' => '',
+      'separator' => '',
+      'empty_column' => 0,
+    ),
+  );
+  /* Field: GC Operation Item: GC Status Color */
+  $handler->display->display_options['fields']['item_status_color']['id'] = 'item_status_color';
+  $handler->display->display_options['fields']['item_status_color']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['item_status_color']['field'] = 'item_status_color';
+  /* Field: GC Operation Item: Operation Item Status */
+  $handler->display->display_options['fields']['item_status']['id'] = 'item_status';
+  $handler->display->display_options['fields']['item_status']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['item_status']['field'] = 'item_status';
+  $handler->display->display_options['fields']['item_status']['label'] = 'Status';
+  /* Field: GC Operation Item: Operation Item Name */
+  $handler->display->display_options['fields']['item_name']['id'] = 'item_name';
+  $handler->display->display_options['fields']['item_name']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['item_name']['field'] = 'item_name';
+  $handler->display->display_options['fields']['item_name']['label'] = 'Item Name';
+  /* Field: GC Operation Item: Operation Item Operation Status */
+  $handler->display->display_options['fields']['status']['id'] = 'status';
+  $handler->display->display_options['fields']['status']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['status']['field'] = 'status';
+  $handler->display->display_options['fields']['status']['label'] = 'Import Status';
+  /* Field: GC Operation Item: Operation Item Template Name */
+  $handler->display->display_options['fields']['template_name']['id'] = 'template_name';
+  $handler->display->display_options['fields']['template_name']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['template_name']['field'] = 'template_name';
+  $handler->display->display_options['fields']['template_name']['label'] = 'GatherContent Template Name';
+  /* Field: GC Operation Item: GC Link */
   $handler->display->display_options['fields']['gc_link']['id'] = 'gc_link';
-  $handler->display->display_options['fields']['gc_link']['table'] = 'node';
+  $handler->display->display_options['fields']['gc_link']['table'] = 'gc_operation_item';
   $handler->display->display_options['fields']['gc_link']['field'] = 'gc_link';
   $handler->display->display_options['fields']['gc_link']['label'] = 'Open in GatherContent';
-  /* Field: Content: Link */
-  $handler->display->display_options['fields']['view_node']['id'] = 'view_node';
-  $handler->display->display_options['fields']['view_node']['table'] = 'views_entity_node';
-  $handler->display->display_options['fields']['view_node']['field'] = 'view_node';
-  $handler->display->display_options['fields']['view_node']['label'] = 'Open in Drupal';
-  $handler->display->display_options['fields']['view_node']['text'] = 'Open';
-  /* Sort criterion: Content: Post date */
-  $handler->display->display_options['sorts']['created']['id'] = 'created';
-  $handler->display->display_options['sorts']['created']['table'] = 'node';
-  $handler->display->display_options['sorts']['created']['field'] = 'created';
-  $handler->display->display_options['sorts']['created']['order'] = 'DESC';
-  /* Contextual filter: Content: Nid */
-  $handler->display->display_options['arguments']['nid']['id'] = 'nid';
-  $handler->display->display_options['arguments']['nid']['table'] = 'node';
-  $handler->display->display_options['arguments']['nid']['field'] = 'nid';
-  $handler->display->display_options['arguments']['nid']['default_action'] = 'not found';
-  $handler->display->display_options['arguments']['nid']['exception']['value'] = '';
-  $handler->display->display_options['arguments']['nid']['default_argument_type'] = 'fixed';
-  $handler->display->display_options['arguments']['nid']['default_argument_skip_url'] = TRUE;
-  $handler->display->display_options['arguments']['nid']['summary']['number_of_records'] = '0';
-  $handler->display->display_options['arguments']['nid']['summary']['format'] = 'default_summary';
-  $handler->display->display_options['arguments']['nid']['summary_options']['items_per_page'] = '25';
-  $handler->display->display_options['arguments']['nid']['specify_validation'] = TRUE;
-  $handler->display->display_options['arguments']['nid']['validate']['type'] = 'node';
-  $handler->display->display_options['arguments']['nid']['validate_options']['nid_type'] = 'nids';
-  $handler->display->display_options['arguments']['nid']['break_phrase'] = TRUE;
-  /* Filter criterion: Content: Published */
-  $handler->display->display_options['filters']['status']['id'] = 'status';
-  $handler->display->display_options['filters']['status']['table'] = 'node';
-  $handler->display->display_options['filters']['status']['field'] = 'status';
-  $handler->display->display_options['filters']['status']['value'] = 1;
-  $handler->display->display_options['filters']['status']['group'] = 1;
-  $handler->display->display_options['filters']['status']['expose']['operator'] = FALSE;
+  /* Field: GC Operation Item: GC Node Link */
+  $handler->display->display_options['fields']['gc_node_link']['id'] = 'gc_node_link';
+  $handler->display->display_options['fields']['gc_node_link']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['gc_node_link']['field'] = 'gc_node_link';
+  $handler->display->display_options['fields']['gc_node_link']['label'] = 'Open in Drupal';
+  $handler->display->display_options['fields']['gc_node_link']['empty'] = 'N/A';
+  $handler->display->display_options['fields']['gc_node_link']['empty_zero'] = TRUE;
+  $handler->display->display_options['fields']['gc_node_link']['hide_alter_empty'] = FALSE;
+  /* Contextual filter: GC Operation Item: Operation UUID */
+  $handler->display->display_options['arguments']['operation_uuid']['id'] = 'operation_uuid';
+  $handler->display->display_options['arguments']['operation_uuid']['table'] = 'gc_operation_item';
+  $handler->display->display_options['arguments']['operation_uuid']['field'] = 'operation_uuid';
+  $handler->display->display_options['arguments']['operation_uuid']['default_action'] = 'not found';
+  $handler->display->display_options['arguments']['operation_uuid']['default_argument_type'] = 'fixed';
+  $handler->display->display_options['arguments']['operation_uuid']['summary']['number_of_records'] = '0';
+  $handler->display->display_options['arguments']['operation_uuid']['summary']['format'] = 'default_summary';
+  $handler->display->display_options['arguments']['operation_uuid']['summary_options']['items_per_page'] = '25';
+  $handler->display->display_options['arguments']['operation_uuid']['limit'] = '0';
 
   /* Display: Page */
   $handler = $view->new_display('page', 'Page', 'page');
   $handler->display->display_options['path'] = 'admin/config/gc/import/result/%';
 
+  /* Display: Page */
+  $handler = $view->new_display('page', 'Page', 'page_1');
+  $handler->display->display_options['defaults']['title'] = FALSE;
+  $handler->display->display_options['title'] = 'Update result page';
+  $handler->display->display_options['defaults']['fields'] = FALSE;
+  /* Field: GC Operation Item: GC Status Color */
+  $handler->display->display_options['fields']['item_status_color']['id'] = 'item_status_color';
+  $handler->display->display_options['fields']['item_status_color']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['item_status_color']['field'] = 'item_status_color';
+  /* Field: GC Operation Item: Operation Item Status */
+  $handler->display->display_options['fields']['item_status']['id'] = 'item_status';
+  $handler->display->display_options['fields']['item_status']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['item_status']['field'] = 'item_status';
+  $handler->display->display_options['fields']['item_status']['label'] = 'Status';
+  /* Field: GC Operation Item: Operation Item Name */
+  $handler->display->display_options['fields']['item_name']['id'] = 'item_name';
+  $handler->display->display_options['fields']['item_name']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['item_name']['field'] = 'item_name';
+  $handler->display->display_options['fields']['item_name']['label'] = 'Item Name';
+  /* Field: GC Operation Item: Operation Item Operation Status */
+  $handler->display->display_options['fields']['status']['id'] = 'status';
+  $handler->display->display_options['fields']['status']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['status']['field'] = 'status';
+  $handler->display->display_options['fields']['status']['label'] = 'Update Status';
+  /* Field: GC Operation Item: Operation Item Template Name */
+  $handler->display->display_options['fields']['template_name']['id'] = 'template_name';
+  $handler->display->display_options['fields']['template_name']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['template_name']['field'] = 'template_name';
+  $handler->display->display_options['fields']['template_name']['label'] = 'GatherContent Template Name';
+  /* Field: GC Operation Item: GC Link */
+  $handler->display->display_options['fields']['gc_link']['id'] = 'gc_link';
+  $handler->display->display_options['fields']['gc_link']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['gc_link']['field'] = 'gc_link';
+  $handler->display->display_options['fields']['gc_link']['label'] = 'Open in GatherContent';
+  /* Field: GC Operation Item: GC Node Link */
+  $handler->display->display_options['fields']['gc_node_link']['id'] = 'gc_node_link';
+  $handler->display->display_options['fields']['gc_node_link']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['gc_node_link']['field'] = 'gc_node_link';
+  $handler->display->display_options['fields']['gc_node_link']['label'] = 'Open in Drupal';
+  $handler->display->display_options['fields']['gc_node_link']['empty'] = 'N/A';
+  $handler->display->display_options['fields']['gc_node_link']['empty_zero'] = TRUE;
+  $handler->display->display_options['fields']['gc_node_link']['hide_alter_empty'] = FALSE;
+  $handler->display->display_options['path'] = 'admin/content/update/result/%';
+  $translatables['import_result_page'] = array(
+    t('Master'),
+    t('Import result page'),
+    t('more'),
+    t('Apply'),
+    t('Reset'),
+    t('Sort by'),
+    t('Asc'),
+    t('Desc'),
+    t('GC Status Color'),
+    t('Status'),
+    t('Item Name'),
+    t('Import Status'),
+    t('GatherContent Template Name'),
+    t('Open in GatherContent'),
+    t('Open in Drupal'),
+    t('N/A'),
+    t('All'),
+    t('Page'),
+    t('Update result page'),
+    t('Update Status'),
+  );
   $views[$view->name] = $view;
 
   $view = new view();
@@ -523,70 +610,6 @@ function gc_views_default_views() {
   $handler->display->display_options['filters']['status']['group'] = 1;
   $handler->display->display_options['filters']['status']['expose']['operator'] = FALSE;
 
-  /* Display: Page */
-  $handler = $view->new_display('page', 'Page', 'page_1');
-  $handler->display->display_options['defaults']['title'] = FALSE;
-  $handler->display->display_options['title'] = 'Update result';
-  $handler->display->display_options['defaults']['fields'] = FALSE;
-  /* Field: Content: GC Status */
-  $handler->display->display_options['fields']['gc_status']['id'] = 'gc_status';
-  $handler->display->display_options['fields']['gc_status']['table'] = 'node';
-  $handler->display->display_options['fields']['gc_status']['field'] = 'gc_status';
-  $handler->display->display_options['fields']['gc_status']['label'] = 'Status';
-  /* Field: Content: Title */
-  $handler->display->display_options['fields']['title']['id'] = 'title';
-  $handler->display->display_options['fields']['title']['table'] = 'node';
-  $handler->display->display_options['fields']['title']['field'] = 'title';
-  $handler->display->display_options['fields']['title']['label'] = 'Item Name';
-  $handler->display->display_options['fields']['title']['alter']['word_boundary'] = FALSE;
-  $handler->display->display_options['fields']['title']['alter']['ellipsis'] = FALSE;
-  $handler->display->display_options['fields']['title']['link_to_node'] = FALSE;
-  /* Field: Content: GC Import status */
-  $handler->display->display_options['fields']['gc_import_status']['id'] = 'gc_import_status';
-  $handler->display->display_options['fields']['gc_import_status']['table'] = 'node';
-  $handler->display->display_options['fields']['gc_import_status']['field'] = 'gc_import_status';
-  $handler->display->display_options['fields']['gc_import_status']['label'] = 'Update status';
-  /* Field: Mapping: GC Template */
-  $handler->display->display_options['fields']['gc_template']['id'] = 'gc_template';
-  $handler->display->display_options['fields']['gc_template']['table'] = 'gc_mapping';
-  $handler->display->display_options['fields']['gc_template']['field'] = 'gc_template';
-  $handler->display->display_options['fields']['gc_template']['relationship'] = 'gc_mapping_id';
-  $handler->display->display_options['fields']['gc_template']['label'] = 'GatherContent Template';
-  /* Field: Content: Link */
-  $handler->display->display_options['fields']['view_node']['id'] = 'view_node';
-  $handler->display->display_options['fields']['view_node']['table'] = 'views_entity_node';
-  $handler->display->display_options['fields']['view_node']['field'] = 'view_node';
-  $handler->display->display_options['fields']['view_node']['label'] = 'Open in Drupal';
-  $handler->display->display_options['fields']['view_node']['text'] = 'Open';
-  /* Field: Content: GC Link */
-  $handler->display->display_options['fields']['gc_link']['id'] = 'gc_link';
-  $handler->display->display_options['fields']['gc_link']['table'] = 'node';
-  $handler->display->display_options['fields']['gc_link']['field'] = 'gc_link';
-  $handler->display->display_options['fields']['gc_link']['label'] = 'Open in GatherContent';
-  $handler->display->display_options['defaults']['arguments'] = FALSE;
-  /* Contextual filter: Content: Nid */
-  $handler->display->display_options['arguments']['nid']['id'] = 'nid';
-  $handler->display->display_options['arguments']['nid']['table'] = 'node';
-  $handler->display->display_options['arguments']['nid']['field'] = 'nid';
-  $handler->display->display_options['arguments']['nid']['default_action'] = 'not found';
-  $handler->display->display_options['arguments']['nid']['default_argument_type'] = 'fixed';
-  $handler->display->display_options['arguments']['nid']['summary']['number_of_records'] = '0';
-  $handler->display->display_options['arguments']['nid']['summary']['format'] = 'default_summary';
-  $handler->display->display_options['arguments']['nid']['summary_options']['items_per_page'] = '25';
-  $handler->display->display_options['arguments']['nid']['specify_validation'] = TRUE;
-  $handler->display->display_options['arguments']['nid']['validate']['type'] = 'node';
-  $handler->display->display_options['arguments']['nid']['validate_options']['nid_type'] = 'nids';
-  $handler->display->display_options['arguments']['nid']['break_phrase'] = TRUE;
-  $handler->display->display_options['defaults']['filter_groups'] = FALSE;
-  $handler->display->display_options['defaults']['filters'] = FALSE;
-  /* Filter criterion: Content: Published */
-  $handler->display->display_options['filters']['status']['id'] = 'status';
-  $handler->display->display_options['filters']['status']['table'] = 'node';
-  $handler->display->display_options['filters']['status']['field'] = 'status';
-  $handler->display->display_options['filters']['status']['value'] = 1;
-  $handler->display->display_options['filters']['status']['group'] = 1;
-  $handler->display->display_options['filters']['status']['expose']['operator'] = FALSE;
-  $handler->display->display_options['path'] = 'admin/content/update/result/%';
   $translatables['update'] = array(
     t('Master'),
     t('Update result'),

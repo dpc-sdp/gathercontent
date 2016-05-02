@@ -96,4 +96,29 @@ function gc_views_data_alter(&$data) {
       'click sortable' => TRUE,
     ),
   );
+
+  $data['gc_operation_item']['gc_link'] = array(
+    'title' => t('GC Link'),
+    'help' => t('Link to content in GatherContent'),
+    'field' => array(
+      'handler' => 'views_handler_field_gc_operation_item_gc_link',
+      'click sortable' => FALSE,
+    ),
+  );
+  $data['gc_operation_item']['gc_node_link'] = array(
+    'title' => t('GC Node Link'),
+    'help' => t('Link to content in Drupal'),
+    'field' => array(
+      'handler' => 'views_handler_field_gc_operation_item_gc_node_link',
+      'click sortable' => FALSE,
+    ),
+  );
+  $data['gc_operation_item']['item_status_color'] = array(
+    'title' => t('GC Status Color'),
+    'help' => t('Status of content in GatherContent'),
+    'field' => array(
+      'handler' => 'views_handler_field_gc_operation_item_status_color',
+      'click sortable' => FALSE,
+    ),
+  );
 }

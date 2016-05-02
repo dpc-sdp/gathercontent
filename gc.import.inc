@@ -159,6 +159,8 @@ function gc_import_form_select($form, &$form_state) {
       'method' => 'replace',
       'effect' => 'fade',
     ),
+    '#default_value' => isset($form_state['object']->project) ? $form_state['object']->project : 0,
+    '#description' => t('You can only see projects with mapped templates in the dropdown.'),
   );
 
   $form['import'] = array(
@@ -171,14 +173,19 @@ function gc_import_form_select($form, &$form_state) {
     ),
   );
 
-  if (isset($form_state['values']['project'])) {
+  $form['menu'] = array(
+    '#type' => 'value',
+  );
+
+  if (isset($form_state['values']['project']) || isset($form_state['object']->project)) {
+    $project_id = isset($form_state['values']['project']) ? $form_state['values']['project'] : $form_state['object']->project;
     $content_obj = new Content();
-    $content = $content_obj->getContents($form_state['values']['project']);
+    $content = $content_obj->getContents($project_id);
 
     $content_table = array();
     $query = new EntityFieldQuery();
     $result = $query->entityCondition('entity_type', 'gc_mapping')
-      ->propertyCondition('gc_project_id', $form_state['values']['project'])
+      ->propertyCondition('gc_project_id', $project_id)
       ->execute();
 
     $query = new EntityFieldQuery();
@@ -192,12 +199,15 @@ function gc_import_form_select($form, &$form_state) {
       $mapping_array = array();
       foreach ($mappings as $mapping) {
         if (!empty($mapping->data)) {
-          $mapping_array[$mapping->gc_template_id] = $mapping->gc_template;
+          $mapping_array[$mapping->gc_template_id] = array(
+            'gc_template' => $mapping->gc_template,
+            'ct' => $mapping->content_type
+          );
         }
       }
 
       $tmp_obj = new Template();
-      $templates = $tmp_obj->getTemplates($form_state['values']['project']);
+      $templates = $tmp_obj->getTemplates($project_id);
       foreach ($content as $item) {
         // If template is not empty, we have mapped template and item
         // isn't synced yet.
@@ -220,8 +230,17 @@ function gc_import_form_select($form, &$form_state) {
               'data-date' => date('Y-m-d.H:i:s', strtotime($item->updated_at->date)),
             ),
             'template' => array(
-              'data' => $mapping_array[$item->template_id],
+              'data' => $mapping_array[$item->template_id]['gc_template'],
               'class' => array('template-name-item'),
+            ),
+            'menu' => array(
+              'data' => array(
+                '#type' => 'select',
+                '#options' => array(0 => t("- Don't create menu item -")) + menu_parent_options(menu_get_menus(), $mapping_array[$item->template_id]['ct']),
+                '#title' => t('Menu'),
+                '#title_display' => 'invisible',
+                '#name' => "menu[$item->id]",
+              ),
             ),
           );
         }
@@ -232,6 +251,7 @@ function gc_import_form_select($form, &$form_state) {
         'title' => t('Item Name'),
         'updated' => t('Last updated in GatherContent'),
         'template' => t('GatherContent Template Name'),
+        'menu' => t('Menu'),
       );
 
       $form['import']['content'] = array(
@@ -267,6 +287,7 @@ function gc_import_form_select_fetch_content($form, &$form_state) {
 function gc_import_form_select_submit($form, &$form_state) {
   $form_state['object']->project_id = $form_state['values']['project'];
   $form_state['object']->nodes = array_filter($form_state['values']['content']);
+  $form_state['object']->menu = array_intersect_key(array_filter($form_state['values']['menu']), array_filter($form_state['values']['content']));
 }
 
 /**
@@ -342,13 +363,21 @@ function gc_import_form_confirm($form, &$form_state) {
  */
 function gc_import_form_confirm_submit($form, &$form_state) {
   $form_state['object']->status = $form_state['values']['status'];
+  $uuid = _gc_uuid_generate();
+
+  $operation = entity_create('gc_operation', array(
+    'uuid' => $uuid,
+    'type' => 'import',
+  ));
+  entity_save('gc_operation', $operation);
 
   $operations = array();
 
   foreach ($form_state['object']->nodes as $value) {
+    $parent_menu_item = isset($form_state['object']->menu[$value]) ? $form_state['object']->menu[$value] : NULL;
     $operations[] = array(
       'gc_import_process',
-      array($value, $form_state['object']->status),
+      array($value, $form_state['object']->status, $uuid, $parent_menu_item),
     );
   }
 
@@ -383,14 +412,14 @@ function gc_import_wizard_finish($form, &$form_state) {
  * @param int $content_id
  *   ID of content we want to import.
  */
-function gc_import_process($content_id, $status_id, &$context) {
-  if (($nid = _gc_fetcher($content_id)) !== FALSE) {
+function gc_import_process($content_id, $status_id, $uuid, $parent_menu_item = NULL, &$context) {
+  if (($nid = _gc_fetcher($content_id, $uuid, $status_id, NULL, $parent_menu_item)) !== FALSE) {
     if ($status_id != 0) {
       // Change status.
       $content_obj = new Content();
       $content_obj->updateStatus($content_id, $status_id);
     }
-    $context['results'][] = $nid;
+    $context['results']['uuid'] = $uuid;
   };
 }
 
@@ -401,7 +430,7 @@ function gc_import_process($content_id, $status_id, &$context) {
  */
 function gc_import_finished($success, $results, $operations) {
   if ($success) {
-    drupal_goto('admin/config/gc/import/result/' . implode('+', $results));
+    drupal_goto('admin/config/gc/import/result/' . $results['uuid']);
   }
   else {
     $error_operation = reset($operations);
