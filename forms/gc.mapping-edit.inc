@@ -353,6 +353,9 @@ function gc_mapping_edit_form_validate($form, &$form_state) {
         }
       }
     }
+    if (empty($content_fields) && empty($metatag_fields)) {
+      form_set_error(NULL, t('You must map at least one field.'));
+    }
   }
 }
 
