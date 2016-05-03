@@ -419,8 +419,8 @@ function gc_import_process($content_id, $status_id, $uuid, $parent_menu_item = N
       $content_obj = new Content();
       $content_obj->updateStatus($content_id, $status_id);
     }
-    $context['results']['uuid'] = $uuid;
   };
+  $context['results']['uuid'] = $uuid;
 }
 
 /**

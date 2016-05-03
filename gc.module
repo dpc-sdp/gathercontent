@@ -1001,9 +1001,8 @@ function gc_views_vbo_update($form, &$form_state) {
  *   Object of content we want to update.
  */
 function gc_update_process($node, $uuid, &$context) {
-  if (_gc_fetcher($node->gc_id, $uuid, NULL, $node) !== FALSE) {
-    $context['results']['uuid'] = $uuid;
-  };
+  _gc_fetcher($node->gc_id, $uuid, NULL, $node);
+  $context['results']['uuid'] = $uuid;
 }
 
 /**
