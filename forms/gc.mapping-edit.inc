@@ -340,7 +340,7 @@ function gc_mapping_edit_form_validate($form, &$form_state) {
             ${$tab['type'] . '_fields'}[$tab['language']][] = $element;
           }
           else {
-            form_set_error($tab_id, t('Each field can be mapped only once.'));
+            form_set_error($tab_id, t('A GatherContent field can only be mapped to a single Drupal field. So each field can only be mapped to once.'));
           }
         }
         else {
@@ -348,7 +348,7 @@ function gc_mapping_edit_form_validate($form, &$form_state) {
             ${$tab['type'] . '_fields'}[] = $element;
           }
           else {
-            form_set_error($tab_id, t('Each field can be mapped only once.'));
+            form_set_error($tab_id, t('A GatherContent field can only be mapped to a single Drupal field. So each field can only be mapped to once.'));
           }
         }
       }
