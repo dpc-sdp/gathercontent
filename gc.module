@@ -464,7 +464,7 @@ function _gc_fetcher($gc_id, $uuid, $status = NULL, $entity = NULL, $parent_menu
         'gc_mapping_id' => $mapping->id,
         'gc_id' => $content->id,
         'uid' => $user->uid,
-        'language' => $first['language'],
+        'language' => isset($first['language']) ? $first['language'] : LANGUAGE_NONE,
       ));
       entity_save('node', $entity);
     }
@@ -476,6 +476,7 @@ function _gc_fetcher($gc_id, $uuid, $status = NULL, $entity = NULL, $parent_menu
         foreach ($content->config as $pane) {
           $is_translatable = module_exists('entity_translation')
             && entity_translation_node_supported_type($mapping->content_type)
+            && isset($mapping_data[$pane->name]['language'])
             && ($mapping_data[$pane->name]['language'] != LANGUAGE_NONE);
           if ($is_translatable) {
             $language = $mapping_data[$pane->name]['language'];
@@ -522,7 +523,7 @@ function _gc_fetcher($gc_id, $uuid, $status = NULL, $entity = NULL, $parent_menu
       }
       catch (\Exception $e) {
         watchdog('gc_import', print_r($e, TRUE), array(), WATCHDOG_ERROR);
-        $operation_item->status = "Mapping doesn't match";
+        $operation_item->status = "Import failed with '$e->getMessage()'";
         entity_save('gc_operation_item', $operation_item);
         return FALSE;
       }
