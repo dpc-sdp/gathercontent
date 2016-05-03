@@ -273,7 +273,6 @@ function gc_mapping_form_mapping_get_table($form, &$form_state) {
  * @inheritdoc
  */
 function gc_mapping_edit_form_validate($form, &$form_state) {
-  // @TODO: check, if title is mapped.
   if ($form_state['triggering_element']['#id'] == 'edit-submit') {
     $form_definition_elements = array(
       'return',
@@ -334,7 +333,6 @@ function gc_mapping_edit_form_validate($form, &$form_state) {
         if (empty($element)) {
           continue;
         }
-
         if ($translatable) {
           if (!in_array($element, ${$tab['type'] . '_fields'}[$tab['language']])) {
             ${$tab['type'] . '_fields'}[$tab['language']][] = $element;
@@ -353,8 +351,12 @@ function gc_mapping_edit_form_validate($form, &$form_state) {
         }
       }
     }
-    if (empty($content_fields) && empty($metatag_fields)) {
-      form_set_error(NULL, t('You must map at least one field.'));
+    if (count($content_fields) === 1
+      && empty($content_fields['und'])
+      && empty($metatag_fields['und'])
+      && count($metatag_fields) === 1
+    ) {
+      form_set_error('form', t('You must map at least one field.'));
     }
   }
 }
