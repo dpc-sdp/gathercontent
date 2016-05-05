@@ -301,7 +301,8 @@ function gc_mapping_edit_form_validate($form, &$form_state) {
     $translatable = module_exists('entity_translation') && module_exists('title')
       && entity_translation_node_supported_type($content_type)
       && title_field_replacement_enabled('node', $content_type, 'title');
-    // If translatable, check, if each language if used only once.
+    // Validate if each language is used only once
+    // for translatable content types.
     $content_lang = array();
     $metatag_lang = array();
     if ($translatable) {
@@ -317,6 +318,7 @@ function gc_mapping_edit_form_validate($form, &$form_state) {
       }
     }
 
+    // Validate if each field is used only once.
     $content_fields = array();
     $metatag_fields = array();
     if ($translatable) {
@@ -351,7 +353,13 @@ function gc_mapping_edit_form_validate($form, &$form_state) {
         }
       }
     }
-    if (count($content_fields) === 1
+
+    // Validate if at least one field in mapped.
+    if (!$translatable && empty($content_fields) && empty($metatag_fields)) {
+      form_set_error('form', t('You must map at least one field.'));
+    }
+    elseif ($translatable &&
+      count($content_fields) === 1
       && empty($content_fields['und'])
       && empty($metatag_fields['und'])
       && count($metatag_fields) === 1
