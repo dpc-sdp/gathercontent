@@ -356,7 +356,7 @@ function gc_mapping_edit_form_validate($form, &$form_state) {
 
     // Validate if at least one field in mapped.
     if (!$translatable && empty($content_fields) && empty($metatag_fields)) {
-      form_set_error('form', t('You must map at least one field.'));
+      form_set_error('form', t('You need to map at least one field to create mapping.'));
     }
     elseif ($translatable &&
       count($content_fields) === 1
@@ -364,7 +364,7 @@ function gc_mapping_edit_form_validate($form, &$form_state) {
       && empty($metatag_fields['und'])
       && count($metatag_fields) === 1
     ) {
-      form_set_error('form', t('You must map at least one field.'));
+      form_set_error('form', t('You need to map at least one field to create mapping.'));
     }
   }
 }
