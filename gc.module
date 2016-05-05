@@ -65,7 +65,7 @@ function gc_menu() {
     'type' => MENU_LOCAL_TASK,
   );
   $items['admin/config/gc/mapping/create'] = array(
-    'title' => 'Create Mapping',
+    'title' => 'Add GatherContent Template',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('gc_mapping_form_templates'),
     'access arguments' => array(
@@ -112,11 +112,11 @@ function gc_menu_local_tasks_alter(&$data, $router_item, $root_path) {
     $data['actions']['output'][] = array(
       '#theme' => 'menu_local_task',
       '#link' => array(
-        'title' => t('Add new mapping'),
+        'title' => t('Add new GatherContent template'),
         'href' => 'admin/config/gc/mapping/create',
         'localized_options' => array(
           'attributes' => array(
-            'title' => t('Add new mapping'),
+            'title' => t('Add new GatherContent template'),
           ),
         ),
       ),

@@ -20,7 +20,7 @@ class views_handler_field_mapping_link_edit extends views_handler_field_node_lin
     $this->options['alter']['path'] = "admin/config/gc/mapping/$entity->id/edit";
     $this->options['alter']['query'] = drupal_get_destination();
 
-    $text = !empty($this->options['text']) ? $this->options['text'] : t('edit');
+    $text = !empty($this->options['text']) ? $this->options['text'] : (empty($entity->data) ? t('create') : t('edit'));
     return $text;
   }
 }
