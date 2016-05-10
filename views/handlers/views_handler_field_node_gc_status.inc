@@ -16,10 +16,15 @@ class views_handler_field_node_gc_status extends views_handler_field {
   }
 
   function render($values) {
-    $gc_id = $values->{$this->aliases['gc_id']};
-    return '<div style="width:20px; height: 20px; float: left; margin-right: 5px; background: ' .
-    $this->contents[$gc_id]['status']->data->color . ';"></div>' .
-    $this->contents[$gc_id]['status']->data->name;
+    $gc_id = isset($values->{$this->aliases['gc_id']}) ? $values->{$this->aliases['gc_id']} : NULL;
+    if (isset($this->contents[$gc_id]['status'])) {
+      return '<div style="width:20px; height: 20px; float: left; margin-right: 5px; background: ' .
+      $this->contents[$gc_id]['status']->data->color . ';"></div>' .
+      $this->contents[$gc_id]['status']->data->name;
+    }
+    else {
+      return t('deleted in GatherContent');
+    }
   }
 
 }

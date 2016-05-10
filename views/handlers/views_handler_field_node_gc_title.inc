@@ -17,7 +17,7 @@ class views_handler_field_node_gc_title extends views_handler_field {
 
   function render($values) {
     $gc_id = $values->{$this->aliases['gc_id']};
-    return $this->view->field['gc_status']->contents[$gc_id]['name'];
+    return isset($this->view->field['gc_status']->contents[$gc_id]['name']) ? $this->view->field['gc_status']->contents[$gc_id]['name'] : t('deleted in GatherContent');
   }
 
 }
