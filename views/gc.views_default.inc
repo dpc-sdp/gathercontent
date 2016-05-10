@@ -264,6 +264,7 @@ function gc_views_default_views() {
       'empty_column' => 0,
     ),
   );
+  $handler->display->display_options['style_options']['sticky'] = TRUE;
   $handler->display->display_options['style_options']['empty_table'] = TRUE;
   /* No results behavior: Global: Text area */
   $handler->display->display_options['empty']['area']['id'] = 'area';
@@ -351,6 +352,7 @@ function gc_views_default_views() {
     t('Operations'),
     t('Page'),
   );
+
 
   $views[$view->name] = $view;
 
