@@ -1363,3 +1363,41 @@ function _gc_uuid_generate() {
     mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
   );
 }
+
+/**
+ * Implements template_preprocess_views_view_table().
+ */
+function gc_preprocess_views_view_table(&$variables) {
+  $view = $variables['view'];
+  switch ("{$view->name}:{$view->current_display}:{$view->plugin_name}") {
+    case 'update:page:table':
+      // Libraries module and tablesorter plugin are optional.
+      // If tablesorter available, add it to the scope.
+      if (module_exists('libraries')) {
+        $library = libraries_detect('tablesorter-mottie');
+        if ($library['installed']) {
+          $gc_module_path = drupal_get_path('module', 'gc');
+          $variables['classes_array'][] = 'tablesorter-enabled';
+          drupal_add_js($gc_module_path . '/js/gc-tablesorter.js');
+          drupal_add_js(array('gc' => array(
+            'tablesorterOptionOverrides' => array(
+              'headers' => array(
+                '0' => array(
+                  'sorter' => FALSE,
+                ),
+                '9' => array(
+                  'sorter' => FALSE,
+                ),
+                '10' => array(
+                  'sorter' => FALSE,
+                ),
+              ),
+            ),
+          )), 'setting');
+          libraries_load('tablesorter-mottie');
+        }
+      }
+      break;
+  }
+}
+

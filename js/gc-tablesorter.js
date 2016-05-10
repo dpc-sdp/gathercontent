@@ -39,12 +39,20 @@
       // Sets tablesorter plugin on tables with class tablesorter-enabled.
       //
       $('table.tablesorter-enabled', context).once('gc-tablesorter', function () {
-        $(this).tablesorter({
+        var tablesorterOptions = {
           cssAsc: 'sort-down',
           cssDesc: 'sort-up',
           widgets: ['zebra']
-        })
+        };
+        if ((typeof Drupal.settings.gc !== 'undefined') &&
+          (typeof Drupal.settings.gc.tablesorterOptionOverrides === 'object')) {
+          var tsOverrides = Drupal.settings.gc.tablesorterOptionOverrides;
+          for (var attrname in tsOverrides) {
+            tablesorterOptions[attrname] = tsOverrides[attrname];
+          }
+        }
 
+        $(this).tablesorter(tablesorterOptions)
         // Keeps sticky table cell classes up-to-date.
         // Makes sticky header's tablesorter classes follow the main table's
         // ones.
