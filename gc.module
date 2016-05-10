@@ -487,10 +487,10 @@ function _gc_fetcher($gc_id, $uuid, $status = NULL, $entity = NULL, $parent_menu
           foreach ($pane->elements as $field) {
             if (isset($mapping_data[$pane->name]['elements'][$field->name]) && !empty($mapping_data[$pane->name]['elements'][$field->name])) {
               $local_field_name = $mapping_data[$pane->name]['elements'][$field->name];
-              if ($mapping_data[$pane->name]['type'] === 'content') {
+              if (isset($mapping_data[$pane->name]['type']) && ($mapping_data[$pane->name]['type'] === 'content') || !isset($mapping_data[$pane->name]['type'])) {
                 gc_gc_process_content_pane($node, $gc_id, $local_field_name, $field, $mapping->content_type, $is_translatable, $language, $parent_menu_item, $entity->nid, $tsid);
               }
-              elseif ($mapping_data[$pane->name]['type'] === 'metatag') {
+              elseif (isset($mapping_data[$pane->name]['type']) && ($mapping_data[$pane->name]['type'] === 'metatag')) {
                 gc_gc_process_metatag_pane($node, $gc_id, $local_field_name, $field, $mapping->content_type, $is_translatable, $language);
               }
             }

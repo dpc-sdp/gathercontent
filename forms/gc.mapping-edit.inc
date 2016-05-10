@@ -306,9 +306,10 @@ function gc_mapping_edit_form_validate($form, &$form_state) {
     $metatag_lang = array();
     if ($translatable) {
       foreach ($mapping_data as $tab_id => $tab) {
+        $tab_type = (isset($tab['type']) ? $tab['type'] : 'content');
         if ($tab['language'] != 'und') {
-          if (!in_array($tab['language'], ${$tab['type'] . '_lang'})) {
-            ${$tab['type'] . '_lang'}[] = $tab['language'];
+          if (!in_array($tab['language'], ${$tab_type . '_lang'})) {
+            ${$tab_type . '_lang'}[] = $tab['language'];
           }
           else {
             form_set_error($tab_id . '[language]', t('Each language can be used only once'));
@@ -330,21 +331,22 @@ function gc_mapping_edit_form_validate($form, &$form_state) {
       $content_fields['und'] = $metatag_fields['und'] = array();
     }
     foreach ($mapping_data as $tab_id => $tab) {
+      $tab_type = (isset($tab['type']) ? $tab['type'] : 'content');
       foreach ($tab['elements'] as $k => $element) {
         if (empty($element)) {
           continue;
         }
         if ($translatable) {
-          if (!in_array($element, ${$tab['type'] . '_fields'}[$tab['language']])) {
-            ${$tab['type'] . '_fields'}[$tab['language']][] = $element;
+          if (!in_array($element, ${$tab_type . '_fields'}[$tab['language']])) {
+            ${$tab_type . '_fields'}[$tab['language']][] = $element;
           }
           else {
             form_set_error($tab_id, t('A GatherContent field can only be mapped to a single Drupal field. So each field can only be mapped to once.'));
           }
         }
         else {
-          if (!in_array($element, ${$tab['type'] . '_fields'})) {
-            ${$tab['type'] . '_fields'}[] = $element;
+          if (!in_array($element, ${$tab_type . '_fields'})) {
+            ${$tab_type . '_fields'}[] = $element;
           }
           else {
             form_set_error($tab_id, t('A GatherContent field can only be mapped to a single Drupal field. So each field can only be mapped to once.'));
