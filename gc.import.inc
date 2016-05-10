@@ -263,8 +263,14 @@ function gc_import_form_select($form, &$form_state) {
           'filter_wrapper' => array('gc-table--filter-wrapper', 'clearfix'),
           'counter_wrapper' => array('gc-table--counter', 'clearfix'),
         ),
+        '#filterdescription' => t('You can only see items with mapped templates in the table.'),
       );
     }
+
+    $form['import']['back_button'] = array(
+      '#type' => 'markup',
+      '#markup' => l(t('Back'), '/admin/config/gc/import', array('attributes' => array('class' => array('button')))),
+    );
   }
 
   return $form;

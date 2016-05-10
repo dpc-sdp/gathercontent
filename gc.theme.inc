@@ -43,6 +43,7 @@ function gc_element_info() {
       // </div>
       // @endcode
       '#filterwrapper' => array(),
+      '#filterdescription' => '',
     ),
   );
 }
@@ -149,6 +150,18 @@ function theme_gc_tableselect(array $variables) {
       );
     }
     $output .= drupal_render($filterwrapper);
+  }
+
+  if (!empty($element['#filterdescription'])) {
+    $filterdescription = array(
+      '#type' => 'html_tag',
+      '#tag' => 'div',
+      '#value' => $element['#filterdescription'],
+      '#attributes' => array(
+        'class' => array('description'),
+      ),
+    );
+    $output .= drupal_render($filterdescription);
   }
 
   $output .= theme('table', array(
