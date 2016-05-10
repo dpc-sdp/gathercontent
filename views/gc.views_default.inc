@@ -412,7 +412,7 @@ function gc_views_default_views() {
   $handler->display->display_options['fields']['title']['id'] = 'title';
   $handler->display->display_options['fields']['title']['table'] = 'node';
   $handler->display->display_options['fields']['title']['field'] = 'title';
-  $handler->display->display_options['fields']['title']['label'] = 'Drupal Item Name';
+  $handler->display->display_options['fields']['title']['label'] = 'Drupal Title';
   $handler->display->display_options['fields']['title']['alter']['word_boundary'] = FALSE;
   $handler->display->display_options['fields']['title']['alter']['ellipsis'] = FALSE;
   $handler->display->display_options['fields']['title']['link_to_node'] = FALSE;
@@ -541,7 +541,7 @@ function gc_views_default_views() {
   $handler->display->display_options['fields']['title']['id'] = 'title';
   $handler->display->display_options['fields']['title']['table'] = 'node';
   $handler->display->display_options['fields']['title']['field'] = 'title';
-  $handler->display->display_options['fields']['title']['label'] = 'Drupal Item Name';
+  $handler->display->display_options['fields']['title']['label'] = 'Drupal Title';
   $handler->display->display_options['fields']['title']['alter']['word_boundary'] = FALSE;
   $handler->display->display_options['fields']['title']['alter']['ellipsis'] = FALSE;
   $handler->display->display_options['fields']['title']['link_to_node'] = FALSE;
@@ -631,7 +631,7 @@ function gc_views_default_views() {
     t('- Choose an operation -'),
     t('Status'),
     t('GatherContent Project'),
-    t('Drupal Item Name'),
+    t('Drupal Title'),
     t('GatherContent Item name'),
     t('Last updated in Drupal'),
     t('Last updated in GatherContent'),
