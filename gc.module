@@ -1439,6 +1439,36 @@ function gc_preprocess_views_view_table(&$variables) {
         }
       }
       break;
+
+    case 'import_result_page:page:table':
+    case 'import_result_page:page_1:table':
+    case 'import_result_page:page_2:table':
+      // Libraries module and tablesorter plugin are optional.
+      // If tablesorter available, add it to the scope.
+      if (module_exists('libraries')) {
+        $library = libraries_detect('tablesorter-mottie');
+        if ($library['installed']) {
+          $gc_module_path = drupal_get_path('module', 'gc');
+          $variables['classes_array'][] = 'tablesorter-enabled';
+          drupal_add_js($gc_module_path . '/js/gc-tablesorter.js');
+          drupal_add_js(array(
+            'gc' => array(
+              'tablesorterOptionOverrides' => array(
+                'headers' => array(
+                  '4' => array(
+                    'sorter' => FALSE,
+                  ),
+                  '5' => array(
+                    'sorter' => FALSE,
+                  ),
+                ),
+              ),
+            ),
+          ), 'setting');
+          libraries_load('tablesorter-mottie');
+        }
+      }
+      break;
   }
 }
 
