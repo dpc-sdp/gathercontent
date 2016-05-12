@@ -23,6 +23,16 @@ function gc_mapping_form_templates($form, &$form_state) {
 
   $form = array();
 
+  $form['description'] = array(
+    '#type' => 'html_tag',
+    '#tag' => 'div',
+    '#value' => t("Please select the GatherContent Templates you'd like 
+    to map. Only Templates you've not selected will be listed."),
+    '#attributes' => array(
+      'class' => array('description'),
+    ),
+  );
+
   $form['projects'] = array(
     '#type' => 'vertical_tabs',
   );
