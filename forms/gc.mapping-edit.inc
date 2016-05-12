@@ -335,24 +335,26 @@ function gc_mapping_edit_form_validate($form, &$form_state) {
     }
     foreach ($mapping_data as $tab_id => $tab) {
       $tab_type = (isset($tab['type']) ? $tab['type'] : 'content');
-      foreach ($tab['elements'] as $k => $element) {
-        if (empty($element)) {
-          continue;
-        }
-        if ($translatable) {
-          if (!in_array($element, ${$tab_type . '_fields'}[$tab['language']])) {
-            ${$tab_type . '_fields'}[$tab['language']][] = $element;
+      if (isset($tab['elements'])) {
+        foreach ($tab['elements'] as $k => $element) {
+          if (empty($element)) {
+            continue;
+          }
+          if ($translatable) {
+            if (!in_array($element, ${$tab_type . '_fields'}[$tab['language']])) {
+              ${$tab_type . '_fields'}[$tab['language']][] = $element;
+            }
+            else {
+              form_set_error($tab_id, t('A GatherContent field can only be mapped to a single Drupal field. So each field can only be mapped to once.'));
+            }
           }
           else {
-            form_set_error($tab_id, t('A GatherContent field can only be mapped to a single Drupal field. So each field can only be mapped to once.'));
-          }
-        }
-        else {
-          if (!in_array($element, ${$tab_type . '_fields'})) {
-            ${$tab_type . '_fields'}[] = $element;
-          }
-          else {
-            form_set_error($tab_id, t('A GatherContent field can only be mapped to a single Drupal field. So each field can only be mapped to once.'));
+            if (!in_array($element, ${$tab_type . '_fields'})) {
+              ${$tab_type . '_fields'}[] = $element;
+            }
+            else {
+              form_set_error($tab_id, t('A GatherContent field can only be mapped to a single Drupal field. So each field can only be mapped to once.'));
+            }
           }
         }
       }
