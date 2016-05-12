@@ -232,11 +232,14 @@ function gc_mapping_edit_form($form, &$form_state, $id) {
           }
         }
       }
-      $form['mapping']['submit'] = array(
-        '#type' => 'submit',
-        '#value' => ($new ? t('Create mapping') : t('Update mapping')),
-      );
     }
+  }
+
+  if (!$new || isset($form_state['values']['content_type'])) {
+    $form['mapping']['submit'] = array(
+      '#type' => 'submit',
+      '#value' => (!$new ? t('Update mapping') : t('Create mapping')),
+    );
   }
 
   $form['cancel'] = array(
