@@ -187,7 +187,7 @@ function theme_gc_tableselect(array $variables) {
  *   The processed element.
  */
 function gc_process_gc_tableselect(array $element) {
-  if ($element['#multiple']) {
+  if (isset($element['#multiple']) && $element['#multiple']) {
     $value = is_array($element['#value']) ? $element['#value'] : array();
   }
   else {
@@ -197,7 +197,7 @@ function gc_process_gc_tableselect(array $element) {
 
   $element['#tree'] = TRUE;
 
-  if (count($element['#options']) > 0) {
+  if (isset($element['#options']) && (count($element['#options']) > 0)) {
     if (!isset($element['#default_value']) || $element['#default_value'] === 0) {
       $element['#default_value'] = array();
     }

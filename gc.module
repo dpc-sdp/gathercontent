@@ -944,8 +944,8 @@ function gc_views_bulk_operations_form_alter(&$form, &$form_state, $vbo) {
         $content = $view->render();
         $form['description']['#markup'] = '<p>' . t('Please review your selection before upload.') . '</p>' . $content;
         $form['#vbo_confirm_form_title'] = format_plural(count(array_filter($form_state['values']['views_bulk_operations'])),
-          'Confirm update selection (@count item)',
-          'Confirm update selection (@count items)');
+          'Confirm upload selection (@count item)',
+          'Confirm upload selection (@count items)');
 
         $form['actions']['submit']['#submit'] = array('gc_views_vbo_upload');
         break;
@@ -1013,6 +1013,25 @@ function gc_update_process($node, $uuid, &$context) {
  */
 function gc_update_finished($success, $results, $operations) {
   if ($success) {
+    // Select all items with uuid.
+    $query = new EntityFieldQuery();
+    $result = $query->entityCondition('entity_type', 'gc_operation_item')
+      ->propertyCondition('operation_uuid', $results['uuid'])
+      ->execute();
+    if (isset($result['gc_operation_item'])) {
+      $operation_items = entity_load('gc_operation_item', array_keys($result['gc_operation_item']));
+      $success_counter = 0;
+      foreach ($operation_items as $operation_item) {
+        if ($operation_item->status === 'Success') {
+          $success_counter++;
+        }
+      }
+      $unsuccessful = count($result['gc_operation_item']) - $success_counter;
+      drupal_set_message(format_plural($success_counter, '1 item was updated successfully.', '@count items were updated successfully.'));
+      if ($unsuccessful > 0) {
+        drupal_set_message(format_plural($unsuccessful, '1 item was not updated. Check errors below.', '@count items were not updated. Check errors below.'), 'error');
+      }
+    }
     drupal_goto('admin/content/update/result/' . $results['uuid']);
   }
   else {
@@ -1262,7 +1281,26 @@ function gc_upload_process($entity, $uuid, &$context) {
  */
 function gc_upload_finished($success, $results, $operations) {
   if ($success) {
-    drupal_goto('admin/content/update/result/' . implode('+', $results));
+    // Select all items with uuid.
+    $query = new EntityFieldQuery();
+    $result = $query->entityCondition('entity_type', 'gc_operation_item')
+      ->propertyCondition('operation_uuid', $results['uuid'])
+      ->execute();
+    if (isset($result['gc_operation_item'])) {
+      $operation_items = entity_load('gc_operation_item', array_keys($result['gc_operation_item']));
+      $success_counter = 0;
+      foreach ($operation_items as $operation_item) {
+        if ($operation_item->status === 'Success') {
+          $success_counter++;
+        }
+      }
+      $unsuccessful = count($result['gc_operation_item']) - $success_counter;
+      drupal_set_message(format_plural($success_counter, '1 item was uploaded successfully.', '@count items were uploaded successfully.'));
+      if ($unsuccessful > 0) {
+        drupal_set_message(format_plural($unsuccessful, '1 item was not uploaded. Check errors below.', '@count items were not uploaded. Check errors below.'), 'error');
+      }
+    }
+    drupal_goto('admin/content/upload/result/' . $results['uuid']);
   }
   else {
     $error_operation = reset($operations);
@@ -1371,6 +1409,7 @@ function gc_preprocess_views_view_table(&$variables) {
   $view = $variables['view'];
   switch ("{$view->name}:{$view->current_display}:{$view->plugin_name}") {
     case 'update:page:table':
+    case 'update:page_1:table':
       // Libraries module and tablesorter plugin are optional.
       // If tablesorter available, add it to the scope.
       if (module_exists('libraries')) {
@@ -1379,21 +1418,23 @@ function gc_preprocess_views_view_table(&$variables) {
           $gc_module_path = drupal_get_path('module', 'gc');
           $variables['classes_array'][] = 'tablesorter-enabled';
           drupal_add_js($gc_module_path . '/js/gc-tablesorter.js');
-          drupal_add_js(array('gc' => array(
-            'tablesorterOptionOverrides' => array(
-              'headers' => array(
-                '0' => array(
-                  'sorter' => FALSE,
-                ),
-                '9' => array(
-                  'sorter' => FALSE,
-                ),
-                '10' => array(
-                  'sorter' => FALSE,
+          drupal_add_js(array(
+            'gc' => array(
+              'tablesorterOptionOverrides' => array(
+                'headers' => array(
+                  '0' => array(
+                    'sorter' => FALSE,
+                  ),
+                  '9' => array(
+                    'sorter' => FALSE,
+                  ),
+                  '10' => array(
+                    'sorter' => FALSE,
+                  ),
                 ),
               ),
             ),
-          )), 'setting');
+          ), 'setting');
           libraries_load('tablesorter-mottie');
         }
       }

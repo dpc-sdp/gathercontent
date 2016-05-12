@@ -170,6 +170,50 @@ Template fields mismatch: This could be because the template in GatherContent ha
   $handler->display->display_options['fields']['gc_node_link']['empty_zero'] = TRUE;
   $handler->display->display_options['fields']['gc_node_link']['hide_alter_empty'] = FALSE;
   $handler->display->display_options['path'] = 'admin/content/update/result/%';
+
+  /* Display: Page 2 */
+  $handler = $view->new_display('page', 'Page 2', 'page_2');
+  $handler->display->display_options['defaults']['title'] = FALSE;
+  $handler->display->display_options['title'] = 'Upload result page';
+  $handler->display->display_options['defaults']['fields'] = FALSE;
+  /* Field: GC Operation Item: GC Status Color */
+  $handler->display->display_options['fields']['item_status_color']['id'] = 'item_status_color';
+  $handler->display->display_options['fields']['item_status_color']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['item_status_color']['field'] = 'item_status_color';
+  /* Field: GC Operation Item: Operation Item Status */
+  $handler->display->display_options['fields']['item_status']['id'] = 'item_status';
+  $handler->display->display_options['fields']['item_status']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['item_status']['field'] = 'item_status';
+  $handler->display->display_options['fields']['item_status']['label'] = 'Status';
+  /* Field: GC Operation Item: Operation Item Name */
+  $handler->display->display_options['fields']['item_name']['id'] = 'item_name';
+  $handler->display->display_options['fields']['item_name']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['item_name']['field'] = 'item_name';
+  $handler->display->display_options['fields']['item_name']['label'] = 'Item Name';
+  /* Field: GC Operation Item: Operation Item Operation Status */
+  $handler->display->display_options['fields']['status']['id'] = 'status';
+  $handler->display->display_options['fields']['status']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['status']['field'] = 'status';
+  $handler->display->display_options['fields']['status']['label'] = 'Upload Status';
+  /* Field: GC Operation Item: Operation Item Template Name */
+  $handler->display->display_options['fields']['template_name']['id'] = 'template_name';
+  $handler->display->display_options['fields']['template_name']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['template_name']['field'] = 'template_name';
+  $handler->display->display_options['fields']['template_name']['label'] = 'GatherContent Template Name';
+  /* Field: GC Operation Item: GC Link */
+  $handler->display->display_options['fields']['gc_link']['id'] = 'gc_link';
+  $handler->display->display_options['fields']['gc_link']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['gc_link']['field'] = 'gc_link';
+  $handler->display->display_options['fields']['gc_link']['label'] = 'Open in GatherContent';
+  /* Field: GC Operation Item: GC Node Link */
+  $handler->display->display_options['fields']['gc_node_link']['id'] = 'gc_node_link';
+  $handler->display->display_options['fields']['gc_node_link']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['gc_node_link']['field'] = 'gc_node_link';
+  $handler->display->display_options['fields']['gc_node_link']['label'] = 'Open in Drupal';
+  $handler->display->display_options['fields']['gc_node_link']['empty'] = 'N/A';
+  $handler->display->display_options['fields']['gc_node_link']['empty_zero'] = TRUE;
+  $handler->display->display_options['fields']['gc_node_link']['hide_alter_empty'] = FALSE;
+  $handler->display->display_options['path'] = 'admin/content/upload/result/%';
   $translatables['import_result_page'] = array(
     t('Master'),
     t('Import result page'),
@@ -194,7 +238,11 @@ Template fields mismatch: This could be because the template in GatherContent ha
     t('Page'),
     t('Update result page'),
     t('Update Status'),
+    t('Page 2'),
+    t('Upload result page'),
+    t('Upload Status'),
   );
+
   $views[$view->name] = $view;
 
   $view = new view();
@@ -379,7 +427,7 @@ Template fields mismatch: This could be because the template in GatherContent ha
 
   /* Display: Master */
   $handler = $view->new_display('default', 'Master', 'default');
-  $handler->display->display_options['title'] = 'Update result';
+  $handler->display->display_options['title'] = 'Upload';
   $handler->display->display_options['use_more_always'] = FALSE;
   $handler->display->display_options['access']['type'] = 'perm';
   $handler->display->display_options['cache']['type'] = 'none';
@@ -534,6 +582,12 @@ Template fields mismatch: This could be because the template in GatherContent ha
   $handler->display->display_options['defaults']['title'] = FALSE;
   $handler->display->display_options['title'] = 'Update';
   $handler->display->display_options['path'] = 'admin/content/update';
+  $handler->display->display_options['menu']['type'] = 'normal';
+  $handler->display->display_options['menu']['title'] = 'Update from GatherContent';
+  $handler->display->display_options['menu']['weight'] = '0';
+  $handler->display->display_options['menu']['name'] = 'management';
+  $handler->display->display_options['menu']['context'] = 0;
+  $handler->display->display_options['menu']['context_only_inline'] = 0;
 
   /* Display: Block */
   $handler = $view->new_display('block', 'Block', 'block_1');
@@ -568,7 +622,8 @@ Template fields mismatch: This could be because the template in GatherContent ha
   $handler->display->display_options['fields']['changed']['table'] = 'node';
   $handler->display->display_options['fields']['changed']['field'] = 'changed';
   $handler->display->display_options['fields']['changed']['label'] = 'Last updated in Drupal';
-  $handler->display->display_options['fields']['changed']['date_format'] = 'long';
+  $handler->display->display_options['fields']['changed']['date_format'] = 'custom';
+  $handler->display->display_options['fields']['changed']['custom_date_format'] = 'F d, Y - H:i';
   $handler->display->display_options['fields']['changed']['second_date_format'] = 'long';
   /* Field: Content: Last updated in GatherContent */
   $handler->display->display_options['fields']['gc_updated1']['id'] = 'gc_updated1';
@@ -623,9 +678,98 @@ Template fields mismatch: This could be because the template in GatherContent ha
   $handler->display->display_options['filters']['status']['group'] = 1;
   $handler->display->display_options['filters']['status']['expose']['operator'] = FALSE;
 
+  /* Display: Page */
+  $handler = $view->new_display('page', 'Page', 'page_1');
+  $handler->display->display_options['defaults']['fields'] = FALSE;
+  /* Field: Bulk operations: Content */
+  $handler->display->display_options['fields']['views_bulk_operations']['id'] = 'views_bulk_operations';
+  $handler->display->display_options['fields']['views_bulk_operations']['table'] = 'node';
+  $handler->display->display_options['fields']['views_bulk_operations']['field'] = 'views_bulk_operations';
+  $handler->display->display_options['fields']['views_bulk_operations']['vbo_settings']['display_type'] = '0';
+  $handler->display->display_options['fields']['views_bulk_operations']['vbo_settings']['enable_select_all_pages'] = 1;
+  $handler->display->display_options['fields']['views_bulk_operations']['vbo_settings']['row_clickable'] = 1;
+  $handler->display->display_options['fields']['views_bulk_operations']['vbo_settings']['force_single'] = 0;
+  $handler->display->display_options['fields']['views_bulk_operations']['vbo_settings']['entity_load_capacity'] = '10';
+  $handler->display->display_options['fields']['views_bulk_operations']['vbo_operations'] = array(
+    'action::gc_upload' => array(
+      'selected' => 1,
+      'postpone_processing' => 0,
+      'skip_confirmation' => 0,
+      'override_label' => 0,
+      'label' => '',
+    ),
+  );
+  /* Field: Content: GC Status */
+  $handler->display->display_options['fields']['gc_status']['id'] = 'gc_status';
+  $handler->display->display_options['fields']['gc_status']['table'] = 'node';
+  $handler->display->display_options['fields']['gc_status']['field'] = 'gc_status';
+  $handler->display->display_options['fields']['gc_status']['label'] = 'Status';
+  /* Field: Mapping: GC Project */
+  $handler->display->display_options['fields']['gc_project']['id'] = 'gc_project';
+  $handler->display->display_options['fields']['gc_project']['table'] = 'gc_mapping';
+  $handler->display->display_options['fields']['gc_project']['field'] = 'gc_project';
+  $handler->display->display_options['fields']['gc_project']['relationship'] = 'gc_mapping_id';
+  $handler->display->display_options['fields']['gc_project']['label'] = 'GatherContent Project';
+  /* Field: Content: Title */
+  $handler->display->display_options['fields']['title']['id'] = 'title';
+  $handler->display->display_options['fields']['title']['table'] = 'node';
+  $handler->display->display_options['fields']['title']['field'] = 'title';
+  $handler->display->display_options['fields']['title']['label'] = 'Drupal Title';
+  $handler->display->display_options['fields']['title']['alter']['word_boundary'] = FALSE;
+  $handler->display->display_options['fields']['title']['alter']['ellipsis'] = FALSE;
+  $handler->display->display_options['fields']['title']['link_to_node'] = FALSE;
+  /* Field: Content: GC Title */
+  $handler->display->display_options['fields']['gc_title']['id'] = 'gc_title';
+  $handler->display->display_options['fields']['gc_title']['table'] = 'node';
+  $handler->display->display_options['fields']['gc_title']['field'] = 'gc_title';
+  $handler->display->display_options['fields']['gc_title']['label'] = 'GatherContent Item name';
+  /* Field: Content: Updated date */
+  $handler->display->display_options['fields']['changed']['id'] = 'changed';
+  $handler->display->display_options['fields']['changed']['table'] = 'node';
+  $handler->display->display_options['fields']['changed']['field'] = 'changed';
+  $handler->display->display_options['fields']['changed']['label'] = 'Last updated in Drupal';
+  $handler->display->display_options['fields']['changed']['date_format'] = 'custom';
+  $handler->display->display_options['fields']['changed']['custom_date_format'] = 'F d, Y - H:i';
+  $handler->display->display_options['fields']['changed']['second_date_format'] = 'long';
+  /* Field: Content: Last updated in GatherContent */
+  $handler->display->display_options['fields']['gc_updated1']['id'] = 'gc_updated1';
+  $handler->display->display_options['fields']['gc_updated1']['table'] = 'node';
+  $handler->display->display_options['fields']['gc_updated1']['field'] = 'gc_updated1';
+  $handler->display->display_options['fields']['gc_updated1']['date_format'] = 'custom';
+  $handler->display->display_options['fields']['gc_updated1']['custom_date_format'] = 'F d, Y - H:i';
+  $handler->display->display_options['fields']['gc_updated1']['second_date_format'] = 'long';
+  /* Field: Mapping: Content type name */
+  $handler->display->display_options['fields']['content_type_name']['id'] = 'content_type_name';
+  $handler->display->display_options['fields']['content_type_name']['table'] = 'gc_mapping';
+  $handler->display->display_options['fields']['content_type_name']['field'] = 'content_type_name';
+  $handler->display->display_options['fields']['content_type_name']['relationship'] = 'gc_mapping_id';
+  /* Field: Mapping: GC Template */
+  $handler->display->display_options['fields']['gc_template']['id'] = 'gc_template';
+  $handler->display->display_options['fields']['gc_template']['table'] = 'gc_mapping';
+  $handler->display->display_options['fields']['gc_template']['field'] = 'gc_template';
+  $handler->display->display_options['fields']['gc_template']['relationship'] = 'gc_mapping_id';
+  $handler->display->display_options['fields']['gc_template']['label'] = 'GatherContent Template';
+  /* Field: Content: Link */
+  $handler->display->display_options['fields']['view_node']['id'] = 'view_node';
+  $handler->display->display_options['fields']['view_node']['table'] = 'views_entity_node';
+  $handler->display->display_options['fields']['view_node']['field'] = 'view_node';
+  $handler->display->display_options['fields']['view_node']['label'] = 'Open in Drupal';
+  $handler->display->display_options['fields']['view_node']['text'] = 'Open';
+  /* Field: Content: GC Link */
+  $handler->display->display_options['fields']['gc_link']['id'] = 'gc_link';
+  $handler->display->display_options['fields']['gc_link']['table'] = 'node';
+  $handler->display->display_options['fields']['gc_link']['field'] = 'gc_link';
+  $handler->display->display_options['fields']['gc_link']['label'] = 'Open in GatherContent';
+  $handler->display->display_options['path'] = 'admin/content/upload';
+  $handler->display->display_options['menu']['type'] = 'normal';
+  $handler->display->display_options['menu']['title'] = 'Upload to GatherContent';
+  $handler->display->display_options['menu']['weight'] = '0';
+  $handler->display->display_options['menu']['name'] = 'management';
+  $handler->display->display_options['menu']['context'] = 0;
+  $handler->display->display_options['menu']['context_only_inline'] = 0;
   $translatables['update'] = array(
     t('Master'),
-    t('Update result'),
+    t('Upload'),
     t('more'),
     t('Apply'),
     t('Reset'),
@@ -658,8 +802,6 @@ Template fields mismatch: This could be because the template in GatherContent ha
     t('Update'),
     t('Block'),
     t('All'),
-    t('Item Name'),
-    t('Update status'),
   );
 
   $views[$view->name] = $view;
