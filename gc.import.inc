@@ -417,6 +417,14 @@ function gc_import_wizard_finish($form, &$form_state) {
  *
  * @param int $content_id
  *   ID of content we want to import.
+ * @param int $status_id
+ *   ID of status, if 0 then we don't want to change status.
+ * @param string $uuid
+ *   UUID of operation.
+ * @param int|null $parent_menu_item
+ *   ID of mlid.
+ * @param array $context
+ *   Context of operation.
  */
 function gc_import_process($content_id, $status_id, $uuid, $parent_menu_item = NULL, &$context) {
   if (($nid = _gc_fetcher($content_id, $uuid, $status_id, NULL, $parent_menu_item)) !== FALSE) {
@@ -436,6 +444,25 @@ function gc_import_process($content_id, $status_id, $uuid, $parent_menu_item = N
  */
 function gc_import_finished($success, $results, $operations) {
   if ($success) {
+    // Select all items with uuid.
+    $query = new EntityFieldQuery();
+    $result = $query->entityCondition('entity_type', 'gc_operation_item')
+      ->propertyCondition('operation_uuid', $results['uuid'])
+      ->execute();
+    if (isset($result['gc_operation_item'])) {
+      $operation_items = entity_load('gc_operation_item', array_keys($result['gc_operation_item']));
+      $success_counter = 0;
+      foreach ($operation_items as $operation_item) {
+        if ($operation_item->status === 'Success') {
+          $success_counter++;
+        }
+      }
+      $unsuccessful = count($result['gc_operation_item']) - $success_counter;
+      drupal_set_message(format_plural($success_counter, '1 item was imported successfully.', '@count items were imported successfully.'));
+      if ($unsuccessful > 0) {
+        drupal_set_message(format_plural($unsuccessful, '1 item was not imported. Check errors below.', '@count items were not imported. Check errors below.'), 'error');
+      }
+    }
     drupal_goto('admin/config/gc/import/result/' . $results['uuid']);
   }
   else {

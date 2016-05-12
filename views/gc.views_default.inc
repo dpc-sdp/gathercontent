@@ -67,6 +67,14 @@ function gc_views_default_views() {
       'empty_column' => 0,
     ),
   );
+  /* Footer: Global: Text area */
+  $handler->display->display_options['footer']['area']['id'] = 'area';
+  $handler->display->display_options['footer']['area']['table'] = 'views';
+  $handler->display->display_options['footer']['area']['field'] = 'area';
+  $handler->display->display_options['footer']['area']['label'] = 'Table description';
+  $handler->display->display_options['footer']['area']['content'] = 'Template not mapped: Please check template mapping.
+Template fields mismatch: This could be because the template in GatherContent has changed and the changed template has not been updated in Drupal.';
+  $handler->display->display_options['footer']['area']['format'] = 'filtered_html';
   /* Field: GC Operation Item: GC Status Color */
   $handler->display->display_options['fields']['item_status_color']['id'] = 'item_status_color';
   $handler->display->display_options['fields']['item_status_color']['table'] = 'gc_operation_item';
@@ -171,6 +179,9 @@ function gc_views_default_views() {
     t('Sort by'),
     t('Asc'),
     t('Desc'),
+    t('Table description'),
+    t('Template not mapped: Please check template mapping.
+Template fields mismatch: This could be because the template in GatherContent has changed and the changed template has not been updated in Drupal.'),
     t('GC Status Color'),
     t('Status'),
     t('Item Name'),

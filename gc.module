@@ -495,7 +495,7 @@ function _gc_fetcher($gc_id, $uuid, $status = NULL, $entity = NULL, $parent_menu
               }
             }
             else {
-              $operation_item->status = "Field with requested name doesn't exist.";
+              $operation_item->status = "Operation failed: Template fields mismatch.";
               entity_save('gc_operation_item', $operation_item);
             }
           }
@@ -523,7 +523,7 @@ function _gc_fetcher($gc_id, $uuid, $status = NULL, $entity = NULL, $parent_menu
       }
       catch (\Exception $e) {
         watchdog('gc_import', print_r($e, TRUE), array(), WATCHDOG_ERROR);
-        $operation_item->status = "Import failed with '$e->getMessage()'";
+        $operation_item->status = "Operation failed: $e->getMessage()";
         entity_save('gc_operation_item', $operation_item);
         return FALSE;
       }
@@ -535,7 +535,7 @@ function _gc_fetcher($gc_id, $uuid, $status = NULL, $entity = NULL, $parent_menu
     }
   }
   else {
-    $operation_item->status = "Mapping doesn't exist";
+    $operation_item->status = "Operation failed: Template not mapped.";
     entity_save('gc_operation_item', $operation_item);
     return FALSE;
   }
