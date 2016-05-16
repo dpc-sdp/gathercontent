@@ -471,7 +471,7 @@ function _gc_fetcher($gc_id, $uuid, $status = NULL, $entity = NULL, $parent_menu
 
     if ($entity !== FALSE) {
       $node = entity_metadata_wrapper('node', $entity);
-
+      $metatags = array();
       try {
         foreach ($content->config as $pane) {
           $is_translatable = module_exists('entity_translation')
@@ -491,7 +491,7 @@ function _gc_fetcher($gc_id, $uuid, $status = NULL, $entity = NULL, $parent_menu
                 gc_gc_process_content_pane($node, $gc_id, $local_field_name, $field, $mapping->content_type, $is_translatable, $language, $parent_menu_item, $entity->nid, $tsid);
               }
               elseif (isset($mapping_data[$pane->name]['type']) && ($mapping_data[$pane->name]['type'] === 'metatag')) {
-                gc_gc_process_metatag_pane($node, $gc_id, $local_field_name, $field, $mapping->content_type, $is_translatable, $language);
+                gc_gc_process_metatag_pane($node, $metatags, $gc_id, $local_field_name, $field, $mapping->content_type, $is_translatable, $language);
               }
             }
             else {
@@ -516,6 +516,10 @@ function _gc_fetcher($gc_id, $uuid, $status = NULL, $entity = NULL, $parent_menu
           }
         }
         $node->save(TRUE);
+        if (module_exists('metatag') && metatag_entity_supports_metatags('node', $mapping->content_type)) {
+          module_load_include('module', 'metatag');
+          metatag_metatags_save('node', $entity->nid, $entity->vid, $metatags);
+        }
         $operation_item->status = "Success";
         $operation_item->nid = $entity->nid;
         entity_save('gc_operation_item', $operation_item);
@@ -544,6 +548,8 @@ function _gc_fetcher($gc_id, $uuid, $status = NULL, $entity = NULL, $parent_menu
 /**
  * @param EntityMetadataWrapper $node
  *   Object of node.
+ * @param array $metatags
+ *   Array of metatags.
  * @param int $gc_id
  *   ID of item in GatherContent.
  * @param string $local_field_name
@@ -559,14 +565,9 @@ function _gc_fetcher($gc_id, $uuid, $status = NULL, $entity = NULL, $parent_menu
  *
  * @throws \Exception
  */
-function gc_gc_process_metatag_pane(EntityMetadataWrapper &$node, $gc_id, $local_field_name, $field, $content_type, $is_translatable = FALSE, $language = LANGUAGE_NONE) {
+function gc_gc_process_metatag_pane(EntityMetadataWrapper &$node, &$metatags, $gc_id, $local_field_name, $field, $content_type, $is_translatable = FALSE, $language = LANGUAGE_NONE) {
   if (module_exists('metatag') && metatag_entity_supports_metatags('node', $content_type)) {
-    if ($is_translatable) {
-      $node->language($language)->metatags->{$local_field_name}->set($field->value);
-    }
-    else {
-      $node->metatags->{$local_field_name}->set($field->value);
-    }
+    $metatags[$language][$local_field_name] = array('value' => $field->value);
   }
   else {
     throw new Exception("Metatag module not enabled or entity doesn't support 
