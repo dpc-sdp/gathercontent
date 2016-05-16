@@ -31,6 +31,14 @@ function gc_install() {
     )
   );
   db_add_field(
+    'node',
+    'gc_import_status',
+    array(
+      'definition' => 'The ID of content in GatherContent.',
+      'type' => 'text',
+    )
+  );
+  db_add_field(
     'file_managed',
     'gc_id',
     array(
@@ -51,6 +59,7 @@ function gc_uninstall() {
 
   db_drop_field('node', 'gc_mapping_id');
   db_drop_field('node', 'gc_id');
+  db_drop_field('node', 'gc_import_status');
   db_drop_field('file_managed', 'gc_id');
 }
 
@@ -238,7 +247,7 @@ function gc_schema_alter(&$schema) {
 /**
  * Change `content_type` and `data` fields from `gc_mapping` table.
  */
-function gc_update_7001() {
+function gc_update_7301() {
   db_change_field('gc_mapping', 'content_type', 'content_type', array(
     'type' => 'varchar',
     'length' => 255,
@@ -256,7 +265,7 @@ function gc_update_7001() {
 /**
  * Add field `gc_import_status` to `node` table.
  */
-function gc_update_7002() {
+function gc_update_7302() {
   db_add_field('node', 'gc_import_status', array(
     'definition' => 'The ID of content in GatherContent.',
     'type' => 'text',
@@ -266,7 +275,7 @@ function gc_update_7002() {
 /**
  * Set `gc_urlkey` variable.
  */
-function gc_update_7003() {
+function gc_update_7303() {
   // Load all accounts.
   $acc_obj = new GatherContent\Account();
   $accounts = $acc_obj->getAccounts();
@@ -286,14 +295,14 @@ function gc_update_7003() {
 /**
  * Remove `updated_gc` field from DB.
  */
-function gc_update_7004() {
+function gc_update_7304() {
   db_drop_field('gc_mapping', 'updated_gc');
 }
 
 /**
  * Add field `template` to `gc_mapping` table.
  */
-function gc_update_7005() {
+function gc_update_7305() {
   db_add_field('gc_mapping', 'template', array(
     'type' => 'blob',
     'not null' => FALSE,
@@ -305,7 +314,7 @@ function gc_update_7005() {
 /**
  * Set templates to existing mappings.
  */
-function gc_update_7006() {
+function gc_update_7306() {
   $mappings = entity_load('gc_mapping');
   $tmp = new GatherContent\Template();
   foreach ($mappings as $mapping) {
@@ -320,7 +329,7 @@ function gc_update_7006() {
 /**
  * Create tables for gc_operation and gc_operation_item entities.
  */
-function gc_update_7007() {
+function gc_update_7307() {
   db_create_table('gc_operation', drupal_get_schema_unprocessed('gc', 'gc_operation'));
   db_create_table('gc_operation_item', drupal_get_schema_unprocessed('gc', 'gc_operation_item'));
 }
