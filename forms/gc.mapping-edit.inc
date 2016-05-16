@@ -104,16 +104,33 @@ function gc_mapping_edit_form($form, &$form_state, $id) {
 
         foreach ($fieldset->elements as $gc_field) {
           $d_fields = array();
-          if (isset($form_state['values'][$fieldset->name]['type']) && $form_state['triggering_element']['#name'] !== 'content_type') {
-            if ($form_state['triggering_element']['#array_parents'][1] === $fieldset->name && $form_state['values'][$fieldset->name]['type'] === 'content') {
-              $d_fields = _filter_fields($gc_field, $mapping->content_type);
+          if (isset($form_state['triggering_element']['#name'])) {
+            // We need different handling for changed fieldset.
+            if ($form_state['triggering_element']['#array_parents'][1] === $fieldset->name) {
+              if ($form_state['triggering_element']['#value'] === 'content') {
+                $d_fields = _filter_fields($gc_field, $mapping->content_type);
+              }
+              elseif ($form_state['triggering_element']['#value'] === 'metatag') {
+                $d_fields = _filter_metatag($gc_field);
+              }
             }
-            elseif ($form_state['triggering_element']['#array_parents'][1] === $fieldset->name && $form_state['values'][$fieldset->name]['type'] === 'metatag') {
-              $d_fields = _filter_metatag($gc_field);
+            else {
+              if ($form_state['values'][$fieldset->name]['type'] === 'content') {
+                $d_fields = _filter_fields($gc_field, $mapping->content_type);
+              }
+              else {
+                $d_fields = _filter_metatag($gc_field);
+              }
             }
           }
           else {
-            $d_fields = _filter_fields($gc_field, $mapping->content_type);
+            if ($mapping_data[$fieldset->name]['type'] === 'content') {
+              $d_fields = _filter_fields($gc_field, $mapping->content_type);
+            }
+            else {
+              $d_fields = _filter_metatag($gc_field);
+
+            }
           }
           $form['mapping'][$fieldset->name]['elements'][$gc_field->name] = array(
             '#type' => 'select',
@@ -211,12 +228,23 @@ function gc_mapping_edit_form($form, &$form_state, $id) {
 
           foreach ($fieldset->elements as $gc_field) {
             $d_fields = array();
-            if (isset($form_state['values']['type']) && $form_state['triggering_element']['#name'] !== 'content_type') {
-              if ($form_state['triggering_element']['#array_parents'][1] === $fieldset->name && $form_state['values']['type'] === 'content') {
-                $d_fields = _filter_fields($gc_field, $form_state['values']['content_type']);
+            if ($form_state['triggering_element']['#name'] !== 'content_type') {
+              // We need different handling for changed fieldset.
+              if ($form_state['triggering_element']['#array_parents'][1] === $fieldset->name) {
+                if ($form_state['triggering_element']['#value'] === 'content') {
+                  $d_fields = _filter_fields($gc_field, $form_state['values']['content_type']);
+                }
+                elseif ($form_state['triggering_element']['#value'] === 'metatag') {
+                  $d_fields = _filter_metatag($gc_field);
+                }
               }
-              elseif ($form_state['triggering_element']['#array_parents'][1] === $fieldset->name && $form_state['values']['type'] === 'metatag') {
-                $d_fields = _filter_metatag($gc_field);
+              else {
+                if ($form_state['values'][$fieldset->name]['type'] === 'content') {
+                  $d_fields = _filter_fields($gc_field, $form_state['values']['content_type']);
+                }
+                else {
+                  $d_fields = _filter_metatag($gc_field);
+                }
               }
             }
             else {
