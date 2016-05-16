@@ -430,6 +430,7 @@ Template fields mismatch: This could be because the template in GatherContent ha
   $handler->display->display_options['title'] = 'Upload';
   $handler->display->display_options['use_more_always'] = FALSE;
   $handler->display->display_options['access']['type'] = 'perm';
+  $handler->display->display_options['access']['perm'] = 'administer gathercontent';
   $handler->display->display_options['cache']['type'] = 'none';
   $handler->display->display_options['query']['type'] = 'views_query';
   $handler->display->display_options['exposed_form']['type'] = 'basic';
@@ -576,6 +577,12 @@ Template fields mismatch: This could be because the template in GatherContent ha
     1 => 0,
     3 => 0,
   );
+  /* Filter criterion: Mapping: Mapping ID */
+  $handler->display->display_options['filters']['id']['id'] = 'id';
+  $handler->display->display_options['filters']['id']['table'] = 'gc_mapping';
+  $handler->display->display_options['filters']['id']['field'] = 'id';
+  $handler->display->display_options['filters']['id']['relationship'] = 'gc_mapping_id';
+  $handler->display->display_options['filters']['id']['operator'] = 'not empty';
 
   /* Display: Page */
   $handler = $view->new_display('page', 'Page', 'page');
@@ -680,6 +687,13 @@ Template fields mismatch: This could be because the template in GatherContent ha
 
   /* Display: Page */
   $handler = $view->new_display('page', 'Page', 'page_1');
+  $handler->display->display_options['defaults']['header'] = FALSE;
+  /* Header: Global: Text area */
+  $handler->display->display_options['header']['area']['id'] = 'area';
+  $handler->display->display_options['header']['area']['table'] = 'views';
+  $handler->display->display_options['header']['area']['field'] = 'area';
+  $handler->display->display_options['header']['area']['content'] = 'Choose the content you\'d like to update. This will update the content in GatherContent with the latest version in Drupal. Please note this feature currently only supports the update of written content (text fields).';
+  $handler->display->display_options['header']['area']['format'] = 'filtered_html';
   $handler->display->display_options['defaults']['fields'] = FALSE;
   /* Field: Bulk operations: Content */
   $handler->display->display_options['fields']['views_bulk_operations']['id'] = 'views_bulk_operations';
@@ -802,6 +816,9 @@ Template fields mismatch: This could be because the template in GatherContent ha
     t('Update'),
     t('Block'),
     t('All'),
+    t("Choose the content you'd like to update. This will update the content in 
+    GatherContent with the latest version in Drupal. Please note this feature 
+    currently only supports the update of written content (text fields)."),
   );
 
   $views[$view->name] = $view;
