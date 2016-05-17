@@ -400,6 +400,15 @@ function gc_mapping_edit_form_validate($form, &$form_state) {
     ) {
       form_set_error('form', t('You need to map at least one field to create mapping.'));
     }
+
+    // Validate if title is mapped for translatable content.
+    if ($translatable) {
+      foreach ($content_fields as $k => $lang_fields) {
+        if (!in_array('field_title', $lang_fields) && $k != LANGUAGE_NONE) {
+          form_set_error('form', t('You have to map Drupal Title field for translatable content'));
+        }
+      }
+    }
   }
 }
 

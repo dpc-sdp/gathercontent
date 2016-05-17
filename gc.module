@@ -472,6 +472,7 @@ function _gc_fetcher($gc_id, $uuid, $status = NULL, $entity = NULL, $parent_menu
     if ($entity !== FALSE) {
       $node = entity_metadata_wrapper('node', $entity);
       $metatags = array();
+      $_title_is_mapped = FALSE;
       try {
         foreach ($content->config as $pane) {
           $is_translatable = module_exists('entity_translation')
@@ -488,7 +489,7 @@ function _gc_fetcher($gc_id, $uuid, $status = NULL, $entity = NULL, $parent_menu
             if (isset($mapping_data[$pane->name]['elements'][$field->name]) && !empty($mapping_data[$pane->name]['elements'][$field->name])) {
               $local_field_name = $mapping_data[$pane->name]['elements'][$field->name];
               if (isset($mapping_data[$pane->name]['type']) && ($mapping_data[$pane->name]['type'] === 'content') || !isset($mapping_data[$pane->name]['type'])) {
-                gc_gc_process_content_pane($node, $gc_id, $local_field_name, $field, $mapping->content_type, $is_translatable, $language, $parent_menu_item, $entity->nid, $tsid);
+                gc_gc_process_content_pane($node, $gc_id, $local_field_name, $field, $mapping->content_type, $is_translatable, $language, $parent_menu_item, $entity->nid, $tsid, $_title_is_mapped);
               }
               elseif (isset($mapping_data[$pane->name]['type']) && ($mapping_data[$pane->name]['type'] === 'metatag')) {
                 gc_gc_process_metatag_pane($node, $metatags, $gc_id, $local_field_name, $field, $mapping->content_type, $is_translatable, $language);
@@ -515,6 +516,11 @@ function _gc_fetcher($gc_id, $uuid, $status = NULL, $entity = NULL, $parent_menu
             $handler->setTranslation($translation, $node->value());
           }
         }
+
+        if (!$is_translatable && !$_title_is_mapped) {
+          $node->title->set($content->name);
+        }
+
         $node->save(TRUE);
         if (module_exists('metatag') && metatag_entity_supports_metatags('node', $mapping->content_type)) {
           module_load_include('module', 'metatag');
@@ -591,7 +597,7 @@ function gc_gc_process_metatag_pane(EntityMetadataWrapper &$node, &$metatags, $g
  * @param string $language
  *   Language of translation if applicable.
  */
-function gc_gc_process_content_pane(EntityMetadataWrapper &$node, $gc_id, $local_field_name, $field, $content_type, $is_translatable = FALSE, $language = LANGUAGE_NONE, $plid = NULL, $nid = NULL, &$tsid = NULL) {
+function gc_gc_process_content_pane(EntityMetadataWrapper &$node, $gc_id, $local_field_name, $field, $content_type, $is_translatable = FALSE, $language = LANGUAGE_NONE, $plid = NULL, $nid = NULL, &$tsid = NULL, &$_title_is_mapped = FALSE) {
   $field_info = field_info_field($local_field_name);
   $is_translatable = $is_translatable && $field_info['translatable'];
   switch ($field->type) {
@@ -616,6 +622,7 @@ function gc_gc_process_content_pane(EntityMetadataWrapper &$node, $gc_id, $local
     default:
       if ($local_field_name === 'title') {
         $node->title->set($field->value);
+        $_title_is_mapped = TRUE;
         gc_create_menu_link($nid, $field->value, $plid);
       }
       else {
