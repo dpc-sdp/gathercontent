@@ -670,6 +670,9 @@ function gc_create_menu_link($nid, $title, $plid, $lang = NULL, &$tsid = NULL) {
     if (is_null($lang)) {
       // Single language node.
       list($menu_name, $mlid) = explode(':', $plid);
+      if ($menu_name === 'node') {
+        _gc_get_menu_by_gc_id($mlid, $menu_name);
+      }
       $link = array(
         'link_path' => 'node/' . $nid,
         'link_title' => $title,
@@ -683,6 +686,9 @@ function gc_create_menu_link($nid, $title, $plid, $lang = NULL, &$tsid = NULL) {
         // Multi language node - first language.
         $menu_translation_set = i18n_translation_set_create('menu_link');
         list($menu_name, $mlid) = explode(':', $plid);
+        if ($menu_name === 'node') {
+          _gc_get_menu_by_gc_id($mlid, $menu_name, $lang);
+        }
         $link = array(
           'link_path' => 'node/' . $nid,
           'link_title' => $title,
@@ -701,15 +707,21 @@ function gc_create_menu_link($nid, $title, $plid, $lang = NULL, &$tsid = NULL) {
         // Multi language node - other language.
         $menu_translation_set = i18n_translation_set_load($tsid);
         list($menu_name, $mlid) = explode(':', $plid);
-        // Load parent translation.
-        $item = menu_link_load($mlid);
-        $translation_set = i18n_translation_set_load($item['i18n_tsid']);
-        $translations = $translation_set->get_translations();
+        if ($menu_name === 'node') {
+          _gc_get_menu_by_gc_id($mlid, $menu_name, $lang);
+        }
+        else {
+          // Load parent translation.
+          $item = menu_link_load($mlid);
+          $translation_set = i18n_translation_set_load($item['i18n_tsid']);
+          $translations = $translation_set->get_translations();
+          $mlid = $translations[$lang]['mlid'];
+        }
         $link = array(
           'link_path' => 'node/' . $nid,
           'link_title' => $title,
           'menu_name' => $menu_name,
-          'plid' => $translations[$lang]['mlid'],
+          'plid' => $mlid,
           'language' => $lang,
         );
 
@@ -718,6 +730,34 @@ function gc_create_menu_link($nid, $title, $plid, $lang = NULL, &$tsid = NULL) {
         $menu_translation_set->add_item($link);
         $menu_translation_set->save_translations();
       }
+    }
+  }
+}
+
+/**
+ * @param $mlid
+ * @param $menu_name
+ */
+function _gc_get_menu_by_gc_id(&$mlid, &$menu_name, $language = NULL) {
+  // Load node by gc_id.
+  $query = new EntityFieldQuery();
+  $node_result = $query->entityCondition('entity_type', 'node')
+    ->propertyCondition('gc_id', $mlid)
+    ->execute();
+  if (isset($node_result['node'])) {
+    // Load menu_link by node_id.
+    $nodes = reset(array_keys($node_result['node']));
+    $ml_result = $query->entityCondition('entity_type', 'menu_link')
+      ->propertyCondition('link_path', 'node/' . $nodes);
+    if (!is_null($language)) {
+      $ml_result->propertyCondition('language', $language);
+    }
+    $ml_result->execute();
+    if (isset($ml_result['menu_link'])) {
+      $ml = reset(array_keys($ml_result['menu_link']));
+      $ml_object = menu_link_load($ml);
+      $menu_name = $ml_object['menu_name'];
+      $mlid = $ml_object['mlid'];
     }
   }
 }

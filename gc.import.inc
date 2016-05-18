@@ -201,7 +201,7 @@ function gc_import_form_select($form, &$form_state) {
         if (!empty($mapping->data)) {
           $mapping_array[$mapping->gc_template_id] = array(
             'gc_template' => $mapping->gc_template,
-            'ct' => $mapping->content_type
+            'ct' => $mapping->content_type,
           );
         }
       }
@@ -236,7 +236,11 @@ function gc_import_form_select($form, &$form_state) {
             'menu' => array(
               'data' => array(
                 '#type' => 'select',
-                '#options' => array(0 => t("- Don't create menu item -")) + menu_parent_options(menu_get_menus(), $mapping_array[$item->template_id]['ct']),
+                '#options' =>
+                  array(
+                    0 => t("- Don't create menu item -"),
+                    -1 => t("Parent being imported"),
+                  ) + menu_parent_options(menu_get_menus(), $mapping_array[$item->template_id]['ct']),
                 '#title' => t('Menu'),
                 '#title_display' => 'invisible',
                 '#name' => "menu[$item->id]",
@@ -283,6 +287,60 @@ function gc_import_form_select($form, &$form_state) {
  */
 function gc_import_form_select_fetch_content($form, &$form_state) {
   return $form['import'];
+}
+
+/**
+ * Validation function for import select screen.
+ *
+ * We are validating, if every item with "parent being imported" menu has
+ * parent in current import selection.
+ *
+ * @inheritdoc
+ */
+function gc_import_form_select_validate($form, &$form_state) {
+  $stack = array();
+  $import_content = array_filter($form_state['values']['content']);
+  $menu = array_intersect_key(array_filter($form_state['values']['menu']), array_filter($form_state['values']['content']));
+
+  foreach ($import_content as $k => $value) {
+    if (isset($menu[$value]) && $menu[$value] != -1) {
+      $stack[] = $value;
+      unset($import_content[$k]);
+    }
+  }
+
+  if (!empty($import_content)) {
+    // Load all by project_id.
+    $first = reset($import_content);
+    $content_obj = new Content();
+    $content = $content_obj->getContent($first);
+
+    $contents_source = $content_obj->getContents($content->project_id);
+    $content = array();
+
+    foreach ($contents_source as $value) {
+      $content[$value->id] = $value;
+    }
+
+    $num_of_repeats = 0;
+    $size = count($import_content);
+
+    while (!empty($import_content)) {
+      $current = reset($import_content);
+      if (isset($stack[$content[$current]->parent_id])) {
+        $stack[] = $current;
+        array_shift($import_content);
+      }
+      else {
+        array_shift($import_content);
+        array_push($import_content, $current);
+        $num_of_repeats++;
+        if ($num_of_repeats >= ($size * $size)) {
+          form_set_error('form', t("Please check your menu selection, some of items don't have parent in import."));
+        }
+      }
+    }
+  }
 }
 
 /**
@@ -379,12 +437,55 @@ function gc_import_form_confirm_submit($form, &$form_state) {
 
   $operations = array();
 
-  foreach ($form_state['object']->nodes as $value) {
-    $parent_menu_item = isset($form_state['object']->menu[$value]) ? $form_state['object']->menu[$value] : NULL;
-    $operations[] = array(
-      'gc_import_process',
-      array($value, $form_state['object']->status, $uuid, $parent_menu_item),
-    );
+  $stack = array();
+  $import_content = $form_state['object']->nodes;
+
+  foreach ($import_content as $k => $value) {
+    if (isset($form_state['object']->menu[$value]) && $form_state['object']->menu[$value] != -1) {
+      $parent_menu_item = isset($form_state['object']->menu[$value]) ? $form_state['object']->menu[$value] : NULL;
+      $operations[] = array(
+        'gc_import_process',
+        array($value, $form_state['object']->status, $uuid, $parent_menu_item),
+      );
+      $stack[] = $value;
+      unset($import_content[$k]);
+    }
+  }
+
+  if (!empty($import_content)) {
+    // Load all by project_id.
+    $first = reset($import_content);
+    $content_obj = new Content();
+    $content = $content_obj->getContent($first);
+
+    $contents_source = $content_obj->getContents($content->project_id);
+    $content = array();
+
+    foreach ($contents_source as $value) {
+      $content[$value->id] = $value;
+    }
+
+    while (!empty($import_content)) {
+      $current = reset($import_content);
+      if (isset($stack[$content[$current]->parent_id])) {
+        $parent_menu_item = 'node:' . $content[$current]->parent_id;
+        $operations[] = array(
+          'gc_import_process',
+          array(
+            $current,
+            $form_state['object']->status,
+            $uuid,
+            $parent_menu_item,
+          ),
+        );
+        $stack[] = $current;
+        array_shift($import_content);
+      }
+      else {
+        array_shift($import_content);
+        array_push($import_content, $current);
+      }
+    }
   }
 
   $batch = array(
