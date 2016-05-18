@@ -159,7 +159,7 @@ function gc_import_form_select($form, &$form_state) {
       'method' => 'replace',
       'effect' => 'fade',
     ),
-    '#default_value' => isset($form_state['object']->project) ? $form_state['object']->project : 0,
+    '#default_value' => isset($form_state['object']->project_id) ? $form_state['object']->project_id : 0,
     '#description' => t('You can only see projects with mapped templates in the dropdown.'),
   );
 
@@ -177,8 +177,8 @@ function gc_import_form_select($form, &$form_state) {
     '#type' => 'value',
   );
 
-  if (isset($form_state['values']['project']) || isset($form_state['object']->project)) {
-    $project_id = isset($form_state['values']['project']) ? $form_state['values']['project'] : $form_state['object']->project;
+  if (isset($form_state['values']['project']) || isset($form_state['object']->project_id)) {
+    $project_id = isset($form_state['values']['project']) ? $form_state['values']['project'] : $form_state['object']->project_id;
     $content_obj = new Content();
     $content = $content_obj->getContents($project_id);
 
@@ -268,6 +268,7 @@ function gc_import_form_select($form, &$form_state) {
           'counter_wrapper' => array('gc-table--counter', 'clearfix'),
         ),
         '#filterdescription' => t('You can only see items with mapped templates in the table.'),
+        '#default_value' => isset($form_state['object']->nodes) ? $form_state['object']->nodes : NULL,
       );
     }
 
@@ -301,42 +302,44 @@ function gc_import_form_select_validate($form, &$form_state) {
   $stack = array();
   $import_content = array_filter($form_state['values']['content']);
   $menu = array_intersect_key(array_filter($form_state['values']['menu']), array_filter($form_state['values']['content']));
+  if (!empty($import_content) && !empty($menu)) {
 
-  foreach ($import_content as $k => $value) {
-    if (isset($menu[$value]) && $menu[$value] != -1) {
-      $stack[] = $value;
-      unset($import_content[$k]);
-    }
-  }
-
-  if (!empty($import_content)) {
-    // Load all by project_id.
-    $first = reset($import_content);
-    $content_obj = new Content();
-    $content = $content_obj->getContent($first);
-
-    $contents_source = $content_obj->getContents($content->project_id);
-    $content = array();
-
-    foreach ($contents_source as $value) {
-      $content[$value->id] = $value;
-    }
-
-    $num_of_repeats = 0;
-    $size = count($import_content);
-
-    while (!empty($import_content)) {
-      $current = reset($import_content);
-      if (isset($stack[$content[$current]->parent_id])) {
-        $stack[] = $current;
-        array_shift($import_content);
+    foreach ($import_content as $k => $value) {
+      if (isset($menu[$value]) && $menu[$value] != -1) {
+        $stack[] = $value;
+        unset($import_content[$k]);
       }
-      else {
-        array_shift($import_content);
-        array_push($import_content, $current);
-        $num_of_repeats++;
-        if ($num_of_repeats >= ($size * $size)) {
-          form_set_error('form', t("Please check your menu selection, some of items don't have parent in import."));
+    }
+
+    if (!empty($import_content)) {
+      // Load all by project_id.
+      $first = reset($import_content);
+      $content_obj = new Content();
+      $content = $content_obj->getContent($first);
+
+      $contents_source = $content_obj->getContents($content->project_id);
+      $content = array();
+
+      foreach ($contents_source as $value) {
+        $content[$value->id] = $value;
+      }
+
+      $num_of_repeats = 0;
+      $size = count($import_content);
+
+      while (!empty($import_content)) {
+        $current = reset($import_content);
+        if (isset($stack[$content[$current]->parent_id])) {
+          $stack[] = $current;
+          array_shift($import_content);
+        }
+        else {
+          array_shift($import_content);
+          array_push($import_content, $current);
+          $num_of_repeats++;
+          if ($num_of_repeats >= ($size * $size)) {
+            form_set_error('form', t("Please check your menu selection, some of items don't have parent in import."));
+          }
         }
       }
     }
