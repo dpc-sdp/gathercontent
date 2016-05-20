@@ -711,7 +711,7 @@ function gathercontent_create_menu_link($nid, $title, $plid, $lang = NULL, &$tsi
         if ($menu_name === 'node') {
           _gathercontent_get_menu_by_gathercontent_id($mlid, $menu_name, $lang);
         }
-        else {
+        elseif ($mlid != 0) {
           // Load parent translation.
           $item = menu_link_load($mlid);
           $translation_set = i18n_translation_set_load($item['i18n_tsid']);
