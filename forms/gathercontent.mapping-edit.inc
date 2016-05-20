@@ -16,12 +16,12 @@ use GatherContent\Template;
  *
  * @inheritdoc
  */
-function gc_mapping_edit_form($form, &$form_state, $id) {
-  $mapping_entity = entity_load('gc_mapping', array($id));
+function gathercontent_mapping_edit_form($form, &$form_state, $id) {
+  $mapping_entity = entity_load('gathercontent_mapping', array($id));
   $mapping = reset($mapping_entity);
   $content_types = node_type_get_names();
   $tmp = new Template();
-  $template = $tmp->getTemplate($mapping->gc_template_id);
+  $template = $tmp->getTemplate($mapping->gathercontent_template_id);
   $new = empty($mapping->data);
   $form = array();
   $form['form_description'] = array(
@@ -38,10 +38,10 @@ function gc_mapping_edit_form($form, &$form_state, $id) {
     $form['info'] = array(
       '#markup' =>
         '<div class="project-name">' .
-        t('Project name: @name', array('@name' => $mapping->gc_project))
+        t('Project name: @name', array('@name' => $mapping->gathercontent_project))
         . '</div>'
         . '<div class="gather-content">'
-        . t('GatherContent template: @gc_template', array('@gc_template' => $mapping->gc_template))
+        . t('GatherContent template: @gathercontent_template', array('@gathercontent_template' => $mapping->gathercontent_template))
         . '</div>'
         . '<div class="drupal-content-type">'
         . t('Drupal content type: @content_type', array('@content_type' => $content_type))
@@ -82,7 +82,7 @@ function gc_mapping_edit_form($form, &$form_state, $id) {
             '#title' => t('Type'),
             '#default_value' => (isset($mapping_data[$fieldset->name]['type']) || isset($form_state['values'][$fieldset->name]['type'])) ? (isset($form_state['values'][$fieldset->name]['type']) ? $form_state['values'][$fieldset->name]['type'] : $mapping_data[$fieldset->name]['type']) : NULL,
             '#ajax' => array(
-              'callback' => 'gc_mapping_form_mapping_get_table',
+              'callback' => 'gathercontent_mapping_form_mapping_get_table',
               'wrapper' => 'edit-mapping',
               'method' => 'replace',
               'effect' => 'fade',
@@ -102,41 +102,41 @@ function gc_mapping_edit_form($form, &$form_state, $id) {
           );
         }
 
-        foreach ($fieldset->elements as $gc_field) {
+        foreach ($fieldset->elements as $gathercontent_field) {
           $d_fields = array();
           if (isset($form_state['triggering_element']['#name'])) {
             // We need different handling for changed fieldset.
             if ($form_state['triggering_element']['#array_parents'][1] === $fieldset->name) {
               if ($form_state['triggering_element']['#value'] === 'content') {
-                $d_fields = _filter_fields($gc_field, $mapping->content_type);
+                $d_fields = _filter_fields($gathercontent_field, $mapping->content_type);
               }
               elseif ($form_state['triggering_element']['#value'] === 'metatag') {
-                $d_fields = _filter_metatag($gc_field);
+                $d_fields = _filter_metatag($gathercontent_field);
               }
             }
             else {
               if ($form_state['values'][$fieldset->name]['type'] === 'content') {
-                $d_fields = _filter_fields($gc_field, $mapping->content_type);
+                $d_fields = _filter_fields($gathercontent_field, $mapping->content_type);
               }
               else {
-                $d_fields = _filter_metatag($gc_field);
+                $d_fields = _filter_metatag($gathercontent_field);
               }
             }
           }
           else {
             if ($mapping_data[$fieldset->name]['type'] === 'content') {
-              $d_fields = _filter_fields($gc_field, $mapping->content_type);
+              $d_fields = _filter_fields($gathercontent_field, $mapping->content_type);
             }
             else {
-              $d_fields = _filter_metatag($gc_field);
+              $d_fields = _filter_metatag($gathercontent_field);
 
             }
           }
-          $form['mapping'][$fieldset->name]['elements'][$gc_field->name] = array(
+          $form['mapping'][$fieldset->name]['elements'][$gathercontent_field->name] = array(
             '#type' => 'select',
             '#options' => $d_fields,
-            '#title' => (isset($gc_field->label) ? $gc_field->label : $gc_field->title),
-            '#default_value' => isset($mapping_data[$fieldset->name]['elements'][$gc_field->name]) ? $mapping_data[$fieldset->name]['elements'][$gc_field->name] : NULL,
+            '#title' => (isset($gathercontent_field->label) ? $gathercontent_field->label : $gathercontent_field->title),
+            '#default_value' => isset($mapping_data[$fieldset->name]['elements'][$gathercontent_field->name]) ? $mapping_data[$fieldset->name]['elements'][$gathercontent_field->name] : NULL,
             '#empty_option' => t('- Select -'),
           );
         }
@@ -146,9 +146,9 @@ function gc_mapping_edit_form($form, &$form_state, $id) {
   else {
     $form = array();
     $form['info'] = array(
-      '#markup' => t('Project name: @name', array('@name' => $mapping->gc_project))
+      '#markup' => t('Project name: @name', array('@name' => $mapping->gathercontent_project))
         . '<br>'
-        . t('GatherContent template: @gc_template', array('@gc_template' => $mapping->gc_template)),
+        . t('GatherContent template: @gathercontent_template', array('@gathercontent_template' => $mapping->gathercontent_template)),
     );
     $form['id'] = array(
       '#type' => 'value',
@@ -165,7 +165,7 @@ function gc_mapping_edit_form($form, &$form_state, $id) {
       '#options' => $content_types,
       '#required' => TRUE,
       '#ajax' => array(
-        'callback' => 'gc_mapping_form_mapping_get_table',
+        'callback' => 'gathercontent_mapping_form_mapping_get_table',
         'wrapper' => 'edit-mapping',
         'method' => 'replace',
         'effect' => 'fade',
@@ -206,7 +206,7 @@ function gc_mapping_edit_form($form, &$form_state, $id) {
               '#title' => t('Type'),
               '#default_value' => isset($form_state['values'][$fieldset->name]['type']) ? $form_state['values'][$fieldset->name]['type'] : 'content',
               '#ajax' => array(
-                'callback' => 'gc_mapping_form_mapping_get_table',
+                'callback' => 'gathercontent_mapping_form_mapping_get_table',
                 'wrapper' => 'edit-mapping',
                 'method' => 'replace',
                 'effect' => 'fade',
@@ -226,36 +226,36 @@ function gc_mapping_edit_form($form, &$form_state, $id) {
             );
           }
 
-          foreach ($fieldset->elements as $gc_field) {
+          foreach ($fieldset->elements as $gathercontent_field) {
             $d_fields = array();
             if ($form_state['triggering_element']['#name'] !== 'content_type') {
               // We need different handling for changed fieldset.
               if ($form_state['triggering_element']['#array_parents'][1] === $fieldset->name) {
                 if ($form_state['triggering_element']['#value'] === 'content') {
-                  $d_fields = _filter_fields($gc_field, $form_state['values']['content_type']);
+                  $d_fields = _filter_fields($gathercontent_field, $form_state['values']['content_type']);
                 }
                 elseif ($form_state['triggering_element']['#value'] === 'metatag') {
-                  $d_fields = _filter_metatag($gc_field);
+                  $d_fields = _filter_metatag($gathercontent_field);
                 }
               }
               else {
                 if ($form_state['values'][$fieldset->name]['type'] === 'content') {
-                  $d_fields = _filter_fields($gc_field, $form_state['values']['content_type']);
+                  $d_fields = _filter_fields($gathercontent_field, $form_state['values']['content_type']);
                 }
                 else {
-                  $d_fields = _filter_metatag($gc_field);
+                  $d_fields = _filter_metatag($gathercontent_field);
                 }
               }
             }
             else {
-              $d_fields = _filter_fields($gc_field, $form_state['values']['content_type']);
+              $d_fields = _filter_fields($gathercontent_field, $form_state['values']['content_type']);
             }
-            $form['mapping'][$fieldset->name]['elements'][$gc_field->name] = array(
+            $form['mapping'][$fieldset->name]['elements'][$gathercontent_field->name] = array(
               '#type' => 'select',
               '#options' => $d_fields,
-              '#title' => (isset($gc_field->label) ? $gc_field->label : $gc_field->title),
+              '#title' => (isset($gathercontent_field->label) ? $gathercontent_field->label : $gathercontent_field->title),
               '#empty_option' => t("Don't map"),
-              '#default_value' => isset($form_state['values'][$fieldset->name]['elements'][$gc_field->name]) ? $form_state['values'][$fieldset->name]['elements'][$gc_field->name] : NULL,
+              '#default_value' => isset($form_state['values'][$fieldset->name]['elements'][$gathercontent_field->name]) ? $form_state['values'][$fieldset->name]['elements'][$gathercontent_field->name] : NULL,
             );
           }
         }
@@ -285,7 +285,7 @@ function gc_mapping_edit_form($form, &$form_state, $id) {
  *
  * @inheritdoc
  */
-function gc_mapping_form_mapping_get_table($form, &$form_state) {
+function gathercontent_mapping_form_mapping_get_table($form, &$form_state) {
   return $form['mapping'];
 }
 
@@ -302,7 +302,7 @@ function gc_mapping_form_mapping_get_table($form, &$form_state) {
  *
  * @inheritdoc
  */
-function gc_mapping_edit_form_validate($form, &$form_state) {
+function gathercontent_mapping_edit_form_validate($form, &$form_state) {
   if ($form_state['triggering_element']['#id'] == 'edit-submit') {
     $form_definition_elements = array(
       'return',
@@ -312,7 +312,7 @@ function gc_mapping_edit_form_validate($form, &$form_state) {
       'op',
     );
     $non_data_elements = array_merge($form_definition_elements, array(
-      'gc_template',
+      'gathercontent_template',
       'content_type',
       'id',
       'updated',
@@ -325,7 +325,7 @@ function gc_mapping_edit_form_validate($form, &$form_state) {
       }
     }
     // Check if is translatable.
-    $mapping_entity = entity_load('gc_mapping', array($form_state['values']['id']));
+    $mapping_entity = entity_load('gathercontent_mapping', array($form_state['values']['id']));
     $mapping = reset($mapping_entity);
     $content_type = (empty($mapping->content_type) ? $form_state['values']['content_type'] : $mapping->content_type);
     $translatable = module_exists('entity_translation') && module_exists('title')
@@ -404,7 +404,7 @@ function gc_mapping_edit_form_validate($form, &$form_state) {
     // Validate if title is mapped for translatable content.
     if ($translatable) {
       foreach ($content_fields as $k => $lang_fields) {
-        if (!in_array('field_title', $lang_fields) && $k != LANGUAGE_NONE) {
+        if (!in_array('title_field', $lang_fields) && $k != LANGUAGE_NONE) {
           form_set_error('form', t('You have to map Drupal Title field for translatable content'));
         }
       }
@@ -417,7 +417,7 @@ function gc_mapping_edit_form_validate($form, &$form_state) {
  *
  * @inheritdoc
  */
-function gc_mapping_edit_form_submit($form, &$form_state) {
+function gathercontent_mapping_edit_form_submit($form, &$form_state) {
   if ($form_state['triggering_element']['#id'] == 'edit-submit') {
     $form_definition_elements = array(
       'return',
@@ -427,7 +427,7 @@ function gc_mapping_edit_form_submit($form, &$form_state) {
       'op',
     );
     $non_data_elements = array_merge($form_definition_elements, array(
-      'gc_template',
+      'gathercontent_template',
       'content_type',
       'id',
       'updated',
@@ -440,7 +440,7 @@ function gc_mapping_edit_form_submit($form, &$form_state) {
       }
     }
 
-    $mapping_entity = entity_load('gc_mapping', array($form_state['values']['id']));
+    $mapping_entity = entity_load('gathercontent_mapping', array($form_state['values']['id']));
     $mapping = reset($mapping_entity);
     $new = empty($mapping->data);
     if ($new) {
@@ -448,10 +448,10 @@ function gc_mapping_edit_form_submit($form, &$form_state) {
     }
     $mapping->data = serialize($mapping_data);
     $mapping->updated_drupal = time();
-    $mapping->updated_gc = $form_state['values']['updated'];
+    $mapping->updated_gathercontent = $form_state['values']['updated'];
 
     $tmp = new Template();
-    $template = $tmp->getTemplate($mapping->gc_template_id);
+    $template = $tmp->getTemplate($mapping->gathercontent_template_id);
 
     $mapping->template = serialize($template);
     $mapping->save();
@@ -459,16 +459,16 @@ function gc_mapping_edit_form_submit($form, &$form_state) {
     // We need to modify field for checkboxes and field instance for radios.
     foreach ($template->config as $i => $fieldset) {
       if ($fieldset->hidden === FALSE) {
-        foreach ($fieldset->elements as $gc_field) {
-          if ($gc_field->type === 'choice_checkbox') {
-            if (!empty($mapping_data[$gc_field->name])) {
+        foreach ($fieldset->elements as $gathercontent_field) {
+          if ($gathercontent_field->type === 'choice_checkbox') {
+            if (!empty($mapping_data[$gathercontent_field->name])) {
               $local_options = array();
-              foreach ($gc_field->options as $option) {
+              foreach ($gathercontent_field->options as $option) {
                 $local_options[$option->name] = $option->label;
               }
 
               $field_data = array(
-                'field_name' => $mapping_data[$gc_field->name],
+                'field_name' => $mapping_data[$gathercontent_field->name],
                 'settings' => array(
                   'allowed_values' => $local_options,
                 ),
@@ -481,15 +481,15 @@ function gc_mapping_edit_form_submit($form, &$form_state) {
               }
             }
           }
-          elseif ($gc_field->type === 'choice_radio') {
-            if (!empty($mapping_data[$gc_field->name])) {
+          elseif ($gathercontent_field->type === 'choice_radio') {
+            if (!empty($mapping_data[$gathercontent_field->name])) {
               $local_options = array();
-              foreach ($gc_field->options as $option) {
-                if ($option != end($gc_field->options)) {
+              foreach ($gathercontent_field->options as $option) {
+                if ($option != end($gathercontent_field->options)) {
                   $local_options[] = $option->name . "|" . $option->label;
                 }
               }
-              $instance = field_read_instance('node', $mapping_data[$gc_field->name], $mapping->content_type);
+              $instance = field_read_instance('node', $mapping_data[$gathercontent_field->name], $mapping->content_type);
               // Make the change.
               $instance['widget']['settings']['available_options'] = implode("\n", $local_options);
               // Save the instance.
@@ -508,7 +508,7 @@ function gc_mapping_edit_form_submit($form, &$form_state) {
         array('@id' => $form_state['values']['id'])));
     }
   }
-  drupal_goto('admin/config/gc/mapping');
+  drupal_goto('admin/config/gathercontent/mapping');
 }
 
 /**
@@ -516,7 +516,7 @@ function gc_mapping_edit_form_submit($form, &$form_state) {
  *
  * Use for filtering only equivalent fields.
  *
- * @param object $gc_field
+ * @param object $gathercontent_field
  *   Type of field in GatherContent.
  * @param string $content_type
  *   Name of Drupal content type.
@@ -524,7 +524,7 @@ function gc_mapping_edit_form_submit($form, &$form_state) {
  * @return array
  *   Associative array with equivalent fields.
  */
-function _filter_fields($gc_field, $content_type) {
+function _filter_fields($gathercontent_field, $content_type) {
   $mapping_array = array(
     'files' => array(
       'file',
@@ -551,15 +551,15 @@ function _filter_fields($gc_field, $content_type) {
   // Fields.
   foreach ($instances as $name => $instance) {
     $field = field_info_field($instance['field_name']);
-    if (in_array($field['type'], $mapping_array[$gc_field->type])) {
+    if (in_array($field['type'], $mapping_array[$gathercontent_field->type])) {
       // Constrains:
-      // - do not map plain text (Drupal) to rich text (GC).
-      // - do not map radios (GC) to text (Drupal),
+      // - do not map plain text (Drupal) to rich text (gathercontent).
+      // - do not map radios (gathercontent) to text (Drupal),
       // if widget isn't provided by select_or_other module.
-      // - do not map section (GC) to plain text (Drupal).
-      switch ($gc_field->type) {
+      // - do not map section (gathercontent) to plain text (Drupal).
+      switch ($gathercontent_field->type) {
         case 'text':
-          if ((!$instance['settings']['text_processing'] && !$gc_field->plain_text) || $instance['widget']['module'] === 'select_or_other') {
+          if ((!$instance['settings']['text_processing'] && !$gathercontent_field->plain_text) || $instance['widget']['module'] === 'select_or_other') {
             continue 2;
           }
           break;
@@ -580,8 +580,8 @@ function _filter_fields($gc_field, $content_type) {
     }
   }
 
-  if ($gc_field->type === 'text'
-    && $gc_field->plain_text
+  if ($gathercontent_field->type === 'text'
+    && $gathercontent_field->plain_text
     && (!module_exists('title') || !title_field_replacement_enabled('node', $content_type, 'title'))
   ) {
     $fields['title'] = 'Title';
@@ -593,14 +593,14 @@ function _filter_fields($gc_field, $content_type) {
 /**
  * Return only supported metatag fields.
  *
- * @param object $gc_field
+ * @param object $gathercontent_field
  *   Object of field from GatherContent.
  *
  * @return array
  *   Array of supported metatag fields.
  */
-function _filter_metatag($gc_field) {
-  if ($gc_field->type === 'text' && $gc_field->plain_text) {
+function _filter_metatag($gathercontent_field) {
+  if ($gathercontent_field->type === 'text' && $gathercontent_field->plain_text) {
     return array(
       'title' => t('Title'),
       'description' => t('Description'),

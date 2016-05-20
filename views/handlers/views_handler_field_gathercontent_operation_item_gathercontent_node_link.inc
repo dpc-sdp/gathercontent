@@ -10,7 +10,7 @@
  *
  * @ingroup views_field_handlers
  */
-class views_handler_field_gc_operation_item_gc_node_link extends views_handler_field_node_link {
+class views_handler_field_gathercontent_operation_item_gathercontent_node_link extends views_handler_field_node_link {
 
   /**
    * Renders the link.

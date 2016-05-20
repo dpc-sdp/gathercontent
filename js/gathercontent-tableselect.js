@@ -5,20 +5,20 @@
  * Reference was Drupal core's tableselect.js.
  * Contains some ':visible' filters and control statements.
  *
- * Used by gc_tableselect form type.
+ * Used by gathercontent_tableselect form type.
  */
 
 (function ($, Drupal, window) {
   'use strict';
 
-  Drupal.behaviors.gcStickySizeFix = {
+  Drupal.behaviors.gathercontentStickySizeFix = {
     attach: function () {
-      $('table.sticky-enabled').once('gc-sticky-table-resizer', function () {
+      $('table.sticky-enabled').once('gathercontent-sticky-table-resizer', function () {
         var timeout;
         var $originalTable = $(this);
         var $originalHeaderCells = $originalTable.children('thead').find('> tr > th');
 
-        $(window).bind('resize.gcUpdateSticky', function () {
+        $(window).bind('resize.gathercontentUpdateSticky', function () {
 
           var $that = null;
           var $stickyCell = null;
@@ -50,14 +50,14 @@
     }
   };
 
-  Drupal.behaviors.gcTableSelect = {
+  Drupal.behaviors.gathercontentTableSelect = {
     attach: function (context) {
       // Select the inner-most table in case of nested tables.
-      $('th.select-all', context).closest('table').once('gc-table-select', Drupal.gcTableSelect);
+      $('th.select-all', context).closest('table').once('gathercontent-table-select', Drupal.gathercontentTableSelect);
     }
   };
 
-  Drupal.gcTableSelect = function () {
+  Drupal.gathercontentTableSelect = function () {
     // Do not add a "Select all" checkbox if there are no rows with checkboxes
     // in the table.
     if ($('td input:checkbox', this).length === 0) {
@@ -113,7 +113,7 @@
       // and that a checkbox has been checked or unchecked before.
       if (e.shiftKey && lastChecked && lastChecked !== e.target) {
         // We use the checkbox's parent TR to do our range searching.
-        Drupal.gcTableSelectRange($(e.target).closest('tr')[0], $(lastChecked).closest('tr')[0], e.target.checked);
+        Drupal.gathercontentTableSelectRange($(e.target).closest('tr')[0], $(lastChecked).closest('tr')[0], e.target.checked);
       }
 
       // If all checkboxes are checked, make sure the select-all one is checked
@@ -129,7 +129,7 @@
     updateSelectAll((checkboxes.length === $(checkboxes).filter(':checked').length));
   };
 
-  Drupal.gcTableSelectRange = function (from, to, state) {
+  Drupal.gathercontentTableSelectRange = function (from, to, state) {
     // We determine the looping mode based on the order of from and to.
     var mode = from.rowIndex > to.rowIndex ? 'previousSibling' : 'nextSibling';
 

@@ -10,7 +10,7 @@ include_once "includes/Account.inc";
 use GatherContent\Account;
 
 /**
- * Callback function for GC administration.
+ * Callback function for gathercontent administration.
  *
  * @param array $form
  *   Array with form elements.
@@ -20,28 +20,28 @@ use GatherContent\Account;
  * @return array
  *   Array with form elements.
  */
-function gc_authentication_form($form, &$form_state) {
+function gathercontent_authentication_form($form, &$form_state) {
   $form = array();
-  $form['gc_username'] = array(
+  $form['gathercontent_username'] = array(
     '#type' => 'textfield',
     '#title' => t('GatherContent User Email Address'),
     '#required' => TRUE,
-    '#default_value' => variable_get('gc_username', ''),
+    '#default_value' => variable_get('gathercontent_username', ''),
     '#description' => t('This is the email address you use to login to 
     GatherContent. Your permissions will determine what accounts, 
     projects and content is available.'),
   );
-  $form['gc_api_key'] = array(
+  $form['gathercontent_api_key'] = array(
     '#type' => 'textfield',
     '#title' => t('GatherContent API key'),
     '#required' => TRUE,
-    '#default_value' => variable_get('gc_api_key', ''),
+    '#default_value' => variable_get('gathercontent_api_key', ''),
     '#description' => l(t('Click to find out where you can generate your API Key'),
       'https://gathercontent.com/developers/authentication/'),
   );
 
   if (!$form_state['submitted']) {
-    $account = variable_get('gc_account', array());
+    $account = variable_get('gathercontent_account', array());
     if (!empty($account)) {
       $account = array_pop($account);
       $form['current_account'] = array(
@@ -94,18 +94,18 @@ function gc_authentication_form($form, &$form_state) {
 }
 
 /**
- * Submit callback for `gc_authentication_form`.
+ * Submit callback for `gathercontent_authentication_form`.
  *
  * @param array $form
  *   Array with form elements.
  * @param array $form_state
  *   Array with form values and state.
  */
-function gc_authentication_form_submit($form, &$form_state) {
+function gathercontent_authentication_form_submit($form, &$form_state) {
   if ($form_state['triggering_element']['#id'] === 'edit-submit') {
     if (!isset($form_state['values']['account'])) {
-      variable_set('gc_username', $form_state['values']['gc_username']);
-      variable_set('gc_api_key', $form_state['values']['gc_api_key']);
+      variable_set('gathercontent_username', $form_state['values']['gathercontent_username']);
+      variable_set('gathercontent_api_key', $form_state['values']['gathercontent_api_key']);
       $form_state['submitted'] = TRUE;
       $form_state['rebuild'] = TRUE;
     }
@@ -115,19 +115,19 @@ function gc_authentication_form_submit($form, &$form_state) {
       foreach ($data as $account) {
         if ($account->id === $form_state['values']['account']) {
           $account_name = $account->name;
-          variable_set('gc_urlkey', $account->slug);
+          variable_set('gathercontent_urlkey', $account->slug);
           break;
         }
       }
-      variable_set('gc_account', array($form_state['values']['account'] => $account_name));
+      variable_set('gathercontent_account', array($form_state['values']['account'] => $account_name));
       drupal_set_message(t("Credentials and project were saved."));
     }
   }
   elseif ($form_state['triggering_element']['#id'] === 'edit-reset') {
-    variable_del('gc_username');
-    variable_del('gc_api_key');
-    variable_del('gc_account');
-    variable_del('gc_urlkey');
+    variable_del('gathercontent_username');
+    variable_del('gathercontent_api_key');
+    variable_del('gathercontent_account');
+    variable_del('gathercontent_urlkey');
   }
 }
 
@@ -137,7 +137,7 @@ function gc_authentication_form_submit($form, &$form_state) {
  * @return string
  *   Content of the page.
  */
-function gc_authentication_test_page() {
+function gathercontent_authentication_test_page() {
   $acc_obj = new Account();
   $success = $acc_obj->testConnection();
 

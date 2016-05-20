@@ -9,7 +9,7 @@
   //
   // Attaches tablesorter plugin.
   //
-  Drupal.behaviors.gcTableSorter = {
+  Drupal.behaviors.gathercontentTableSorter = {
     attach: function (context) {
       // Adds custom data-date attr filter parser if tablesorter plugin is
       // available.
@@ -38,15 +38,15 @@
       //
       // Sets tablesorter plugin on tables with class tablesorter-enabled.
       //
-      $('table.tablesorter-enabled', context).once('gc-tablesorter', function () {
+      $('table.tablesorter-enabled', context).once('gathercontent-tablesorter', function () {
         var tablesorterOptions = {
           cssAsc: 'sort-down',
           cssDesc: 'sort-up',
           widgets: ['zebra']
         };
-        if ((typeof Drupal.settings.gc !== 'undefined') &&
-          (typeof Drupal.settings.gc.tablesorterOptionOverrides === 'object')) {
-          var tsOverrides = Drupal.settings.gc.tablesorterOptionOverrides;
+        if ((typeof Drupal.settings.gathercontent !== 'undefined') &&
+          (typeof Drupal.settings.gathercontent.tablesorterOptionOverrides === 'object')) {
+          var tsOverrides = Drupal.settings.gathercontent.tablesorterOptionOverrides;
           for (var attrname in tsOverrides) {
             tablesorterOptions[attrname] = tsOverrides[attrname];
           }

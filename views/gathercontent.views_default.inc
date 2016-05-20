@@ -3,12 +3,12 @@
 /**
  * Implements hook_views_default_views().
  */
-function gc_views_default_views() {
+function gathercontent_views_default_views() {
   $view = new view();
   $view->name = 'import_result_page';
   $view->description = '';
   $view->tag = 'default';
-  $view->base_table = 'gc_operation_item';
+  $view->base_table = 'gathercontent_operation_item';
   $view->human_name = 'Result page';
   $view->core = 7;
   $view->api_version = '3.0';
@@ -75,46 +75,46 @@ function gc_views_default_views() {
   $handler->display->display_options['footer']['area']['content'] = 'Template not mapped: Please check template mapping.
 Template fields mismatch: This could be because the template in GatherContent has changed and the changed template has not been updated in Drupal.';
   $handler->display->display_options['footer']['area']['format'] = 'filtered_html';
-  /* Field: GC Operation Item: GC Status Color */
+  /* Field: gathercontent Operation Item: gathercontent Status Color */
   $handler->display->display_options['fields']['item_status_color']['id'] = 'item_status_color';
-  $handler->display->display_options['fields']['item_status_color']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['item_status_color']['table'] = 'gathercontent_operation_item';
   $handler->display->display_options['fields']['item_status_color']['field'] = 'item_status_color';
-  /* Field: GC Operation Item: Operation Item Status */
+  /* Field: gathercontent Operation Item: Operation Item Status */
   $handler->display->display_options['fields']['item_status']['id'] = 'item_status';
-  $handler->display->display_options['fields']['item_status']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['item_status']['table'] = 'gathercontent_operation_item';
   $handler->display->display_options['fields']['item_status']['field'] = 'item_status';
   $handler->display->display_options['fields']['item_status']['label'] = 'Status';
-  /* Field: GC Operation Item: Operation Item Name */
+  /* Field: gathercontent Operation Item: Operation Item Name */
   $handler->display->display_options['fields']['item_name']['id'] = 'item_name';
-  $handler->display->display_options['fields']['item_name']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['item_name']['table'] = 'gathercontent_operation_item';
   $handler->display->display_options['fields']['item_name']['field'] = 'item_name';
   $handler->display->display_options['fields']['item_name']['label'] = 'Item Name';
-  /* Field: GC Operation Item: Operation Item Operation Status */
+  /* Field: gathercontent Operation Item: Operation Item Operation Status */
   $handler->display->display_options['fields']['status']['id'] = 'status';
-  $handler->display->display_options['fields']['status']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['status']['table'] = 'gathercontent_operation_item';
   $handler->display->display_options['fields']['status']['field'] = 'status';
   $handler->display->display_options['fields']['status']['label'] = 'Import Status';
-  /* Field: GC Operation Item: Operation Item Template Name */
+  /* Field: gathercontent Operation Item: Operation Item Template Name */
   $handler->display->display_options['fields']['template_name']['id'] = 'template_name';
-  $handler->display->display_options['fields']['template_name']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['template_name']['table'] = 'gathercontent_operation_item';
   $handler->display->display_options['fields']['template_name']['field'] = 'template_name';
   $handler->display->display_options['fields']['template_name']['label'] = 'GatherContent Template Name';
-  /* Field: GC Operation Item: GC Link */
-  $handler->display->display_options['fields']['gc_link']['id'] = 'gc_link';
-  $handler->display->display_options['fields']['gc_link']['table'] = 'gc_operation_item';
-  $handler->display->display_options['fields']['gc_link']['field'] = 'gc_link';
-  $handler->display->display_options['fields']['gc_link']['label'] = 'Open in GatherContent';
-  /* Field: GC Operation Item: GC Node Link */
-  $handler->display->display_options['fields']['gc_node_link']['id'] = 'gc_node_link';
-  $handler->display->display_options['fields']['gc_node_link']['table'] = 'gc_operation_item';
-  $handler->display->display_options['fields']['gc_node_link']['field'] = 'gc_node_link';
-  $handler->display->display_options['fields']['gc_node_link']['label'] = 'Open in Drupal';
-  $handler->display->display_options['fields']['gc_node_link']['empty'] = 'N/A';
-  $handler->display->display_options['fields']['gc_node_link']['empty_zero'] = TRUE;
-  $handler->display->display_options['fields']['gc_node_link']['hide_alter_empty'] = FALSE;
-  /* Contextual filter: GC Operation Item: Operation UUID */
+  /* Field: gathercontent Operation Item: gathercontent Link */
+  $handler->display->display_options['fields']['gathercontent_link']['id'] = 'gathercontent_link';
+  $handler->display->display_options['fields']['gathercontent_link']['table'] = 'gathercontent_operation_item';
+  $handler->display->display_options['fields']['gathercontent_link']['field'] = 'gathercontent_link';
+  $handler->display->display_options['fields']['gathercontent_link']['label'] = 'Open in GatherContent';
+  /* Field: gathercontent Operation Item: gathercontent Node Link */
+  $handler->display->display_options['fields']['gathercontent_node_link']['id'] = 'gathercontent_node_link';
+  $handler->display->display_options['fields']['gathercontent_node_link']['table'] = 'gathercontent_operation_item';
+  $handler->display->display_options['fields']['gathercontent_node_link']['field'] = 'gathercontent_node_link';
+  $handler->display->display_options['fields']['gathercontent_node_link']['label'] = 'Open in Drupal';
+  $handler->display->display_options['fields']['gathercontent_node_link']['empty'] = 'N/A';
+  $handler->display->display_options['fields']['gathercontent_node_link']['empty_zero'] = TRUE;
+  $handler->display->display_options['fields']['gathercontent_node_link']['hide_alter_empty'] = FALSE;
+  /* Contextual filter: gathercontent Operation Item: Operation UUID */
   $handler->display->display_options['arguments']['operation_uuid']['id'] = 'operation_uuid';
-  $handler->display->display_options['arguments']['operation_uuid']['table'] = 'gc_operation_item';
+  $handler->display->display_options['arguments']['operation_uuid']['table'] = 'gathercontent_operation_item';
   $handler->display->display_options['arguments']['operation_uuid']['field'] = 'operation_uuid';
   $handler->display->display_options['arguments']['operation_uuid']['default_action'] = 'not found';
   $handler->display->display_options['arguments']['operation_uuid']['default_argument_type'] = 'fixed';
@@ -125,50 +125,50 @@ Template fields mismatch: This could be because the template in GatherContent ha
 
   /* Display: Page */
   $handler = $view->new_display('page', 'Page', 'page');
-  $handler->display->display_options['path'] = 'admin/config/gc/import/result/%';
+  $handler->display->display_options['path'] = 'admin/config/gathercontent/import/result/%';
 
   /* Display: Page */
   $handler = $view->new_display('page', 'Page', 'page_1');
   $handler->display->display_options['defaults']['title'] = FALSE;
   $handler->display->display_options['title'] = 'Update result page';
   $handler->display->display_options['defaults']['fields'] = FALSE;
-  /* Field: GC Operation Item: GC Status Color */
+  /* Field: gathercontent Operation Item: gathercontent Status Color */
   $handler->display->display_options['fields']['item_status_color']['id'] = 'item_status_color';
-  $handler->display->display_options['fields']['item_status_color']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['item_status_color']['table'] = 'gathercontent_operation_item';
   $handler->display->display_options['fields']['item_status_color']['field'] = 'item_status_color';
-  /* Field: GC Operation Item: Operation Item Status */
+  /* Field: gathercontent Operation Item: Operation Item Status */
   $handler->display->display_options['fields']['item_status']['id'] = 'item_status';
-  $handler->display->display_options['fields']['item_status']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['item_status']['table'] = 'gathercontent_operation_item';
   $handler->display->display_options['fields']['item_status']['field'] = 'item_status';
   $handler->display->display_options['fields']['item_status']['label'] = 'Status';
-  /* Field: GC Operation Item: Operation Item Name */
+  /* Field: gathercontent Operation Item: Operation Item Name */
   $handler->display->display_options['fields']['item_name']['id'] = 'item_name';
-  $handler->display->display_options['fields']['item_name']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['item_name']['table'] = 'gathercontent_operation_item';
   $handler->display->display_options['fields']['item_name']['field'] = 'item_name';
   $handler->display->display_options['fields']['item_name']['label'] = 'Item Name';
-  /* Field: GC Operation Item: Operation Item Operation Status */
+  /* Field: gathercontent Operation Item: Operation Item Operation Status */
   $handler->display->display_options['fields']['status']['id'] = 'status';
-  $handler->display->display_options['fields']['status']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['status']['table'] = 'gathercontent_operation_item';
   $handler->display->display_options['fields']['status']['field'] = 'status';
   $handler->display->display_options['fields']['status']['label'] = 'Update Status';
-  /* Field: GC Operation Item: Operation Item Template Name */
+  /* Field: gathercontent Operation Item: Operation Item Template Name */
   $handler->display->display_options['fields']['template_name']['id'] = 'template_name';
-  $handler->display->display_options['fields']['template_name']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['template_name']['table'] = 'gathercontent_operation_item';
   $handler->display->display_options['fields']['template_name']['field'] = 'template_name';
   $handler->display->display_options['fields']['template_name']['label'] = 'GatherContent Template Name';
-  /* Field: GC Operation Item: GC Link */
-  $handler->display->display_options['fields']['gc_link']['id'] = 'gc_link';
-  $handler->display->display_options['fields']['gc_link']['table'] = 'gc_operation_item';
-  $handler->display->display_options['fields']['gc_link']['field'] = 'gc_link';
-  $handler->display->display_options['fields']['gc_link']['label'] = 'Open in GatherContent';
-  /* Field: GC Operation Item: GC Node Link */
-  $handler->display->display_options['fields']['gc_node_link']['id'] = 'gc_node_link';
-  $handler->display->display_options['fields']['gc_node_link']['table'] = 'gc_operation_item';
-  $handler->display->display_options['fields']['gc_node_link']['field'] = 'gc_node_link';
-  $handler->display->display_options['fields']['gc_node_link']['label'] = 'Open in Drupal';
-  $handler->display->display_options['fields']['gc_node_link']['empty'] = 'N/A';
-  $handler->display->display_options['fields']['gc_node_link']['empty_zero'] = TRUE;
-  $handler->display->display_options['fields']['gc_node_link']['hide_alter_empty'] = FALSE;
+  /* Field: gathercontent Operation Item: gathercontent Link */
+  $handler->display->display_options['fields']['gathercontent_link']['id'] = 'gathercontent_link';
+  $handler->display->display_options['fields']['gathercontent_link']['table'] = 'gathercontent_operation_item';
+  $handler->display->display_options['fields']['gathercontent_link']['field'] = 'gathercontent_link';
+  $handler->display->display_options['fields']['gathercontent_link']['label'] = 'Open in GatherContent';
+  /* Field: gathercontent Operation Item: gathercontent Node Link */
+  $handler->display->display_options['fields']['gathercontent_node_link']['id'] = 'gathercontent_node_link';
+  $handler->display->display_options['fields']['gathercontent_node_link']['table'] = 'gathercontent_operation_item';
+  $handler->display->display_options['fields']['gathercontent_node_link']['field'] = 'gathercontent_node_link';
+  $handler->display->display_options['fields']['gathercontent_node_link']['label'] = 'Open in Drupal';
+  $handler->display->display_options['fields']['gathercontent_node_link']['empty'] = 'N/A';
+  $handler->display->display_options['fields']['gathercontent_node_link']['empty_zero'] = TRUE;
+  $handler->display->display_options['fields']['gathercontent_node_link']['hide_alter_empty'] = FALSE;
   $handler->display->display_options['path'] = 'admin/content/update/result/%';
 
   /* Display: Page 2 */
@@ -176,43 +176,43 @@ Template fields mismatch: This could be because the template in GatherContent ha
   $handler->display->display_options['defaults']['title'] = FALSE;
   $handler->display->display_options['title'] = 'Upload result page';
   $handler->display->display_options['defaults']['fields'] = FALSE;
-  /* Field: GC Operation Item: GC Status Color */
+  /* Field: gathercontent Operation Item: gathercontent Status Color */
   $handler->display->display_options['fields']['item_status_color']['id'] = 'item_status_color';
-  $handler->display->display_options['fields']['item_status_color']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['item_status_color']['table'] = 'gathercontent_operation_item';
   $handler->display->display_options['fields']['item_status_color']['field'] = 'item_status_color';
-  /* Field: GC Operation Item: Operation Item Status */
+  /* Field: gathercontent Operation Item: Operation Item Status */
   $handler->display->display_options['fields']['item_status']['id'] = 'item_status';
-  $handler->display->display_options['fields']['item_status']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['item_status']['table'] = 'gathercontent_operation_item';
   $handler->display->display_options['fields']['item_status']['field'] = 'item_status';
   $handler->display->display_options['fields']['item_status']['label'] = 'Status';
-  /* Field: GC Operation Item: Operation Item Name */
+  /* Field: gathercontent Operation Item: Operation Item Name */
   $handler->display->display_options['fields']['item_name']['id'] = 'item_name';
-  $handler->display->display_options['fields']['item_name']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['item_name']['table'] = 'gathercontent_operation_item';
   $handler->display->display_options['fields']['item_name']['field'] = 'item_name';
   $handler->display->display_options['fields']['item_name']['label'] = 'Item Name';
-  /* Field: GC Operation Item: Operation Item Operation Status */
+  /* Field: gathercontent Operation Item: Operation Item Operation Status */
   $handler->display->display_options['fields']['status']['id'] = 'status';
-  $handler->display->display_options['fields']['status']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['status']['table'] = 'gathercontent_operation_item';
   $handler->display->display_options['fields']['status']['field'] = 'status';
   $handler->display->display_options['fields']['status']['label'] = 'Upload Status';
-  /* Field: GC Operation Item: Operation Item Template Name */
+  /* Field: gathercontent Operation Item: Operation Item Template Name */
   $handler->display->display_options['fields']['template_name']['id'] = 'template_name';
-  $handler->display->display_options['fields']['template_name']['table'] = 'gc_operation_item';
+  $handler->display->display_options['fields']['template_name']['table'] = 'gathercontent_operation_item';
   $handler->display->display_options['fields']['template_name']['field'] = 'template_name';
   $handler->display->display_options['fields']['template_name']['label'] = 'GatherContent Template Name';
-  /* Field: GC Operation Item: GC Link */
-  $handler->display->display_options['fields']['gc_link']['id'] = 'gc_link';
-  $handler->display->display_options['fields']['gc_link']['table'] = 'gc_operation_item';
-  $handler->display->display_options['fields']['gc_link']['field'] = 'gc_link';
-  $handler->display->display_options['fields']['gc_link']['label'] = 'Open in GatherContent';
-  /* Field: GC Operation Item: GC Node Link */
-  $handler->display->display_options['fields']['gc_node_link']['id'] = 'gc_node_link';
-  $handler->display->display_options['fields']['gc_node_link']['table'] = 'gc_operation_item';
-  $handler->display->display_options['fields']['gc_node_link']['field'] = 'gc_node_link';
-  $handler->display->display_options['fields']['gc_node_link']['label'] = 'Open in Drupal';
-  $handler->display->display_options['fields']['gc_node_link']['empty'] = 'N/A';
-  $handler->display->display_options['fields']['gc_node_link']['empty_zero'] = TRUE;
-  $handler->display->display_options['fields']['gc_node_link']['hide_alter_empty'] = FALSE;
+  /* Field: gathercontent Operation Item: gathercontent Link */
+  $handler->display->display_options['fields']['gathercontent_link']['id'] = 'gathercontent_link';
+  $handler->display->display_options['fields']['gathercontent_link']['table'] = 'gathercontent_operation_item';
+  $handler->display->display_options['fields']['gathercontent_link']['field'] = 'gathercontent_link';
+  $handler->display->display_options['fields']['gathercontent_link']['label'] = 'Open in GatherContent';
+  /* Field: gathercontent Operation Item: gathercontent Node Link */
+  $handler->display->display_options['fields']['gathercontent_node_link']['id'] = 'gathercontent_node_link';
+  $handler->display->display_options['fields']['gathercontent_node_link']['table'] = 'gathercontent_operation_item';
+  $handler->display->display_options['fields']['gathercontent_node_link']['field'] = 'gathercontent_node_link';
+  $handler->display->display_options['fields']['gathercontent_node_link']['label'] = 'Open in Drupal';
+  $handler->display->display_options['fields']['gathercontent_node_link']['empty'] = 'N/A';
+  $handler->display->display_options['fields']['gathercontent_node_link']['empty_zero'] = TRUE;
+  $handler->display->display_options['fields']['gathercontent_node_link']['hide_alter_empty'] = FALSE;
   $handler->display->display_options['path'] = 'admin/content/upload/result/%';
   $translatables['import_result_page'] = array(
     t('Master'),
@@ -248,8 +248,8 @@ Template fields mismatch: This could be because the template in GatherContent ha
   $view = new view();
   $view->name = 'mapping';
   $view->description = '';
-  $view->tag = 'gc';
-  $view->base_table = 'gc_mapping';
+  $view->tag = 'gathercontent';
+  $view->base_table = 'gathercontent_mapping';
   $view->human_name = 'Manage Mappings';
   $view->core = 7;
   $view->api_version = '3.0';
@@ -267,24 +267,24 @@ Template fields mismatch: This could be because the template in GatherContent ha
   $handler->display->display_options['pager']['options']['items_per_page'] = '10';
   $handler->display->display_options['style_plugin'] = 'table';
   $handler->display->display_options['style_options']['columns'] = array(
-    'gc_project' => 'gc_project',
-    'gc_template' => 'gc_template',
+    'gathercontent_project' => 'gathercontent_project',
+    'gathercontent_template' => 'gathercontent_template',
     'content_type_name' => 'content_type_name',
-    'gc_updated' => 'gc_updated',
+    'gathercontent_updated' => 'gathercontent_updated',
     'updated_drupal' => 'updated_drupal',
     'edit_mapping' => 'edit_mapping',
     'delete_mapping' => 'edit_mapping',
   );
   $handler->display->display_options['style_options']['default'] = '-1';
   $handler->display->display_options['style_options']['info'] = array(
-    'gc_project' => array(
+    'gathercontent_project' => array(
       'sortable' => 1,
       'default_sort_order' => 'asc',
       'align' => '',
       'separator' => '',
       'empty_column' => 0,
     ),
-    'gc_template' => array(
+    'gathercontent_template' => array(
       'sortable' => 1,
       'default_sort_order' => 'asc',
       'align' => '',
@@ -298,7 +298,7 @@ Template fields mismatch: This could be because the template in GatherContent ha
       'separator' => '',
       'empty_column' => 0,
     ),
-    'gc_updated' => array(
+    'gathercontent_updated' => array(
       'sortable' => 0,
       'default_sort_order' => 'asc',
       'align' => '',
@@ -332,32 +332,32 @@ Template fields mismatch: This could be because the template in GatherContent ha
   $handler->display->display_options['empty']['area']['empty'] = TRUE;
   $handler->display->display_options['empty']['area']['content'] = 'No mappings were created.';
   $handler->display->display_options['empty']['area']['format'] = 'plain_text';
-  /* Field: Mapping: GC Project */
-  $handler->display->display_options['fields']['gc_project']['id'] = 'gc_project';
-  $handler->display->display_options['fields']['gc_project']['table'] = 'gc_mapping';
-  $handler->display->display_options['fields']['gc_project']['field'] = 'gc_project';
-  $handler->display->display_options['fields']['gc_project']['label'] = 'Project';
-  /* Field: Mapping: GC Template */
-  $handler->display->display_options['fields']['gc_template']['id'] = 'gc_template';
-  $handler->display->display_options['fields']['gc_template']['table'] = 'gc_mapping';
-  $handler->display->display_options['fields']['gc_template']['field'] = 'gc_template';
-  $handler->display->display_options['fields']['gc_template']['label'] = 'GatherContent Template';
+  /* Field: Mapping: gathercontent Project */
+  $handler->display->display_options['fields']['gathercontent_project']['id'] = 'gathercontent_project';
+  $handler->display->display_options['fields']['gathercontent_project']['table'] = 'gathercontent_mapping';
+  $handler->display->display_options['fields']['gathercontent_project']['field'] = 'gathercontent_project';
+  $handler->display->display_options['fields']['gathercontent_project']['label'] = 'Project';
+  /* Field: Mapping: gathercontent Template */
+  $handler->display->display_options['fields']['gathercontent_template']['id'] = 'gathercontent_template';
+  $handler->display->display_options['fields']['gathercontent_template']['table'] = 'gathercontent_mapping';
+  $handler->display->display_options['fields']['gathercontent_template']['field'] = 'gathercontent_template';
+  $handler->display->display_options['fields']['gathercontent_template']['label'] = 'GatherContent Template';
   /* Field: Mapping: Content type name */
   $handler->display->display_options['fields']['content_type_name']['id'] = 'content_type_name';
-  $handler->display->display_options['fields']['content_type_name']['table'] = 'gc_mapping';
+  $handler->display->display_options['fields']['content_type_name']['table'] = 'gathercontent_mapping';
   $handler->display->display_options['fields']['content_type_name']['field'] = 'content_type_name';
   $handler->display->display_options['fields']['content_type_name']['label'] = 'Content type';
   $handler->display->display_options['fields']['content_type_name']['empty'] = 'None';
   /* Field: Mapping: Last updated in GatherContent */
-  $handler->display->display_options['fields']['gc_updated']['id'] = 'gc_updated';
-  $handler->display->display_options['fields']['gc_updated']['table'] = 'gc_mapping';
-  $handler->display->display_options['fields']['gc_updated']['field'] = 'gc_updated';
-  $handler->display->display_options['fields']['gc_updated']['date_format'] = 'custom';
-  $handler->display->display_options['fields']['gc_updated']['custom_date_format'] = 'F d, Y - H:i';
-  $handler->display->display_options['fields']['gc_updated']['second_date_format'] = 'long';
+  $handler->display->display_options['fields']['gathercontent_updated']['id'] = 'gathercontent_updated';
+  $handler->display->display_options['fields']['gathercontent_updated']['table'] = 'gathercontent_mapping';
+  $handler->display->display_options['fields']['gathercontent_updated']['field'] = 'gathercontent_updated';
+  $handler->display->display_options['fields']['gathercontent_updated']['date_format'] = 'custom';
+  $handler->display->display_options['fields']['gathercontent_updated']['custom_date_format'] = 'F d, Y - H:i';
+  $handler->display->display_options['fields']['gathercontent_updated']['second_date_format'] = 'long';
   /* Field: Mapping: Updated (Drupal) */
   $handler->display->display_options['fields']['updated_drupal']['id'] = 'updated_drupal';
-  $handler->display->display_options['fields']['updated_drupal']['table'] = 'gc_mapping';
+  $handler->display->display_options['fields']['updated_drupal']['table'] = 'gathercontent_mapping';
   $handler->display->display_options['fields']['updated_drupal']['field'] = 'updated_drupal';
   $handler->display->display_options['fields']['updated_drupal']['empty'] = 'Never';
   $handler->display->display_options['fields']['updated_drupal']['date_format'] = 'custom';
@@ -365,19 +365,19 @@ Template fields mismatch: This could be because the template in GatherContent ha
   $handler->display->display_options['fields']['updated_drupal']['second_date_format'] = 'long';
   /* Field: Mapping: Edit link */
   $handler->display->display_options['fields']['edit_mapping']['id'] = 'edit_mapping';
-  $handler->display->display_options['fields']['edit_mapping']['table'] = 'gc_mapping';
+  $handler->display->display_options['fields']['edit_mapping']['table'] = 'gathercontent_mapping';
   $handler->display->display_options['fields']['edit_mapping']['field'] = 'edit_mapping';
   $handler->display->display_options['fields']['edit_mapping']['label'] = 'Operations';
   /* Field: Mapping: Delete link */
   $handler->display->display_options['fields']['delete_mapping']['id'] = 'delete_mapping';
-  $handler->display->display_options['fields']['delete_mapping']['table'] = 'gc_mapping';
+  $handler->display->display_options['fields']['delete_mapping']['table'] = 'gathercontent_mapping';
   $handler->display->display_options['fields']['delete_mapping']['field'] = 'delete_mapping';
   $handler->display->display_options['fields']['delete_mapping']['label'] = '';
   $handler->display->display_options['fields']['delete_mapping']['element_label_colon'] = FALSE;
 
   /* Display: Page */
   $handler = $view->new_display('page', 'Page', 'page');
-  $handler->display->display_options['path'] = 'admin/config/gc/mapping';
+  $handler->display->display_options['path'] = 'admin/config/gathercontent/mapping';
   $handler->display->display_options['menu']['type'] = 'normal';
   $handler->display->display_options['menu']['title'] = 'Manage Mappings';
   $handler->display->display_options['menu']['weight'] = '0';
@@ -438,9 +438,9 @@ Template fields mismatch: This could be because the template in GatherContent ha
   $handler->display->display_options['pager']['options']['items_per_page'] = '50';
   $handler->display->display_options['style_plugin'] = 'table';
   /* Relationship: Content: Mapping used for GatherContent. */
-  $handler->display->display_options['relationships']['gc_mapping_id']['id'] = 'gc_mapping_id';
-  $handler->display->display_options['relationships']['gc_mapping_id']['table'] = 'node';
-  $handler->display->display_options['relationships']['gc_mapping_id']['field'] = 'gc_mapping_id';
+  $handler->display->display_options['relationships']['gathercontent_mapping_id']['id'] = 'gathercontent_mapping_id';
+  $handler->display->display_options['relationships']['gathercontent_mapping_id']['table'] = 'node';
+  $handler->display->display_options['relationships']['gathercontent_mapping_id']['field'] = 'gathercontent_mapping_id';
   /* Field: Bulk operations: Content */
   $handler->display->display_options['fields']['views_bulk_operations']['id'] = 'views_bulk_operations';
   $handler->display->display_options['fields']['views_bulk_operations']['table'] = 'node';
@@ -451,7 +451,7 @@ Template fields mismatch: This could be because the template in GatherContent ha
   $handler->display->display_options['fields']['views_bulk_operations']['vbo_settings']['force_single'] = 0;
   $handler->display->display_options['fields']['views_bulk_operations']['vbo_settings']['entity_load_capacity'] = '10';
   $handler->display->display_options['fields']['views_bulk_operations']['vbo_operations'] = array(
-    'action::gc_update' => array(
+    'action::gathercontent_update' => array(
       'selected' => 1,
       'postpone_processing' => 0,
       'skip_confirmation' => 0,
@@ -459,17 +459,17 @@ Template fields mismatch: This could be because the template in GatherContent ha
       'label' => '',
     ),
   );
-  /* Field: Content: GC Status */
-  $handler->display->display_options['fields']['gc_status']['id'] = 'gc_status';
-  $handler->display->display_options['fields']['gc_status']['table'] = 'node';
-  $handler->display->display_options['fields']['gc_status']['field'] = 'gc_status';
-  $handler->display->display_options['fields']['gc_status']['label'] = 'Status';
-  /* Field: Mapping: GC Project */
-  $handler->display->display_options['fields']['gc_project']['id'] = 'gc_project';
-  $handler->display->display_options['fields']['gc_project']['table'] = 'gc_mapping';
-  $handler->display->display_options['fields']['gc_project']['field'] = 'gc_project';
-  $handler->display->display_options['fields']['gc_project']['relationship'] = 'gc_mapping_id';
-  $handler->display->display_options['fields']['gc_project']['label'] = 'GatherContent Project';
+  /* Field: Content: gathercontent Status */
+  $handler->display->display_options['fields']['gathercontent_status']['id'] = 'gathercontent_status';
+  $handler->display->display_options['fields']['gathercontent_status']['table'] = 'node';
+  $handler->display->display_options['fields']['gathercontent_status']['field'] = 'gathercontent_status';
+  $handler->display->display_options['fields']['gathercontent_status']['label'] = 'Status';
+  /* Field: Mapping: gathercontent Project */
+  $handler->display->display_options['fields']['gathercontent_project']['id'] = 'gathercontent_project';
+  $handler->display->display_options['fields']['gathercontent_project']['table'] = 'gathercontent_mapping';
+  $handler->display->display_options['fields']['gathercontent_project']['field'] = 'gathercontent_project';
+  $handler->display->display_options['fields']['gathercontent_project']['relationship'] = 'gathercontent_mapping_id';
+  $handler->display->display_options['fields']['gathercontent_project']['label'] = 'GatherContent Project';
   /* Field: Content: Title */
   $handler->display->display_options['fields']['title']['id'] = 'title';
   $handler->display->display_options['fields']['title']['table'] = 'node';
@@ -478,11 +478,11 @@ Template fields mismatch: This could be because the template in GatherContent ha
   $handler->display->display_options['fields']['title']['alter']['word_boundary'] = FALSE;
   $handler->display->display_options['fields']['title']['alter']['ellipsis'] = FALSE;
   $handler->display->display_options['fields']['title']['link_to_node'] = FALSE;
-  /* Field: Content: GC Title */
-  $handler->display->display_options['fields']['gc_title']['id'] = 'gc_title';
-  $handler->display->display_options['fields']['gc_title']['table'] = 'node';
-  $handler->display->display_options['fields']['gc_title']['field'] = 'gc_title';
-  $handler->display->display_options['fields']['gc_title']['label'] = 'GatherContent Item name';
+  /* Field: Content: gathercontent Title */
+  $handler->display->display_options['fields']['gathercontent_title']['id'] = 'gathercontent_title';
+  $handler->display->display_options['fields']['gathercontent_title']['table'] = 'node';
+  $handler->display->display_options['fields']['gathercontent_title']['field'] = 'gathercontent_title';
+  $handler->display->display_options['fields']['gathercontent_title']['label'] = 'GatherContent Item name';
   /* Field: Content: Updated date */
   $handler->display->display_options['fields']['changed']['id'] = 'changed';
   $handler->display->display_options['fields']['changed']['table'] = 'node';
@@ -492,34 +492,34 @@ Template fields mismatch: This could be because the template in GatherContent ha
   $handler->display->display_options['fields']['changed']['custom_date_format'] = 'F d, Y - H:i';
   $handler->display->display_options['fields']['changed']['second_date_format'] = 'long';
   /* Field: Content: Last updated in GatherContent */
-  $handler->display->display_options['fields']['gc_updated1']['id'] = 'gc_updated1';
-  $handler->display->display_options['fields']['gc_updated1']['table'] = 'node';
-  $handler->display->display_options['fields']['gc_updated1']['field'] = 'gc_updated1';
-  $handler->display->display_options['fields']['gc_updated1']['date_format'] = 'custom';
-  $handler->display->display_options['fields']['gc_updated1']['custom_date_format'] = 'F d, Y - H:i';
-  $handler->display->display_options['fields']['gc_updated1']['second_date_format'] = 'long';
+  $handler->display->display_options['fields']['gathercontent_updated1']['id'] = 'gathercontent_updated1';
+  $handler->display->display_options['fields']['gathercontent_updated1']['table'] = 'node';
+  $handler->display->display_options['fields']['gathercontent_updated1']['field'] = 'gathercontent_updated1';
+  $handler->display->display_options['fields']['gathercontent_updated1']['date_format'] = 'custom';
+  $handler->display->display_options['fields']['gathercontent_updated1']['custom_date_format'] = 'F d, Y - H:i';
+  $handler->display->display_options['fields']['gathercontent_updated1']['second_date_format'] = 'long';
   /* Field: Mapping: Content type name */
   $handler->display->display_options['fields']['content_type_name']['id'] = 'content_type_name';
-  $handler->display->display_options['fields']['content_type_name']['table'] = 'gc_mapping';
+  $handler->display->display_options['fields']['content_type_name']['table'] = 'gathercontent_mapping';
   $handler->display->display_options['fields']['content_type_name']['field'] = 'content_type_name';
-  $handler->display->display_options['fields']['content_type_name']['relationship'] = 'gc_mapping_id';
-  /* Field: Mapping: GC Template */
-  $handler->display->display_options['fields']['gc_template']['id'] = 'gc_template';
-  $handler->display->display_options['fields']['gc_template']['table'] = 'gc_mapping';
-  $handler->display->display_options['fields']['gc_template']['field'] = 'gc_template';
-  $handler->display->display_options['fields']['gc_template']['relationship'] = 'gc_mapping_id';
-  $handler->display->display_options['fields']['gc_template']['label'] = 'GatherContent Template';
+  $handler->display->display_options['fields']['content_type_name']['relationship'] = 'gathercontent_mapping_id';
+  /* Field: Mapping: gathercontent Template */
+  $handler->display->display_options['fields']['gathercontent_template']['id'] = 'gathercontent_template';
+  $handler->display->display_options['fields']['gathercontent_template']['table'] = 'gathercontent_mapping';
+  $handler->display->display_options['fields']['gathercontent_template']['field'] = 'gathercontent_template';
+  $handler->display->display_options['fields']['gathercontent_template']['relationship'] = 'gathercontent_mapping_id';
+  $handler->display->display_options['fields']['gathercontent_template']['label'] = 'GatherContent Template';
   /* Field: Content: Link */
   $handler->display->display_options['fields']['view_node']['id'] = 'view_node';
   $handler->display->display_options['fields']['view_node']['table'] = 'views_entity_node';
   $handler->display->display_options['fields']['view_node']['field'] = 'view_node';
   $handler->display->display_options['fields']['view_node']['label'] = 'Open in Drupal';
   $handler->display->display_options['fields']['view_node']['text'] = 'Open';
-  /* Field: Content: GC Link */
-  $handler->display->display_options['fields']['gc_link']['id'] = 'gc_link';
-  $handler->display->display_options['fields']['gc_link']['table'] = 'node';
-  $handler->display->display_options['fields']['gc_link']['field'] = 'gc_link';
-  $handler->display->display_options['fields']['gc_link']['label'] = 'Open in GatherContent';
+  /* Field: Content: gathercontent Link */
+  $handler->display->display_options['fields']['gathercontent_link']['id'] = 'gathercontent_link';
+  $handler->display->display_options['fields']['gathercontent_link']['table'] = 'node';
+  $handler->display->display_options['fields']['gathercontent_link']['field'] = 'gathercontent_link';
+  $handler->display->display_options['fields']['gathercontent_link']['label'] = 'Open in GatherContent';
   /* Sort criterion: Content: Post date */
   $handler->display->display_options['sorts']['created']['id'] = 'created';
   $handler->display->display_options['sorts']['created']['table'] = 'node';
@@ -532,32 +532,32 @@ Template fields mismatch: This could be because the template in GatherContent ha
   $handler->display->display_options['filters']['status']['value'] = 1;
   $handler->display->display_options['filters']['status']['group'] = 1;
   $handler->display->display_options['filters']['status']['expose']['operator'] = FALSE;
-  /* Filter criterion: Mapping: GC Project */
-  $handler->display->display_options['filters']['gc_project']['id'] = 'gc_project';
-  $handler->display->display_options['filters']['gc_project']['table'] = 'gc_mapping';
-  $handler->display->display_options['filters']['gc_project']['field'] = 'gc_project';
-  $handler->display->display_options['filters']['gc_project']['relationship'] = 'gc_mapping_id';
-  $handler->display->display_options['filters']['gc_project']['exposed'] = TRUE;
-  $handler->display->display_options['filters']['gc_project']['expose']['operator_id'] = 'gc_project_op';
-  $handler->display->display_options['filters']['gc_project']['expose']['label'] = 'GatherContent Project';
-  $handler->display->display_options['filters']['gc_project']['expose']['operator'] = 'gc_project_op';
-  $handler->display->display_options['filters']['gc_project']['expose']['identifier'] = 'gc_project';
-  $handler->display->display_options['filters']['gc_project']['expose']['remember_roles'] = array(
+  /* Filter criterion: Mapping: gathercontent Project */
+  $handler->display->display_options['filters']['gathercontent_project']['id'] = 'gathercontent_project';
+  $handler->display->display_options['filters']['gathercontent_project']['table'] = 'gathercontent_mapping';
+  $handler->display->display_options['filters']['gathercontent_project']['field'] = 'gathercontent_project';
+  $handler->display->display_options['filters']['gathercontent_project']['relationship'] = 'gathercontent_mapping_id';
+  $handler->display->display_options['filters']['gathercontent_project']['exposed'] = TRUE;
+  $handler->display->display_options['filters']['gathercontent_project']['expose']['operator_id'] = 'gathercontent_project_op';
+  $handler->display->display_options['filters']['gathercontent_project']['expose']['label'] = 'GatherContent Project';
+  $handler->display->display_options['filters']['gathercontent_project']['expose']['operator'] = 'gathercontent_project_op';
+  $handler->display->display_options['filters']['gathercontent_project']['expose']['identifier'] = 'gathercontent_project';
+  $handler->display->display_options['filters']['gathercontent_project']['expose']['remember_roles'] = array(
     2 => '2',
     1 => 0,
     3 => 0,
   );
-  /* Filter criterion: Mapping: GC Template */
-  $handler->display->display_options['filters']['gc_template']['id'] = 'gc_template';
-  $handler->display->display_options['filters']['gc_template']['table'] = 'gc_mapping';
-  $handler->display->display_options['filters']['gc_template']['field'] = 'gc_template';
-  $handler->display->display_options['filters']['gc_template']['relationship'] = 'gc_mapping_id';
-  $handler->display->display_options['filters']['gc_template']['exposed'] = TRUE;
-  $handler->display->display_options['filters']['gc_template']['expose']['operator_id'] = 'gc_template_op';
-  $handler->display->display_options['filters']['gc_template']['expose']['label'] = 'GatherContent Template';
-  $handler->display->display_options['filters']['gc_template']['expose']['operator'] = 'gc_template_op';
-  $handler->display->display_options['filters']['gc_template']['expose']['identifier'] = 'gc_template';
-  $handler->display->display_options['filters']['gc_template']['expose']['remember_roles'] = array(
+  /* Filter criterion: Mapping: gathercontent Template */
+  $handler->display->display_options['filters']['gathercontent_template']['id'] = 'gathercontent_template';
+  $handler->display->display_options['filters']['gathercontent_template']['table'] = 'gathercontent_mapping';
+  $handler->display->display_options['filters']['gathercontent_template']['field'] = 'gathercontent_template';
+  $handler->display->display_options['filters']['gathercontent_template']['relationship'] = 'gathercontent_mapping_id';
+  $handler->display->display_options['filters']['gathercontent_template']['exposed'] = TRUE;
+  $handler->display->display_options['filters']['gathercontent_template']['expose']['operator_id'] = 'gathercontent_template_op';
+  $handler->display->display_options['filters']['gathercontent_template']['expose']['label'] = 'GatherContent Template';
+  $handler->display->display_options['filters']['gathercontent_template']['expose']['operator'] = 'gathercontent_template_op';
+  $handler->display->display_options['filters']['gathercontent_template']['expose']['identifier'] = 'gathercontent_template';
+  $handler->display->display_options['filters']['gathercontent_template']['expose']['remember_roles'] = array(
     2 => '2',
     1 => 0,
     3 => 0,
@@ -579,9 +579,9 @@ Template fields mismatch: This could be because the template in GatherContent ha
   );
   /* Filter criterion: Mapping: Mapping ID */
   $handler->display->display_options['filters']['id']['id'] = 'id';
-  $handler->display->display_options['filters']['id']['table'] = 'gc_mapping';
+  $handler->display->display_options['filters']['id']['table'] = 'gathercontent_mapping';
   $handler->display->display_options['filters']['id']['field'] = 'id';
-  $handler->display->display_options['filters']['id']['relationship'] = 'gc_mapping_id';
+  $handler->display->display_options['filters']['id']['relationship'] = 'gathercontent_mapping_id';
   $handler->display->display_options['filters']['id']['operator'] = 'not empty';
 
   /* Display: Page */
@@ -600,17 +600,17 @@ Template fields mismatch: This could be because the template in GatherContent ha
   $handler = $view->new_display('block', 'Block', 'block_1');
   $handler->display->display_options['defaults']['title'] = FALSE;
   $handler->display->display_options['defaults']['fields'] = FALSE;
-  /* Field: Content: GC Status */
-  $handler->display->display_options['fields']['gc_status']['id'] = 'gc_status';
-  $handler->display->display_options['fields']['gc_status']['table'] = 'node';
-  $handler->display->display_options['fields']['gc_status']['field'] = 'gc_status';
-  $handler->display->display_options['fields']['gc_status']['label'] = 'Status';
-  /* Field: Mapping: GC Project */
-  $handler->display->display_options['fields']['gc_project']['id'] = 'gc_project';
-  $handler->display->display_options['fields']['gc_project']['table'] = 'gc_mapping';
-  $handler->display->display_options['fields']['gc_project']['field'] = 'gc_project';
-  $handler->display->display_options['fields']['gc_project']['relationship'] = 'gc_mapping_id';
-  $handler->display->display_options['fields']['gc_project']['label'] = 'GatherContent Project';
+  /* Field: Content: gathercontent Status */
+  $handler->display->display_options['fields']['gathercontent_status']['id'] = 'gathercontent_status';
+  $handler->display->display_options['fields']['gathercontent_status']['table'] = 'node';
+  $handler->display->display_options['fields']['gathercontent_status']['field'] = 'gathercontent_status';
+  $handler->display->display_options['fields']['gathercontent_status']['label'] = 'Status';
+  /* Field: Mapping: gathercontent Project */
+  $handler->display->display_options['fields']['gathercontent_project']['id'] = 'gathercontent_project';
+  $handler->display->display_options['fields']['gathercontent_project']['table'] = 'gathercontent_mapping';
+  $handler->display->display_options['fields']['gathercontent_project']['field'] = 'gathercontent_project';
+  $handler->display->display_options['fields']['gathercontent_project']['relationship'] = 'gathercontent_mapping_id';
+  $handler->display->display_options['fields']['gathercontent_project']['label'] = 'GatherContent Project';
   /* Field: Content: Title */
   $handler->display->display_options['fields']['title']['id'] = 'title';
   $handler->display->display_options['fields']['title']['table'] = 'node';
@@ -619,11 +619,11 @@ Template fields mismatch: This could be because the template in GatherContent ha
   $handler->display->display_options['fields']['title']['alter']['word_boundary'] = FALSE;
   $handler->display->display_options['fields']['title']['alter']['ellipsis'] = FALSE;
   $handler->display->display_options['fields']['title']['link_to_node'] = FALSE;
-  /* Field: Content: GC Title */
-  $handler->display->display_options['fields']['gc_title']['id'] = 'gc_title';
-  $handler->display->display_options['fields']['gc_title']['table'] = 'node';
-  $handler->display->display_options['fields']['gc_title']['field'] = 'gc_title';
-  $handler->display->display_options['fields']['gc_title']['label'] = 'GatherContent Item name';
+  /* Field: Content: gathercontent Title */
+  $handler->display->display_options['fields']['gathercontent_title']['id'] = 'gathercontent_title';
+  $handler->display->display_options['fields']['gathercontent_title']['table'] = 'node';
+  $handler->display->display_options['fields']['gathercontent_title']['field'] = 'gathercontent_title';
+  $handler->display->display_options['fields']['gathercontent_title']['label'] = 'GatherContent Item name';
   /* Field: Content: Updated date */
   $handler->display->display_options['fields']['changed']['id'] = 'changed';
   $handler->display->display_options['fields']['changed']['table'] = 'node';
@@ -633,34 +633,34 @@ Template fields mismatch: This could be because the template in GatherContent ha
   $handler->display->display_options['fields']['changed']['custom_date_format'] = 'F d, Y - H:i';
   $handler->display->display_options['fields']['changed']['second_date_format'] = 'long';
   /* Field: Content: Last updated in GatherContent */
-  $handler->display->display_options['fields']['gc_updated1']['id'] = 'gc_updated1';
-  $handler->display->display_options['fields']['gc_updated1']['table'] = 'node';
-  $handler->display->display_options['fields']['gc_updated1']['field'] = 'gc_updated1';
-  $handler->display->display_options['fields']['gc_updated1']['date_format'] = 'custom';
-  $handler->display->display_options['fields']['gc_updated1']['custom_date_format'] = 'F d, Y - H:i';
-  $handler->display->display_options['fields']['gc_updated1']['second_date_format'] = 'long';
+  $handler->display->display_options['fields']['gathercontent_updated1']['id'] = 'gathercontent_updated1';
+  $handler->display->display_options['fields']['gathercontent_updated1']['table'] = 'node';
+  $handler->display->display_options['fields']['gathercontent_updated1']['field'] = 'gathercontent_updated1';
+  $handler->display->display_options['fields']['gathercontent_updated1']['date_format'] = 'custom';
+  $handler->display->display_options['fields']['gathercontent_updated1']['custom_date_format'] = 'F d, Y - H:i';
+  $handler->display->display_options['fields']['gathercontent_updated1']['second_date_format'] = 'long';
   /* Field: Mapping: Content type name */
   $handler->display->display_options['fields']['content_type_name']['id'] = 'content_type_name';
-  $handler->display->display_options['fields']['content_type_name']['table'] = 'gc_mapping';
+  $handler->display->display_options['fields']['content_type_name']['table'] = 'gathercontent_mapping';
   $handler->display->display_options['fields']['content_type_name']['field'] = 'content_type_name';
-  $handler->display->display_options['fields']['content_type_name']['relationship'] = 'gc_mapping_id';
-  /* Field: Mapping: GC Template */
-  $handler->display->display_options['fields']['gc_template']['id'] = 'gc_template';
-  $handler->display->display_options['fields']['gc_template']['table'] = 'gc_mapping';
-  $handler->display->display_options['fields']['gc_template']['field'] = 'gc_template';
-  $handler->display->display_options['fields']['gc_template']['relationship'] = 'gc_mapping_id';
-  $handler->display->display_options['fields']['gc_template']['label'] = 'GatherContent Template';
+  $handler->display->display_options['fields']['content_type_name']['relationship'] = 'gathercontent_mapping_id';
+  /* Field: Mapping: gathercontent Template */
+  $handler->display->display_options['fields']['gathercontent_template']['id'] = 'gathercontent_template';
+  $handler->display->display_options['fields']['gathercontent_template']['table'] = 'gathercontent_mapping';
+  $handler->display->display_options['fields']['gathercontent_template']['field'] = 'gathercontent_template';
+  $handler->display->display_options['fields']['gathercontent_template']['relationship'] = 'gathercontent_mapping_id';
+  $handler->display->display_options['fields']['gathercontent_template']['label'] = 'GatherContent Template';
   /* Field: Content: Link */
   $handler->display->display_options['fields']['view_node']['id'] = 'view_node';
   $handler->display->display_options['fields']['view_node']['table'] = 'views_entity_node';
   $handler->display->display_options['fields']['view_node']['field'] = 'view_node';
   $handler->display->display_options['fields']['view_node']['label'] = 'Open in Drupal';
   $handler->display->display_options['fields']['view_node']['text'] = 'Open';
-  /* Field: Content: GC Link */
-  $handler->display->display_options['fields']['gc_link']['id'] = 'gc_link';
-  $handler->display->display_options['fields']['gc_link']['table'] = 'node';
-  $handler->display->display_options['fields']['gc_link']['field'] = 'gc_link';
-  $handler->display->display_options['fields']['gc_link']['label'] = 'Open in GatherContent';
+  /* Field: Content: gathercontent Link */
+  $handler->display->display_options['fields']['gathercontent_link']['id'] = 'gathercontent_link';
+  $handler->display->display_options['fields']['gathercontent_link']['table'] = 'node';
+  $handler->display->display_options['fields']['gathercontent_link']['field'] = 'gathercontent_link';
+  $handler->display->display_options['fields']['gathercontent_link']['label'] = 'Open in GatherContent';
   $handler->display->display_options['defaults']['arguments'] = FALSE;
   /* Contextual filter: Content: Nid */
   $handler->display->display_options['arguments']['nid']['id'] = 'nid';
@@ -705,7 +705,7 @@ Template fields mismatch: This could be because the template in GatherContent ha
   $handler->display->display_options['fields']['views_bulk_operations']['vbo_settings']['force_single'] = 0;
   $handler->display->display_options['fields']['views_bulk_operations']['vbo_settings']['entity_load_capacity'] = '10';
   $handler->display->display_options['fields']['views_bulk_operations']['vbo_operations'] = array(
-    'action::gc_upload' => array(
+    'action::gathercontent_upload' => array(
       'selected' => 1,
       'postpone_processing' => 0,
       'skip_confirmation' => 0,
@@ -713,17 +713,17 @@ Template fields mismatch: This could be because the template in GatherContent ha
       'label' => '',
     ),
   );
-  /* Field: Content: GC Status */
-  $handler->display->display_options['fields']['gc_status']['id'] = 'gc_status';
-  $handler->display->display_options['fields']['gc_status']['table'] = 'node';
-  $handler->display->display_options['fields']['gc_status']['field'] = 'gc_status';
-  $handler->display->display_options['fields']['gc_status']['label'] = 'Status';
-  /* Field: Mapping: GC Project */
-  $handler->display->display_options['fields']['gc_project']['id'] = 'gc_project';
-  $handler->display->display_options['fields']['gc_project']['table'] = 'gc_mapping';
-  $handler->display->display_options['fields']['gc_project']['field'] = 'gc_project';
-  $handler->display->display_options['fields']['gc_project']['relationship'] = 'gc_mapping_id';
-  $handler->display->display_options['fields']['gc_project']['label'] = 'GatherContent Project';
+  /* Field: Content: gathercontent Status */
+  $handler->display->display_options['fields']['gathercontent_status']['id'] = 'gathercontent_status';
+  $handler->display->display_options['fields']['gathercontent_status']['table'] = 'node';
+  $handler->display->display_options['fields']['gathercontent_status']['field'] = 'gathercontent_status';
+  $handler->display->display_options['fields']['gathercontent_status']['label'] = 'Status';
+  /* Field: Mapping: gathercontent Project */
+  $handler->display->display_options['fields']['gathercontent_project']['id'] = 'gathercontent_project';
+  $handler->display->display_options['fields']['gathercontent_project']['table'] = 'gathercontent_mapping';
+  $handler->display->display_options['fields']['gathercontent_project']['field'] = 'gathercontent_project';
+  $handler->display->display_options['fields']['gathercontent_project']['relationship'] = 'gathercontent_mapping_id';
+  $handler->display->display_options['fields']['gathercontent_project']['label'] = 'GatherContent Project';
   /* Field: Content: Title */
   $handler->display->display_options['fields']['title']['id'] = 'title';
   $handler->display->display_options['fields']['title']['table'] = 'node';
@@ -732,11 +732,11 @@ Template fields mismatch: This could be because the template in GatherContent ha
   $handler->display->display_options['fields']['title']['alter']['word_boundary'] = FALSE;
   $handler->display->display_options['fields']['title']['alter']['ellipsis'] = FALSE;
   $handler->display->display_options['fields']['title']['link_to_node'] = FALSE;
-  /* Field: Content: GC Title */
-  $handler->display->display_options['fields']['gc_title']['id'] = 'gc_title';
-  $handler->display->display_options['fields']['gc_title']['table'] = 'node';
-  $handler->display->display_options['fields']['gc_title']['field'] = 'gc_title';
-  $handler->display->display_options['fields']['gc_title']['label'] = 'GatherContent Item name';
+  /* Field: Content: gathercontent Title */
+  $handler->display->display_options['fields']['gathercontent_title']['id'] = 'gathercontent_title';
+  $handler->display->display_options['fields']['gathercontent_title']['table'] = 'node';
+  $handler->display->display_options['fields']['gathercontent_title']['field'] = 'gathercontent_title';
+  $handler->display->display_options['fields']['gathercontent_title']['label'] = 'GatherContent Item name';
   /* Field: Content: Updated date */
   $handler->display->display_options['fields']['changed']['id'] = 'changed';
   $handler->display->display_options['fields']['changed']['table'] = 'node';
@@ -746,34 +746,34 @@ Template fields mismatch: This could be because the template in GatherContent ha
   $handler->display->display_options['fields']['changed']['custom_date_format'] = 'F d, Y - H:i';
   $handler->display->display_options['fields']['changed']['second_date_format'] = 'long';
   /* Field: Content: Last updated in GatherContent */
-  $handler->display->display_options['fields']['gc_updated1']['id'] = 'gc_updated1';
-  $handler->display->display_options['fields']['gc_updated1']['table'] = 'node';
-  $handler->display->display_options['fields']['gc_updated1']['field'] = 'gc_updated1';
-  $handler->display->display_options['fields']['gc_updated1']['date_format'] = 'custom';
-  $handler->display->display_options['fields']['gc_updated1']['custom_date_format'] = 'F d, Y - H:i';
-  $handler->display->display_options['fields']['gc_updated1']['second_date_format'] = 'long';
+  $handler->display->display_options['fields']['gathercontent_updated1']['id'] = 'gathercontent_updated1';
+  $handler->display->display_options['fields']['gathercontent_updated1']['table'] = 'node';
+  $handler->display->display_options['fields']['gathercontent_updated1']['field'] = 'gathercontent_updated1';
+  $handler->display->display_options['fields']['gathercontent_updated1']['date_format'] = 'custom';
+  $handler->display->display_options['fields']['gathercontent_updated1']['custom_date_format'] = 'F d, Y - H:i';
+  $handler->display->display_options['fields']['gathercontent_updated1']['second_date_format'] = 'long';
   /* Field: Mapping: Content type name */
   $handler->display->display_options['fields']['content_type_name']['id'] = 'content_type_name';
-  $handler->display->display_options['fields']['content_type_name']['table'] = 'gc_mapping';
+  $handler->display->display_options['fields']['content_type_name']['table'] = 'gathercontent_mapping';
   $handler->display->display_options['fields']['content_type_name']['field'] = 'content_type_name';
-  $handler->display->display_options['fields']['content_type_name']['relationship'] = 'gc_mapping_id';
-  /* Field: Mapping: GC Template */
-  $handler->display->display_options['fields']['gc_template']['id'] = 'gc_template';
-  $handler->display->display_options['fields']['gc_template']['table'] = 'gc_mapping';
-  $handler->display->display_options['fields']['gc_template']['field'] = 'gc_template';
-  $handler->display->display_options['fields']['gc_template']['relationship'] = 'gc_mapping_id';
-  $handler->display->display_options['fields']['gc_template']['label'] = 'GatherContent Template';
+  $handler->display->display_options['fields']['content_type_name']['relationship'] = 'gathercontent_mapping_id';
+  /* Field: Mapping: gathercontent Template */
+  $handler->display->display_options['fields']['gathercontent_template']['id'] = 'gathercontent_template';
+  $handler->display->display_options['fields']['gathercontent_template']['table'] = 'gathercontent_mapping';
+  $handler->display->display_options['fields']['gathercontent_template']['field'] = 'gathercontent_template';
+  $handler->display->display_options['fields']['gathercontent_template']['relationship'] = 'gathercontent_mapping_id';
+  $handler->display->display_options['fields']['gathercontent_template']['label'] = 'GatherContent Template';
   /* Field: Content: Link */
   $handler->display->display_options['fields']['view_node']['id'] = 'view_node';
   $handler->display->display_options['fields']['view_node']['table'] = 'views_entity_node';
   $handler->display->display_options['fields']['view_node']['field'] = 'view_node';
   $handler->display->display_options['fields']['view_node']['label'] = 'Open in Drupal';
   $handler->display->display_options['fields']['view_node']['text'] = 'Open';
-  /* Field: Content: GC Link */
-  $handler->display->display_options['fields']['gc_link']['id'] = 'gc_link';
-  $handler->display->display_options['fields']['gc_link']['table'] = 'node';
-  $handler->display->display_options['fields']['gc_link']['field'] = 'gc_link';
-  $handler->display->display_options['fields']['gc_link']['label'] = 'Open in GatherContent';
+  /* Field: Content: gathercontent Link */
+  $handler->display->display_options['fields']['gathercontent_link']['id'] = 'gathercontent_link';
+  $handler->display->display_options['fields']['gathercontent_link']['table'] = 'node';
+  $handler->display->display_options['fields']['gathercontent_link']['field'] = 'gathercontent_link';
+  $handler->display->display_options['fields']['gathercontent_link']['label'] = 'Open in GatherContent';
   $handler->display->display_options['path'] = 'admin/content/upload';
   $handler->display->display_options['menu']['type'] = 'normal';
   $handler->display->display_options['menu']['title'] = 'Upload to GatherContent';

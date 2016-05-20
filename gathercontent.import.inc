@@ -17,17 +17,17 @@ use GatherContent\Template;
  *
  * @inheritdoc
  */
-function gc_import_form($step = NULL) {
+function gathercontent_import_form($step = NULL) {
   // Define array for ctools multistep wizard.
   $form_info = array(
-    'id' => 'gc_import',
-    'path' => "admin/config/gc/import/%step",
+    'id' => 'gathercontent_import',
+    'path' => "admin/config/gathercontent/import/%step",
     'show trail' => FALSE,
     'show back' => TRUE,
     'show cancel' => FALSE,
     'show return' => FALSE,
-    'next callback' => 'gc_import_wizard_next',
-    'finish callback' => 'gc_import_wizard_finish',
+    'next callback' => 'gathercontent_import_wizard_next',
+    'finish callback' => 'gathercontent_import_wizard_finish',
     'finish text' => t('Import'),
 
     // Define forms order.
@@ -39,10 +39,10 @@ function gc_import_form($step = NULL) {
     // Define forms.
     'forms' => array(
       'select' => array(
-        'form id' => 'gc_import_form_select',
+        'form id' => 'gathercontent_import_form_select',
       ),
       'confirm' => array(
-        'form id' => 'gc_import_form_confirm',
+        'form id' => 'gathercontent_import_form_confirm',
       ),
     ),
   );
@@ -52,12 +52,12 @@ function gc_import_form($step = NULL) {
   if (empty($step)) {
     // We reset the form when $step is NULL because that means they have
     // for whatever reason started over.
-    gc_import_cache_clear($object_id);
+    gathercontent_import_cache_clear($object_id);
     $step = 'select';
   }
 
   // This automatically gets defaults if there wasn't anything saved.
-  $object = gc_import_cache_get($object_id);
+  $object = gathercontent_import_cache_get($object_id);
 
   // Live $form_state changes.
   $form_state = array(
@@ -73,7 +73,7 @@ function gc_import_form($step = NULL) {
 
   if ($output === FALSE || !empty($form_state['complete'])) {
     drupal_set_message(t('New mapping has been saved.'));
-    drupal_goto("admin/config/gc/mapping");
+    drupal_goto("admin/config/gathercontent/mapping");
   }
 
   return $output;
@@ -86,9 +86,9 @@ function gc_import_form($step = NULL) {
  * @param int $id
  *   Cache ID.
  */
-function gc_import_cache_clear($id) {
+function gathercontent_import_cache_clear($id) {
   ctools_include('object-cache');
-  ctools_object_cache_clear('gc_import', $id);
+  ctools_object_cache_clear('gathercontent_import', $id);
 }
 
 /**
@@ -99,9 +99,9 @@ function gc_import_cache_clear($id) {
  * @param object $object
  *   Object with form values.
  */
-function gc_import_cache_set($id, $object) {
+function gathercontent_import_cache_set($id, $object) {
   ctools_include('object-cache');
-  ctools_object_cache_set('gc_import', $id, $object);
+  ctools_object_cache_set('gathercontent_import', $id, $object);
 }
 
 /**
@@ -113,9 +113,9 @@ function gc_import_cache_set($id, $object) {
  * @return object
  *   Cache with stored stuff.
  */
-function gc_import_cache_get($id) {
+function gathercontent_import_cache_get($id) {
   ctools_include('object-cache');
-  $object = ctools_object_cache_get('gc_import', $id);
+  $object = ctools_object_cache_get('gathercontent_import', $id);
   if (!$object) {
     // Create a default object.
     $object = new stdClass();
@@ -129,8 +129,8 @@ function gc_import_cache_get($id) {
  *
  * All we need to do is store the updated pane in the cache.
  */
-function gc_import_wizard_next(&$form_state) {
-  gc_import_cache_set($form_state['object_id'], $form_state['object']);
+function gathercontent_import_wizard_next(&$form_state) {
+  gathercontent_import_cache_set($form_state['object_id'], $form_state['object']);
 }
 
 /**
@@ -138,11 +138,11 @@ function gc_import_wizard_next(&$form_state) {
  *
  * @inheritdoc
  */
-function gc_import_form_select($form, &$form_state) {
-  $gc_module_path = drupal_get_path('module', 'gc');
-  $query = db_select('gc_mapping', 'm')
+function gathercontent_import_form_select($form, &$form_state) {
+  $gathercontent_module_path = drupal_get_path('module', 'gathercontent');
+  $query = db_select('gathercontent_mapping', 'm')
     ->distinct()
-    ->fields('m', array('gc_project', 'gc_project_id'))
+    ->fields('m', array('gathercontent_project', 'gathercontent_project_id'))
     ->isNotNull('data')
     ->execute();
   $projects = $query->fetchAllKeyed(1, 0);
@@ -154,7 +154,7 @@ function gc_import_form_select($form, &$form_state) {
     '#empty_option' => t('- Select -'),
     '#required' => TRUE,
     '#ajax' => array(
-      'callback' => 'gc_import_form_select_fetch_content',
+      'callback' => 'gathercontent_import_form_select_fetch_content',
       'wrapper' => 'edit-import',
       'method' => 'replace',
       'effect' => 'fade',
@@ -168,7 +168,7 @@ function gc_import_form_select($form, &$form_state) {
     '#suffix' => '</div>',
     '#attached' => array(
       'js' => array(
-        $gc_module_path . '/js/gc-filter.js',
+        $gathercontent_module_path . '/js/gathercontent-filter.js',
       ),
     ),
   );
@@ -184,23 +184,23 @@ function gc_import_form_select($form, &$form_state) {
 
     $content_table = array();
     $query = new EntityFieldQuery();
-    $result = $query->entityCondition('entity_type', 'gc_mapping')
-      ->propertyCondition('gc_project_id', $project_id)
+    $result = $query->entityCondition('entity_type', 'gathercontent_mapping')
+      ->propertyCondition('gathercontent_project_id', $project_id)
       ->execute();
 
     $query = new EntityFieldQuery();
     $nodes = $query->entityCondition('entity_type', 'node')
-      ->propertyCondition('gc_mapping_id', NULL, 'IS NOT')
+      ->propertyCondition('gathercontent_mapping_id', NULL, 'IS NOT')
       ->execute();
 
-    if (isset($result['gc_mapping'])) {
-      $mapping_ids = array_keys($result['gc_mapping']);
-      $mappings = entity_load('gc_mapping', $mapping_ids);
+    if (isset($result['gathercontent_mapping'])) {
+      $mapping_ids = array_keys($result['gathercontent_mapping']);
+      $mappings = entity_load('gathercontent_mapping', $mapping_ids);
       $mapping_array = array();
       foreach ($mappings as $mapping) {
         if (!empty($mapping->data)) {
-          $mapping_array[$mapping->gc_template_id] = array(
-            'gc_template' => $mapping->gc_template,
+          $mapping_array[$mapping->gathercontent_template_id] = array(
+            'gathercontent_template' => $mapping->gathercontent_template,
             'ct' => $mapping->content_type,
           );
         }
@@ -217,20 +217,20 @@ function gc_import_form_select($form, &$form_state) {
         ) {
           $content_table[$item->id] = array(
             'status' => array(
-              'data' => '<div class="gc-item--status--color" style="background: ' . $item->status->data->color . ';"></div>' . $item->status->data->name,
-              'class' => array('gc-item', 'status-item'),
+              'data' => '<div class="gathercontent-item--status--color" style="background: ' . $item->status->data->color . ';"></div>' . $item->status->data->name,
+              'class' => array('gathercontent-item', 'status-item'),
             ),
             'title' => array(
               'data' => $item->name,
-              'class' => array('gc-item', 'gc-item--name'),
+              'class' => array('gathercontent-item', 'gathercontent-item--name'),
             ),
             'updated' => array(
               'data' => date('F d, Y - H:i', strtotime($item->updated_at->date)),
-              'class' => array('gc-item', 'gc-item-date'),
+              'class' => array('gathercontent-item', 'gathercontent-item-date'),
               'data-date' => date('Y-m-d.H:i:s', strtotime($item->updated_at->date)),
             ),
             'template' => array(
-              'data' => $mapping_array[$item->template_id]['gc_template'],
+              'data' => $mapping_array[$item->template_id]['gathercontent_template'],
               'class' => array('template-name-item'),
             ),
             'menu' => array(
@@ -259,13 +259,13 @@ function gc_import_form_select($form, &$form_state) {
       );
 
       $form['import']['content'] = array(
-        '#type' => 'gc_tableselect',
+        '#type' => 'gathercontent_tableselect',
         '#header' => $header,
         '#options' => $content_table,
         '#empty' => t('No content available.'),
         '#filterwrapper' => array(
-          'filter_wrapper' => array('gc-table--filter-wrapper', 'clearfix'),
-          'counter_wrapper' => array('gc-table--counter', 'clearfix'),
+          'filter_wrapper' => array('gathercontent-table--filter-wrapper', 'clearfix'),
+          'counter_wrapper' => array('gathercontent-table--counter', 'clearfix'),
         ),
         '#filterdescription' => t('You can only see items with mapped templates in the table.'),
         '#default_value' => isset($form_state['object']->nodes) ? $form_state['object']->nodes : NULL,
@@ -274,7 +274,7 @@ function gc_import_form_select($form, &$form_state) {
 
     $form['import']['back_button'] = array(
       '#type' => 'markup',
-      '#markup' => l(t('Back'), '/admin/config/gc/import', array('attributes' => array('class' => array('button')))),
+      '#markup' => l(t('Back'), '/admin/config/gathercontent/import', array('attributes' => array('class' => array('button')))),
     );
   }
 
@@ -286,7 +286,7 @@ function gc_import_form_select($form, &$form_state) {
  *
  * @inheritdoc
  */
-function gc_import_form_select_fetch_content($form, &$form_state) {
+function gathercontent_import_form_select_fetch_content($form, &$form_state) {
   return $form['import'];
 }
 
@@ -298,7 +298,7 @@ function gc_import_form_select_fetch_content($form, &$form_state) {
  *
  * @inheritdoc
  */
-function gc_import_form_select_validate($form, &$form_state) {
+function gathercontent_import_form_select_validate($form, &$form_state) {
   if ($form_state['triggering_element']['#type'] === 'submit') {
     $stack = array();
     $import_content = array_filter($form_state['values']['content']);
@@ -350,11 +350,11 @@ function gc_import_form_select_validate($form, &$form_state) {
 }
 
 /**
- * Submit handler for `gc_import` form.
+ * Submit handler for `gathercontent_import` form.
  *
  * @inheritdoc
  */
-function gc_import_form_select_submit($form, &$form_state) {
+function gathercontent_import_form_select_submit($form, &$form_state) {
   $form_state['object']->project_id = $form_state['values']['project'];
   $form_state['object']->nodes = array_filter($form_state['values']['content']);
   $form_state['object']->menu = array_intersect_key(array_filter($form_state['values']['menu']), array_filter($form_state['values']['content']));
@@ -365,7 +365,7 @@ function gc_import_form_select_submit($form, &$form_state) {
  *
  * @inheritdoc
  */
-function gc_import_form_confirm($form, &$form_state) {
+function gathercontent_import_form_confirm($form, &$form_state) {
   $form['title'] = array(
     'form_title' => array(
       '#type' => 'html_tag',
@@ -431,15 +431,15 @@ function gc_import_form_confirm($form, &$form_state) {
  *
  * @inheritdoc
  */
-function gc_import_form_confirm_submit($form, &$form_state) {
+function gathercontent_import_form_confirm_submit($form, &$form_state) {
   $form_state['object']->status = $form_state['values']['status'];
-  $uuid = _gc_uuid_generate();
+  $uuid = _gathercontent_uuid_generate();
 
-  $operation = entity_create('gc_operation', array(
+  $operation = entity_create('gathercontent_operation', array(
     'uuid' => $uuid,
     'type' => 'import',
   ));
-  entity_save('gc_operation', $operation);
+  entity_save('gathercontent_operation', $operation);
 
   $operations = array();
 
@@ -450,7 +450,7 @@ function gc_import_form_confirm_submit($form, &$form_state) {
     if ((isset($form_state['object']->menu[$value]) && $form_state['object']->menu[$value] != -1) || !isset($form_state['object']->menu[$value])) {
       $parent_menu_item = isset($form_state['object']->menu[$value]) ? $form_state['object']->menu[$value] : NULL;
       $operations[] = array(
-        'gc_import_process',
+        'gathercontent_import_process',
         array($value, $form_state['object']->status, $uuid, $parent_menu_item),
       );
       $stack[] = $value;
@@ -477,7 +477,7 @@ function gc_import_form_confirm_submit($form, &$form_state) {
       if (in_array($content[$current]->parent_id, $stack)) {
         $parent_menu_item = 'node:' . $content[$current]->parent_id;
         $operations[] = array(
-          'gc_import_process',
+          'gathercontent_import_process',
           array(
             $current,
             $form_state['object']->status,
@@ -498,8 +498,8 @@ function gc_import_form_confirm_submit($form, &$form_state) {
   $batch = array(
     'title' => t('Importing content ...'),
     'operations' => $operations,
-    'finished' => 'gc_import_finished',
-    'file' => drupal_get_path('module', 'gc') . '/gc.import.inc',
+    'finished' => 'gathercontent_import_finished',
+    'file' => drupal_get_path('module', 'gathercontent') . '/gathercontent.import.inc',
     'init_message' => t('Import is starting ...'),
     'progress_message' => t('Processed @current out of @total.'),
     'error_message' => t('An error occurred during processing'),
@@ -515,7 +515,7 @@ function gc_import_form_confirm_submit($form, &$form_state) {
  *
  * @inheritdoc
  */
-function gc_import_wizard_finish($form, &$form_state) {
+function gathercontent_import_wizard_finish($form, &$form_state) {
 }
 
 /**
@@ -534,8 +534,8 @@ function gc_import_wizard_finish($form, &$form_state) {
  * @param array $context
  *   Context of operation.
  */
-function gc_import_process($content_id, $status_id, $uuid, $parent_menu_item = NULL, &$context) {
-  if (($nid = _gc_fetcher($content_id, $uuid, $status_id, NULL, $parent_menu_item)) !== FALSE) {
+function gathercontent_import_process($content_id, $status_id, $uuid, $parent_menu_item = NULL, &$context) {
+  if (($nid = _gathercontent_fetcher($content_id, $uuid, $status_id, NULL, $parent_menu_item)) !== FALSE) {
     if ($status_id != 0) {
       // Change status.
       $content_obj = new Content();
@@ -550,28 +550,28 @@ function gc_import_process($content_id, $status_id, $uuid, $parent_menu_item = N
  *
  * @inheritdoc
  */
-function gc_import_finished($success, $results, $operations) {
+function gathercontent_import_finished($success, $results, $operations) {
   if ($success) {
     // Select all items with uuid.
     $query = new EntityFieldQuery();
-    $result = $query->entityCondition('entity_type', 'gc_operation_item')
+    $result = $query->entityCondition('entity_type', 'gathercontent_operation_item')
       ->propertyCondition('operation_uuid', $results['uuid'])
       ->execute();
-    if (isset($result['gc_operation_item'])) {
-      $operation_items = entity_load('gc_operation_item', array_keys($result['gc_operation_item']));
+    if (isset($result['gathercontent_operation_item'])) {
+      $operation_items = entity_load('gathercontent_operation_item', array_keys($result['gathercontent_operation_item']));
       $success_counter = 0;
       foreach ($operation_items as $operation_item) {
         if ($operation_item->status === 'Success') {
           $success_counter++;
         }
       }
-      $unsuccessful = count($result['gc_operation_item']) - $success_counter;
+      $unsuccessful = count($result['gathercontent_operation_item']) - $success_counter;
       drupal_set_message(format_plural($success_counter, '1 item was imported successfully.', '@count items were imported successfully.'));
       if ($unsuccessful > 0) {
         drupal_set_message(format_plural($unsuccessful, '1 item was not imported. Check errors below.', '@count items were not imported. Check errors below.'), 'error');
       }
     }
-    drupal_goto('admin/config/gc/import/result/' . $results['uuid']);
+    drupal_goto('admin/config/gathercontent/import/result/' . $results['uuid']);
   }
   else {
     $error_operation = reset($operations);

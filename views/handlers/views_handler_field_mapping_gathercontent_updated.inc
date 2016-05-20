@@ -3,11 +3,11 @@
 /**
  * Field handler to present a link to delete a mytype record.
  */
-class views_handler_field_mapping_gc_updated extends views_handler_field_date {
+class views_handler_field_mapping_gathercontent_updated extends views_handler_field_date {
 
   function construct() {
     parent::construct();
-    $this->additional_fields['gc_template_id'] = 'gc_template_id';
+    $this->additional_fields['gathercontent_template_id'] = 'gathercontent_template_id';
   }
 
   function query() {
@@ -17,9 +17,9 @@ class views_handler_field_mapping_gc_updated extends views_handler_field_date {
 
   function render($values) {
 //    // Load last updated time from remote server.
-    $template = $this->view->field['gc_updated']->templates;
-    $gc_template_id = $values->{$this->aliases['gc_template_id']};
-    $value = $template[$gc_template_id]['updated_at'];
+    $template = $this->view->field['gathercontent_updated']->templates;
+    $gathercontent_template_id = $values->{$this->aliases['gathercontent_template_id']};
+    $value = $template[$gathercontent_template_id]['updated_at'];
 
     $format = $this->options['date_format'];
     if (in_array($format, array('custom', 'raw time ago', 'time ago', 'today time ago', 'raw time hence', 'time hence', 'raw time span', 'time span', 'raw time span', 'inverse time span', 'time span'))) {

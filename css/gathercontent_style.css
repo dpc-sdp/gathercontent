@@ -6,7 +6,7 @@
 /**
  * Colored square in status column.
  */
-.gc-item--status--color {
+.gathercontent-item--status--color {
   width: 20px;
   height: 20px;
   margin-right: 5px;
@@ -16,7 +16,7 @@
 /**
  * Themes client-side filters at Import Content.
  */
-.form-item.gc-filter {
+.form-item.gathercontent-filter {
   padding-right: 20px;
   float: left;
 }
@@ -25,24 +25,24 @@
  * Mapping.
  ******************************************************************************/
 
-.form-gc-mapping .form-type-select label {
+.form-gathercontent-mapping .form-type-select label {
   min-width: 400px;
   padding-right: 100px;
   background: url(../images/arrow.png) no-repeat right center;
 }
 
-.form-gc-mapping .form-type-select select {
+.form-gathercontent-mapping .form-type-select select {
   min-width: 150px;
   margin-left: 100px;
 }
 
-.form-gc-mapping .form-type-select label,
-.form-gc-mapping .form-type-select select {
+.form-gathercontent-mapping .form-type-select label,
+.form-gathercontent-mapping .form-type-select select {
   display: inline-block;
 }
 
-.form-select--gc-import,
-.form-text-gc-import {
+.form-select--gathercontent-import,
+.form-text-gathercontent-import {
   min-width: 145px;
 }
 

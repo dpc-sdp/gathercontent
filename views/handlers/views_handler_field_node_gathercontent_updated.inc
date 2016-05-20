@@ -3,11 +3,11 @@
 /**
  * Field handler to present a link to delete a mytype record.
  */
-class views_handler_field_node_gc_updated extends views_handler_field_date {
+class views_handler_field_node_gathercontent_updated extends views_handler_field_date {
 
   function construct() {
     parent::construct();
-    $this->additional_fields['gc_id'] = 'gc_id';
+    $this->additional_fields['gathercontent_id'] = 'gathercontent_id';
   }
 
   function query() {
@@ -17,10 +17,10 @@ class views_handler_field_node_gc_updated extends views_handler_field_date {
 
   function render($values) {
     // Load last updated time from remote server.
-    $content = $this->view->field['gc_status']->contents;
-    $gc_id = $values->{$this->aliases['gc_id']};
-    if (isset($content[$gc_id]['gc_updated'])) {
-      $value = strtotime($content[$gc_id]['gc_updated']->date);
+    $content = $this->view->field['gathercontent_status']->contents;
+    $gathercontent_id = $values->{$this->aliases['gathercontent_id']};
+    if (isset($content[$gathercontent_id]['gathercontent_updated'])) {
+      $value = strtotime($content[$gathercontent_id]['gathercontent_updated']->date);
 
       $format = $this->options['date_format'];
       if (in_array($format, array(

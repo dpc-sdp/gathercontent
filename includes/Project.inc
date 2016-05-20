@@ -24,11 +24,11 @@ class Project {
     $this->local = $local;
     if (!$local) {
       if (is_null($username)) {
-        $username = variable_get('gc_username', '');
+        $username = variable_get('gathercontent_username', '');
       }
 
       if (is_null($api_key)) {
-        $api_key = variable_get('gc_api_key', '');
+        $api_key = variable_get('gathercontent_api_key', '');
       }
 
       if (empty($username) || empty($api_key)) {
@@ -60,7 +60,7 @@ class Project {
    */
   public function getProjects() {
     if (!$this->local) {
-      $account = variable_get('gc_account', array());
+      $account = variable_get('gathercontent_account', array());
       $projects = array();
 
       reset($account);
@@ -98,7 +98,7 @@ class Project {
    */
   public function getProjectObjects() {
     if (!$this->local) {
-      $account = variable_get('gc_account', array());
+      $account = variable_get('gathercontent_account', array());
       $projects = array();
 
       reset($account);

@@ -6,15 +6,15 @@
 (function ($, Drupal, window) {
   'use strict';
 
-  Drupal.behaviors.gcImportSelectedCounter = {
+  Drupal.behaviors.gathercontentImportSelectedCounter = {
     attach: function (context) {
       var self = this;
       if ($('#edit-import table:not(.sticky-header)', context).length) {
-        $('.gc-table--counter', context).once('gc-import-selected-counter', function () {
-          $('<div class="form-item form-item--gc-import">\n' +
+        $('.gathercontent-table--counter', context).once('gathercontent-import-selected-counter', function () {
+          $('<div class="form-item form-item--gathercontent-import">\n' +
             '  <em class="select-counter"></em>\n' +
             '</div>')
-            .appendTo('.gc-table--counter');
+            .appendTo('.gathercontent-table--counter');
         });
 
         self.updateCount();
@@ -41,29 +41,29 @@
     }
   };
 
-  Drupal.behaviors.gcImportFilter = {
+  Drupal.behaviors.gathercontentImportFilter = {
     attach: function (context, settings) {
       var self = this;
-      $('#edit-import table:not(.sticky-header)', context).once('gc-import-filter', function () {
-        $('.gc-filter').remove();
+      $('#edit-import table:not(.sticky-header)', context).once('gathercontent-import-filter', function () {
+        $('.gathercontent-filter').remove();
 
-        $('.gc-table--filter-wrapper')
+        $('.gathercontent-table--filter-wrapper')
           .append(
-            '<div class="form-item gc-filter project-status">\n' +
+            '<div class="form-item gathercontent-filter project-status">\n' +
             '  <label for="ga-form-select-status">' + Drupal.t('Status') + '</label>\n' +
-            '  <select id="ga-form-select-status" class="form-select form-select--gc-import">\n' +
+            '  <select id="ga-form-select-status" class="form-select form-select--gathercontent-import">\n' +
             '    <option value="all">' + Drupal.t('All') + '</option>\n' +
             '  </select>\n' +
             '</div>\n' +
-            '<div class="form-item gc-filter">\n' +
+            '<div class="form-item gathercontent-filter">\n' +
             '  <label for="ga-form-select-template">' + Drupal.t('GatherContent Template Name') + '</label>\n' +
-            '  <select id="ga-form-select-template" class="form-select form-select--gc-import">\n' +
+            '  <select id="ga-form-select-template" class="form-select form-select--gathercontent-import">\n' +
             '    <option value="all">' + Drupal.t('All') + '</option>\n' +
             '  </select>\n' +
             '</div>\n' +
-            '<div class="form-item gc-filter">\n' +
+            '<div class="form-item gathercontent-filter">\n' +
             '  <label for="ga-form-select-search">' + Drupal.t('Search') + '</label>\n' +
-            '  <input placeholder="' + Drupal.t('Filter by Item Name') + '" type="text" id="ga-form-select-search" class="form-text form-text--gc-import">\n' +
+            '  <input placeholder="' + Drupal.t('Filter by Item Name') + '" type="text" id="ga-form-select-search" class="form-text form-text--gathercontent-import">\n' +
             '</div>');
 
         // Populate status select.
@@ -94,7 +94,7 @@
         var templateValue = $('#ga-form-select-template').val();
         var searchValue = $('#ga-form-select-search').val().replace(/([.*+?^=!:${}()|\[\]\/\\])/g, '');
 
-        $('.gc-import-filter-processed .selected:hidden').each(function () {
+        $('.gathercontent-import-filter-processed .selected:hidden').each(function () {
           // It removes te bg color from the table rows and uncheckes it's
           // checkbox.
           $(this).removeClass('selected')
@@ -110,7 +110,7 @@
           // Checking filter values.
           if ((($(this).data('status') !== statusValue) && statusValue !== 'all') ||
             (($(this).data('template') !== templateValue) && templateValue !== 'all') ||
-            ($(this).find('.gc-item--name').text().search(new RegExp(searchValue, 'i')) === -1)) {
+            ($(this).find('.gathercontent-item--name').text().search(new RegExp(searchValue, 'i')) === -1)) {
             hidden = true;
           }
 

@@ -7,16 +7,16 @@
 /**
  * Implements hook_element_info().
  */
-function gc_element_info() {
+function gathercontent_element_info() {
   return array(
-    'gc_tableselect' => array(
+    'gathercontent_tableselect' => array(
       '#input' => TRUE,
       '#js_select' => TRUE,
       '#multiple' => TRUE,
       '#process' => array('form_process_tableselect'),
       '#options' => array(),
       '#empty' => '',
-      '#theme' => 'gc_tableselect',
+      '#theme' => 'gathercontent_tableselect',
       '#type' => 'tableselect',
       //
       // Additional options compared to tableselect form element.
@@ -25,7 +25,7 @@ function gc_element_info() {
       '#tablesorter' => TRUE,
       // DIV elements which have to be added to the table as prefix, array of
       // class arrays keyed by an (internal) element name.
-      // These elements will be wrapped into a DIV with class gc-table--header.
+      // These elements will be wrapped into a DIV with class gathercontent-table--header.
       //
       // Example:
       // @code
@@ -37,7 +37,7 @@ function gc_element_info() {
       //
       // Sample output in the case above:
       // @code
-      // <div class="gc-table-header">
+      // <div class="gathercontent-table-header">
       //   <div class="class1 class2"></div>
       //   <div class="class3 class4"></div>
       // </div>
@@ -51,9 +51,9 @@ function gc_element_info() {
 /**
  * Implements hook_theme().
  */
-function gc_theme() {
+function gathercontent_theme() {
   return array(
-    'gc_tableselect' => array(
+    'gathercontent_tableselect' => array(
       'render element' => 'element',
     ),
   );
@@ -78,10 +78,10 @@ function gc_theme() {
  *
  * @ingroup themeable
  */
-function theme_gc_tableselect(array $variables) {
+function theme_gathercontent_tableselect(array $variables) {
   $output = '';
   $element = $variables['element'];
-  $gc_module_path = drupal_get_path('module', 'gc');
+  $gathercontent_module_path = drupal_get_path('module', 'gathercontent');
 
   // Libraries module and tablesorter plugin are optional.
   // If tablesorter available, add it to the scope.
@@ -89,7 +89,7 @@ function theme_gc_tableselect(array $variables) {
     $library = libraries_detect('tablesorter-mottie');
     if ($library['installed'] && $element['#tablesorter']) {
       $element['#attributes']['class'][] = 'tablesorter-enabled';
-      drupal_add_js($gc_module_path . '/js/gc-tablesorter.js');
+      drupal_add_js($gathercontent_module_path . '/js/gathercontent-tablesorter.js');
       libraries_load('tablesorter-mottie');
     }
   }
@@ -121,7 +121,7 @@ function theme_gc_tableselect(array $variables) {
   // checkboxes/radios in the first table column.
   if ($element['#js_select']) {
     // Add a "Select all" checkbox.
-    drupal_add_js($gc_module_path . '/js/gc-tableselect.js');
+    drupal_add_js($gathercontent_module_path . '/js/gathercontent-tableselect.js');
     array_unshift($header, array(
       'class' => array('select-all'),
       'data-sorter' => 'false',
@@ -137,7 +137,7 @@ function theme_gc_tableselect(array $variables) {
     $filterwrapper = array(
       '#type' => 'container',
       '#attributes' => array(
-        'class' => array('gc-table--header'),
+        'class' => array('gathercontent-table--header'),
       ),
     );
 
@@ -186,7 +186,7 @@ function theme_gc_tableselect(array $variables) {
  * @return array
  *   The processed element.
  */
-function gc_process_gc_tableselect(array $element) {
+function gathercontent_process_gathercontent_tableselect(array $element) {
   if (isset($element['#multiple']) && $element['#multiple']) {
     $value = is_array($element['#value']) ? $element['#value'] : array();
   }

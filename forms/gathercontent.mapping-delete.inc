@@ -14,7 +14,7 @@
  *
  * @inheritdoc
  */
-function gc_mapping_delete_form($form, &$form_state, $id) {
+function gathercontent_mapping_delete_form($form, &$form_state, $id) {
   $form = array();
   $form['id'] = array(
     '#type' => 'value',
@@ -24,7 +24,7 @@ function gc_mapping_delete_form($form, &$form_state, $id) {
   return confirm_form(
     $form,
     t('Are you sure you want to delete this item?'),
-    'admin/config/gc/mapping',
+    'admin/config/gathercontent/mapping',
     t('This action cannot be undone.'),
     t('Delete'),
     t('Cancel')
@@ -36,9 +36,9 @@ function gc_mapping_delete_form($form, &$form_state, $id) {
  *
  * @inheritdoc
  */
-function gc_mapping_delete_form_submit($form, &$form_state) {
+function gathercontent_mapping_delete_form_submit($form, &$form_state) {
   // @TODO: remove mapping from nodes, if used.
-  entity_delete('gc_mapping', $form_state['values']['id']);
+  entity_delete('gathercontent_mapping', $form_state['values']['id']);
   drupal_set_message(t('You removed mapping'));
-  $form_state['redirect'] = 'admin/config/gc/mapping';
+  $form_state['redirect'] = 'admin/config/gathercontent/mapping';
 }

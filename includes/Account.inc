@@ -29,11 +29,11 @@ class Account {
    */
   public function __construct($username = NULL, $api_key = NULL) {
     if (is_null($username)) {
-      $username = variable_get('gc_username', '');
+      $username = variable_get('gathercontent_username', '');
     }
 
     if (is_null($api_key)) {
-      $api_key = variable_get('gc_api_key', '');
+      $api_key = variable_get('gathercontent_api_key', '');
     }
 
     if (empty($username || $api_key)) {

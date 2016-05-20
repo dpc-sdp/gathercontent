@@ -11,10 +11,10 @@ require_once 'includes/Template.inc';
 /**
  * Implements hook_install().
  */
-function gc_install() {
+function gathercontent_install() {
   db_add_field(
     'node',
-    'gc_mapping_id',
+    'gathercontent_mapping_id',
     array(
       'definition' => 'The ID of GatherContent mapping.',
       'type' => 'int',
@@ -23,7 +23,7 @@ function gc_install() {
   );
   db_add_field(
     'node',
-    'gc_id',
+    'gathercontent_id',
     array(
       'definition' => 'The ID of content in GatherContent.',
       'type' => 'int',
@@ -32,7 +32,7 @@ function gc_install() {
   );
   db_add_field(
     'node',
-    'gc_import_status',
+    'gathercontent_import_status',
     array(
       'definition' => 'The ID of content in GatherContent.',
       'type' => 'text',
@@ -40,7 +40,7 @@ function gc_install() {
   );
   db_add_field(
     'file_managed',
-    'gc_id',
+    'gathercontent_id',
     array(
       'definition' => 'The ID of file in GatherContent.',
       'type' => 'int',
@@ -52,15 +52,15 @@ function gc_install() {
 /**
  * Implements hook_uninstall().
  */
-function gc_uninstall() {
-  variable_del('gc_username');
-  variable_del('gc_api_key');
-  variable_del('gc_account');
+function gathercontent_uninstall() {
+  variable_del('gathercontent_username');
+  variable_del('gathercontent_api_key');
+  variable_del('gathercontent_account');
 
-  db_drop_field('node', 'gc_mapping_id');
-  db_drop_field('node', 'gc_id');
-  db_drop_field('node', 'gc_import_status');
-  db_drop_field('file_managed', 'gc_id');
+  db_drop_field('node', 'gathercontent_mapping_id');
+  db_drop_field('node', 'gathercontent_id');
+  db_drop_field('node', 'gathercontent_import_status');
+  db_drop_field('file_managed', 'gathercontent_id');
 }
 
 /**
@@ -68,10 +68,10 @@ function gc_uninstall() {
  *
  * @inheritdoc
  */
-function gc_schema() {
+function gathercontent_schema() {
   $schema = array();
 
-  $schema['gc_mapping'] = array(
+  $schema['gathercontent_mapping'] = array(
     'description' => 'The base table for the Mapping entity',
     'fields' => array(
       'id' => array(
@@ -79,23 +79,23 @@ function gc_schema() {
         'unsigned' => TRUE,
         'not null' => TRUE,
       ),
-      'gc_project_id' => array(
+      'gathercontent_project_id' => array(
         'type' => 'int',
         'length' => 11,
         'not null' => TRUE,
       ),
-      'gc_project' => array(
+      'gathercontent_project' => array(
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'default' => '',
       ),
-      'gc_template_id' => array(
+      'gathercontent_template_id' => array(
         'type' => 'int',
         'length' => 11,
         'not null' => TRUE,
       ),
-      'gc_template' => array(
+      'gathercontent_template' => array(
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
@@ -131,7 +131,7 @@ function gc_schema() {
     'primary key' => array('id'),
   );
 
-  $schema['gc_operation'] = array(
+  $schema['gathercontent_operation'] = array(
     'description' => 'The base table for the GC Operation entity',
     'fields' => array(
       'uuid' => array(
@@ -150,7 +150,7 @@ function gc_schema() {
     'primary key' => array('uuid'),
   );
 
-  $schema['gc_operation_item'] = array(
+  $schema['gathercontent_operation_item'] = array(
     'description' => 'The base table for the GC Operation Item entity',
     'fields' => array(
       'id' => array(
@@ -194,7 +194,7 @@ function gc_schema() {
         'not null' => TRUE,
         'default' => '',
       ),
-      'gc_id' => array(
+      'gathercontent_id' => array(
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
@@ -218,43 +218,43 @@ function gc_schema() {
  *
  * @inheritdoc
  */
-function gc_schema_alter(&$schema) {
-  $schema['node']['fields']['gc_mapping_id'] = array(
+function gathercontent_schema_alter(&$schema) {
+  $schema['node']['fields']['gathercontent_mapping_id'] = array(
     'definition' => 'The ID of GatherContent mapping.',
     'type' => 'int',
     'unsigned' => TRUE,
   );
-  $schema['node']['fields']['gc_id'] = array(
+  $schema['node']['fields']['gathercontent_id'] = array(
     'definition' => 'The ID of content in GatherContent.',
     'type' => 'int',
     'unsigned' => TRUE,
   );
-  $schema['node']['fields']['gc_import_status'] = array(
+  $schema['node']['fields']['gathercontent_import_status'] = array(
     'definition' => 'The ID of content in GatherContent.',
     'type' => 'text',
   );
-  $schema['file_managed']['fields']['gc_id'] = array(
+  $schema['file_managed']['fields']['gathercontent_id'] = array(
     'definition' => 'The ID of file in GatherContent.',
     'type' => 'int',
     'unsigned' => TRUE,
   );
 
-  if (isset($schema['gc_mapping']['fields']['updated_gc'])) {
-    unset($schema['gc_mapping']['fields']['updated_gc']);
+  if (isset($schema['gathercontent_mapping']['fields']['updated_gathercontent'])) {
+    unset($schema['gathercontent_mapping']['fields']['updated_gathercontent']);
   }
 }
 
 /**
- * Change `content_type` and `data` fields from `gc_mapping` table.
+ * Change `content_type` and `data` fields from `gathercontent_mapping` table.
  */
-function gc_update_7301() {
-  db_change_field('gc_mapping', 'content_type', 'content_type', array(
+function gathercontent_update_7301() {
+  db_change_field('gathercontent_mapping', 'content_type', 'content_type', array(
     'type' => 'varchar',
     'length' => 255,
     'not null' => FALSE,
     'default' => '',
   ));
-  db_change_field('gc_mapping', 'data', 'data', array(
+  db_change_field('gathercontent_mapping', 'data', 'data', array(
     'type' => 'blob',
     'not null' => FALSE,
     'size' => 'big',
@@ -263,47 +263,47 @@ function gc_update_7301() {
 }
 
 /**
- * Add field `gc_import_status` to `node` table.
+ * Add field `gathercontent_import_status` to `node` table.
  */
-function gc_update_7302() {
-  db_add_field('node', 'gc_import_status', array(
+function gathercontent_update_7302() {
+  db_add_field('node', 'gathercontent_import_status', array(
     'definition' => 'The ID of content in GatherContent.',
     'type' => 'text',
   ));
 }
 
 /**
- * Set `gc_urlkey` variable.
+ * Set `gathercontent_urlkey` variable.
  */
-function gc_update_7303() {
+function gathercontent_update_7303() {
   // Load all accounts.
   $acc_obj = new GatherContent\Account();
   $accounts = $acc_obj->getAccounts();
   // Load local account and extract account id.
-  $local_account = variable_get('gc_account');
+  $local_account = variable_get('gathercontent_account');
   reset($local_account);
   $local_account_id = key($local_account);
   // Find urlkey for local account id and store it in variable.
   foreach ($accounts as $account) {
     if ($local_account_id === $account->id) {
-      variable_set('gc_urlkey', $account->slug);
+      variable_set('gathercontent_urlkey', $account->slug);
       break;
     }
   }
 }
 
 /**
- * Remove `updated_gc` field from DB.
+ * Remove `updated_gathercontent` field from DB.
  */
-function gc_update_7304() {
-  db_drop_field('gc_mapping', 'updated_gc');
+function gathercontent_update_7304() {
+  db_drop_field('gathercontent_mapping', 'updated_gathercontent');
 }
 
 /**
- * Add field `template` to `gc_mapping` table.
+ * Add field `template` to `gathercontent_mapping` table.
  */
-function gc_update_7305() {
-  db_add_field('gc_mapping', 'template', array(
+function gathercontent_update_7305() {
+  db_add_field('gathercontent_mapping', 'template', array(
     'type' => 'blob',
     'not null' => FALSE,
     'size' => 'big',
@@ -314,12 +314,12 @@ function gc_update_7305() {
 /**
  * Set templates to existing mappings.
  */
-function gc_update_7306() {
-  $mappings = entity_load('gc_mapping');
+function gathercontent_update_7306() {
+  $mappings = entity_load('gathercontent_mapping');
   $tmp = new GatherContent\Template();
   foreach ($mappings as $mapping) {
     if (empty($mapping->template)) {
-      $template = $tmp->getTemplate($mapping->gc_template_id);
+      $template = $tmp->getTemplate($mapping->gathercontent_template_id);
       $mapping->template = serialize($template);
       $mapping->save();
     }
@@ -327,24 +327,24 @@ function gc_update_7306() {
 }
 
 /**
- * Create tables for gc_operation and gc_operation_item entities.
+ * Create tables for gathercontent_operation and gathercontent_operation_item entities.
  */
-function gc_update_7307() {
-  db_create_table('gc_operation', drupal_get_schema_unprocessed('gc', 'gc_operation'));
-  db_create_table('gc_operation_item', drupal_get_schema_unprocessed('gc', 'gc_operation_item'));
+function gathercontent_update_7307() {
+  db_create_table('gathercontent_operation', drupal_get_schema_unprocessed('gathercontent', 'gathercontent_operation'));
+  db_create_table('gathercontent_operation_item', drupal_get_schema_unprocessed('gathercontent', 'gathercontent_operation_item'));
 }
 
 /**
  * Implements hook_requirements().
  */
-function gc_requirements($phase) {
+function gathercontent_requirements($phase) {
   if ($phase !== 'runtime') {
     return array();
   }
 
   $t = get_t();
   $requirements = array(
-    'gc_tablesorter' => array(
+    'gathercontent_tablesorter' => array(
       'title' => $t('GatherContent: Tablesorter plugin'),
       'value' => $t('Unavailable.'),
       'description' => $t('Install <a href="@libraries-page">Libraries</a> module.', array(
@@ -358,12 +358,12 @@ function gc_requirements($phase) {
     $tablesorter_lib_info = libraries_detect('tablesorter-mottie');
 
     if ($tablesorter_lib_info['installed'] && $tablesorter_lib_info['version']) {
-      $requirements['gc_tablesorter']['value'] = $tablesorter_lib_info['version'];
-      $requirements['gc_tablesorter']['severity'] = REQUIREMENT_OK;
-      unset($requirements['gc_tablesorter']['description']);
+      $requirements['gathercontent_tablesorter']['value'] = $tablesorter_lib_info['version'];
+      $requirements['gathercontent_tablesorter']['severity'] = REQUIREMENT_OK;
+      unset($requirements['gathercontent_tablesorter']['description']);
     }
     else {
-      $requirements['gc_tablesorter']['description'] = $t('Download <a href="@tablesorter-github">Mottie\'s tablesorter plugin</a> to <code>sites/all/libraries</code> toget sortable table headers at GatherContent admin UI. Rename it\'s folder to <code>tablesorter-mottie</code>.',
+      $requirements['gathercontent_tablesorter']['description'] = $t('Download <a href="@tablesorter-github">Mottie\'s tablesorter plugin</a> to <code>sites/all/libraries</code> toget sortable table headers at GatherContent admin UI. Rename it\'s folder to <code>tablesorter-mottie</code>.',
         array(
           '@tablesorter-github' => 'https://github.com/Mottie/tablesorter/archive/v2.25.8.zip',
         ));

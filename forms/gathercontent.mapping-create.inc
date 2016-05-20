@@ -11,11 +11,11 @@ use GatherContent\Template;
 /**
  * GatherContent template import.
  *
- * In this form, we load templates from GC and create empty Mappings for them.
+ * In this form, we load templates from gathercontent and create empty Mappings for them.
  *
  * @inheritdoc
  */
-function gc_mapping_form_templates($form, &$form_state) {
+function gathercontent_mapping_form_templates($form, &$form_state) {
   $pr_obj = new Project();
   $projects = $pr_obj->getProjects();
 
@@ -39,9 +39,9 @@ function gc_mapping_form_templates($form, &$form_state) {
 
   foreach ($projects as $project_id => $project) {
     $remote_templates = $template_obj->getTemplates($project_id);
-    $query = db_select('gc_mapping', 'm')
+    $query = db_select('gathercontent_mapping', 'm')
       ->distinct()
-      ->fields('m', array('gc_template', 'gc_template_id'))
+      ->fields('m', array('gathercontent_template', 'gathercontent_template_id'))
       ->execute();
     $local_templates = $query->fetchAllKeyed(1, 0);
 
@@ -82,7 +82,7 @@ function gc_mapping_form_templates($form, &$form_state) {
  *
  * @inheritdoc
  */
-function gc_mapping_form_templates_submit($form, &$form_state) {
+function gathercontent_mapping_form_templates_submit($form, &$form_state) {
   if ($form_state['triggering_element']['#id'] == 'edit-submit') {
     // Load all projects.
     $pr_obj = new Project();
@@ -96,15 +96,15 @@ function gc_mapping_form_templates_submit($form, &$form_state) {
         $tmp_obj = new Template();
         $template = $tmp_obj->getTemplate($template_id);
         $mapping_values = array(
-          'gc_project_id' => $template->project_id,
-          'gc_project' => $projects[$template->project_id],
-          'gc_template_id' => $template_id,
-          'gc_template' => $template->name,
+          'gathercontent_project_id' => $template->project_id,
+          'gathercontent_project' => $projects[$template->project_id],
+          'gathercontent_template_id' => $template_id,
+          'gathercontent_template' => $template->name,
           'created' => time(),
-          'updated_gc' => $template->updated_at,
+          'updated_gathercontent' => $template->updated_at,
           'template' => serialize($template),
         );
-        $mapping = entity_create('gc_mapping', $mapping_values);
+        $mapping = entity_create('gathercontent_mapping', $mapping_values);
         if (is_object($mapping)) {
           $mapping->save();
         }
@@ -112,5 +112,5 @@ function gc_mapping_form_templates_submit($form, &$form_state) {
     }
   }
 
-  drupal_goto('admin/config/gc/mapping');
+  drupal_goto('admin/config/gathercontent/mapping');
 }
