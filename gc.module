@@ -519,6 +519,7 @@ function _gc_fetcher($gc_id, $uuid, $status = NULL, $entity = NULL, $parent_menu
 
         if (!$is_translatable && !$_title_is_mapped) {
           $node->title->set($content->name);
+          gc_create_menu_link($entity->nid, $content->name, $parent_menu_item);
         }
 
         $node->save(TRUE);
@@ -667,7 +668,7 @@ function gc_gc_process_content_pane(EntityMetadataWrapper &$node, $gc_id, $local
  */
 function gc_create_menu_link($nid, $title, $plid, $lang = NULL, &$tsid = NULL) {
   if (!empty($plid)) {
-    if (is_null($lang)) {
+    if (is_null($lang) || $lang === LANGUAGE_NONE) {
       // Single language node.
       list($menu_name, $mlid) = explode(':', $plid);
       if ($menu_name === 'node') {
@@ -747,17 +748,18 @@ function _gc_get_menu_by_gc_id(&$mlid, &$menu_name, $language = NULL) {
   if (isset($node_result['node'])) {
     // Load menu_link by node_id.
     $nodes = reset(array_keys($node_result['node']));
-    $ml_result = $query->entityCondition('entity_type', 'menu_link')
-      ->propertyCondition('link_path', 'node/' . $nodes);
+
+    $query = db_select('menu_links', 'ml');
+    $query->condition('link_path', 'node/' . $nodes);
     if (!is_null($language)) {
-      $ml_result->propertyCondition('language', $language);
+      $query->condition('language', $language);
     }
-    $ml_result->execute();
-    if (isset($ml_result['menu_link'])) {
-      $ml = reset(array_keys($ml_result['menu_link']));
-      $ml_object = menu_link_load($ml);
-      $menu_name = $ml_object['menu_name'];
-      $mlid = $ml_object['mlid'];
+    $query->fields('ml');
+    $result = $query->execute()->fetchAllAssoc('mlid');
+    if (!empty($result)) {
+      $ml_object = reset($result);
+      $menu_name = $ml_object->menu_name;
+      $mlid = $ml_object->mlid;
     }
   }
 }

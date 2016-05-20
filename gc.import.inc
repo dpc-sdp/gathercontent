@@ -299,46 +299,49 @@ function gc_import_form_select_fetch_content($form, &$form_state) {
  * @inheritdoc
  */
 function gc_import_form_select_validate($form, &$form_state) {
-  $stack = array();
-  $import_content = array_filter($form_state['values']['content']);
-  $menu = array_intersect_key(array_filter($form_state['values']['menu']), array_filter($form_state['values']['content']));
-  if (!empty($import_content) && !empty($menu)) {
+  if ($form_state['triggering_element']['#type'] === 'submit') {
+    $stack = array();
+    $import_content = array_filter($form_state['values']['content']);
+    $menu = array_intersect_key(array_filter($form_state['values']['menu']), array_filter($form_state['values']['content']));
+    if (!empty($import_content) && !empty($menu)) {
 
-    foreach ($import_content as $k => $value) {
-      if (isset($menu[$value]) && $menu[$value] != -1) {
-        $stack[] = $value;
-        unset($import_content[$k]);
-      }
-    }
-
-    if (!empty($import_content)) {
-      // Load all by project_id.
-      $first = reset($import_content);
-      $content_obj = new Content();
-      $content = $content_obj->getContent($first);
-
-      $contents_source = $content_obj->getContents($content->project_id);
-      $content = array();
-
-      foreach ($contents_source as $value) {
-        $content[$value->id] = $value;
-      }
-
-      $num_of_repeats = 0;
-      $size = count($import_content);
-
-      while (!empty($import_content)) {
-        $current = reset($import_content);
-        if (isset($stack[$content[$current]->parent_id])) {
-          $stack[] = $current;
-          array_shift($import_content);
+      foreach ($import_content as $k => $value) {
+        if ((isset($menu[$value]) && $menu[$value] != -1) || !isset($menu[$value])) {
+          $stack[] = $value;
+          unset($import_content[$k]);
         }
-        else {
-          array_shift($import_content);
-          array_push($import_content, $current);
-          $num_of_repeats++;
-          if ($num_of_repeats >= ($size * $size)) {
-            form_set_error('form', t("Please check your menu selection, some of items don't have parent in import."));
+      }
+
+      if (!empty($import_content)) {
+        // Load all by project_id.
+        $first = reset($import_content);
+        $content_obj = new Content();
+        $content = $content_obj->getContent($first);
+
+        $contents_source = $content_obj->getContents($content->project_id);
+        $content = array();
+
+        foreach ($contents_source as $value) {
+          $content[$value->id] = $value;
+        }
+
+        $num_of_repeats = 0;
+        $size = count($import_content);
+
+        while (!empty($import_content)) {
+          $current = reset($import_content);
+          if (in_array($content[$current]->parent_id, $stack)) {
+            $stack[] = $current;
+            array_shift($import_content);
+          }
+          else {
+            array_shift($import_content);
+            array_push($import_content, $current);
+            $num_of_repeats++;
+            if ($num_of_repeats >= ($size * $size)) {
+              form_set_error('form', t("Please check your menu selection, some of items don't have parent in import."));
+              $import_content = array();
+            }
           }
         }
       }
@@ -444,7 +447,7 @@ function gc_import_form_confirm_submit($form, &$form_state) {
   $import_content = $form_state['object']->nodes;
 
   foreach ($import_content as $k => $value) {
-    if (isset($form_state['object']->menu[$value]) && $form_state['object']->menu[$value] != -1) {
+    if ((isset($form_state['object']->menu[$value]) && $form_state['object']->menu[$value] != -1) || !isset($form_state['object']->menu[$value])) {
       $parent_menu_item = isset($form_state['object']->menu[$value]) ? $form_state['object']->menu[$value] : NULL;
       $operations[] = array(
         'gc_import_process',
@@ -455,6 +458,7 @@ function gc_import_form_confirm_submit($form, &$form_state) {
     }
   }
 
+  // If there are any items
   if (!empty($import_content)) {
     // Load all by project_id.
     $first = reset($import_content);
@@ -470,7 +474,7 @@ function gc_import_form_confirm_submit($form, &$form_state) {
 
     while (!empty($import_content)) {
       $current = reset($import_content);
-      if (isset($stack[$content[$current]->parent_id])) {
+      if (in_array($content[$current]->parent_id, $stack)) {
         $parent_menu_item = 'node:' . $content[$current]->parent_id;
         $operations[] = array(
           'gc_import_process',
