@@ -124,7 +124,7 @@ function gathercontent_mapping_edit_form($form, &$form_state, $id) {
             }
           }
           else {
-            if ($mapping_data[$fieldset->name]['type'] === 'content') {
+            if ((isset($mapping_data[$fieldset->name]['type']) && $mapping_data[$fieldset->name]['type'] === 'content') || !isset($mapping_data[$fieldset->name]['type'])) {
               $d_fields = _filter_fields($gathercontent_field, $mapping->content_type);
             }
             else {
