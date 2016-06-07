@@ -47,6 +47,40 @@ function gathercontent_install() {
       'unsigned' => TRUE,
     )
   );
+
+  _gathercontent_create_text_formats();
+}
+
+function _gathercontent_create_text_formats() {
+  $filtered_html_format = array(
+    'format' => 'filtered_gathercontent_html',
+    'name' => 'Filtered GatherContent HTML',
+    'weight' => 0,
+    'filters' => array(
+      // URL filter.
+      'filter_url' => array(
+        'weight' => 0,
+        'status' => 1,
+      ),
+      // HTML filter.
+      'filter_html' => array(
+        'weight' => 1,
+        'status' => 1,
+      ),
+      // Line break filter.
+      'filter_autop' => array(
+        'weight' => 2,
+        'status' => 1,
+      ),
+      // HTML corrector filter.
+      'filter_htmlcorrector' => array(
+        'weight' => 10,
+        'status' => 1,
+      ),
+    ),
+  );
+  $filtered_html_format = (object) $filtered_html_format;
+  filter_format_save($filtered_html_format);
 }
 
 /**
@@ -332,6 +366,29 @@ function gathercontent_update_7306() {
 function gathercontent_update_7307() {
   db_create_table('gathercontent_operation', drupal_get_schema_unprocessed('gathercontent', 'gathercontent_operation'));
   db_create_table('gathercontent_operation_item', drupal_get_schema_unprocessed('gathercontent', 'gathercontent_operation_item'));
+}
+
+/**
+ * Create custom GatherContent formats and revert views.
+ */
+function gathercontent_update_7308() {
+  _gathercontent_create_text_formats();
+
+  $views = views_get_all_views();
+
+  // Find all overridden views.
+  foreach ($views as $view) {
+    if ($view->disabled) {
+      continue;
+    }
+    if ($view->type == t('Overridden')) {
+      // Revert the view.
+      $view->delete();
+      // Clear its cache.
+      ctools_include('object-cache');
+      ctools_object_cache_clear('view', $view->name);
+    }
+  }
 }
 
 /**

@@ -74,7 +74,7 @@ function gathercontent_views_default_views() {
   $handler->display->display_options['footer']['area']['label'] = 'Table description';
   $handler->display->display_options['footer']['area']['content'] = 'Template not mapped: Please check template mapping.
 Template fields mismatch: This could be because the template in GatherContent has changed and the changed template has not been updated in Drupal.';
-  $handler->display->display_options['footer']['area']['format'] = 'filtered_html';
+  $handler->display->display_options['footer']['area']['format'] = 'filtered_gathercontent_html';
   /* Field: gathercontent Operation Item: gathercontent Status Color */
   $handler->display->display_options['fields']['item_status_color']['id'] = 'item_status_color';
   $handler->display->display_options['fields']['item_status_color']['table'] = 'gathercontent_operation_item';
@@ -693,7 +693,7 @@ Template fields mismatch: This could be because the template in GatherContent ha
   $handler->display->display_options['header']['area']['table'] = 'views';
   $handler->display->display_options['header']['area']['field'] = 'area';
   $handler->display->display_options['header']['area']['content'] = 'Choose the content you\'d like to update. This will update the content in GatherContent with the latest version in Drupal. Please note this feature currently only supports the update of written content (text fields).';
-  $handler->display->display_options['header']['area']['format'] = 'filtered_html';
+  $handler->display->display_options['header']['area']['format'] = 'filtered_gathercontent_html';
   $handler->display->display_options['defaults']['fields'] = FALSE;
   /* Field: Bulk operations: Content */
   $handler->display->display_options['fields']['views_bulk_operations']['id'] = 'views_bulk_operations';

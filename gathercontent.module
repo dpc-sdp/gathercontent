@@ -534,7 +534,7 @@ function _gathercontent_fetcher($gathercontent_id, $uuid, $status = NULL, $entit
       }
       catch (\Exception $e) {
         watchdog('gathercontent_import', print_r($e, TRUE), array(), WATCHDOG_ERROR);
-        $operation_item->status = "Operation failed: $e->getMessage()";
+        $operation_item->status = "Operation failed:" . $e->getMessage();
         entity_save('gathercontent_operation_item', $operation_item);
         return FALSE;
       }
@@ -642,19 +642,39 @@ function gathercontent_gathercontent_process_content_pane(EntityMetadataWrapper 
               $node->language($language)->{$local_field_name}->set($field->value);
             }
             gathercontent_create_menu_link($nid, $field->value, $plid, $language, $tsid);
+            $_title_is_mapped = TRUE;
+
           }
           else {
             $node->language($language)->{$local_field_name}->set(array(
               'value' => $field->value,
-              'format' => ($field->plain_text ? 'plain_text' : 'filtered_html'),
+              'format' => ($field->plain_text ? 'plain_text' : 'filtered_gathercontent_html'),
             ));
           }
         }
         else {
-          $node->{$local_field_name}->set(array(
-            'value' => $field->value,
-            'format' => ($field->plain_text ? 'plain_text' : 'filtered_html'),
-          ));
+          if (title_field_replacement_enabled('node', $content_type, 'title')
+            && title_field_replacement_info('node', 'title')['field']['field_name'] === $local_field_name
+          ) {
+            // If we are setting title for default language,
+            // we set it just into title attribute and
+            // it's synced automatically.
+            // @see http://andrejgaluf.com/blog/2015-11-27/drupal-7-setting-title-module-field-programmatically
+            if ($language === $node->language->value()) {
+              $node->title->set($field->value);
+            }
+            else {
+              $node->language($language)->{$local_field_name}->set($field->value);
+            }
+            gathercontent_create_menu_link($nid, $field->value, $plid, $language, $tsid);
+            $_title_is_mapped = TRUE;
+          }
+          else {
+            $node->{$local_field_name}->set(array(
+              'value' => $field->value,
+              'format' => ($field->plain_text ? 'plain_text' : 'filtered_gathercontent_html'),
+            ));
+          }
         }
       }
       break;
@@ -782,13 +802,13 @@ function gathercontent_gathercontent_process_section_field(EntityMetadataWrapper
   if ($is_translatable) {
     $node->language($language)->$local_field_name->set(array(
       'value' => '<h3>' . $field->title . '</h3>' . $field->subtitle,
-      'format' => 'filtered_html',
+      'format' => 'filtered_gathercontent_html',
     ));
   }
   else {
     $node->$local_field_name->set(array(
       'value' => '<h3>' . $field->title . '</h3>' . $field->subtitle,
-      'format' => 'filtered_html',
+      'format' => 'filtered_gathercontent_html',
     ));
   }
 }
