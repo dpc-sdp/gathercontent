@@ -83,7 +83,7 @@ class views_handler_field_node_gathercontent_updated extends views_handler_field
       }
     }
     else {
-      return t('deleted in GatherContent');
+      return t('Not accessible');
     }
   }
 

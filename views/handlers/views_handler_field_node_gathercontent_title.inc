@@ -17,7 +17,7 @@ class views_handler_field_node_gathercontent_title extends views_handler_field {
 
   function render($values) {
     $gathercontent_id = $values->{$this->aliases['gathercontent_id']};
-    return isset($this->view->field['gathercontent_status']->contents[$gathercontent_id]['name']) ? $this->view->field['gathercontent_status']->contents[$gathercontent_id]['name'] : t('deleted in GatherContent');
+    return isset($this->view->field['gathercontent_status']->contents[$gathercontent_id]['name']) ? $this->view->field['gathercontent_status']->contents[$gathercontent_id]['name'] : t('Not accessible');
   }
 
 }

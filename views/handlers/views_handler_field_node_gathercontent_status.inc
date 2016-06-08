@@ -23,7 +23,7 @@ class views_handler_field_node_gathercontent_status extends views_handler_field 
       $this->contents[$gathercontent_id]['status']->data->name;
     }
     else {
-      return t('deleted in GatherContent');
+      return t('Not accessible');
     }
   }
 

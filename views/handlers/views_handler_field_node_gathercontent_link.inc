@@ -23,7 +23,7 @@ class views_handler_field_node_gathercontent_link extends views_handler_field_no
       $text = !empty($this->options['text']) ? $this->options['text'] : t('Open');
     }
     else {
-      $text = t('deleted in GatherContent');
+      $text = t('Not accessible');
     }
     return $text;
   }

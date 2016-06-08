@@ -9,6 +9,7 @@ namespace GatherContent;
 
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
 
 /**
  * Class Account.
@@ -113,8 +114,24 @@ class Content {
       }
     }
     catch (\Exception $e) {
-      drupal_set_message($e->getMessage(), 'error');
-      watchdog('gathercontent', $e->getMessage(), array(), WATCHDOG_ERROR);
+      if ($e instanceof RequestException) {
+        $level = floor($e->getResponse()->getStatusCode() / 100);
+        if ($level == '4' || $level == '5') {
+          drupal_set_message(t('Some content could not be accessed in
+        GatherContent and updated. This could be due to the Items being deleted
+        in GatherContent or a change in module authentication details.')
+            , 'error');
+        }
+        else {
+          drupal_set_message($e->getMessage(), 'error');
+          watchdog('gathercontent', $e->getMessage(), array(), WATCHDOG_ERROR);
+        }
+
+      }
+      else {
+        drupal_set_message($e->getMessage(), 'error');
+        watchdog('gathercontent', $e->getMessage(), array(), WATCHDOG_ERROR);
+      }
     }
 
     return $accounts;
