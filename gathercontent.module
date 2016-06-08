@@ -1,0 +1,599 @@
+<?php
+/**
+ * @file
+ * Main module file for GatherContent module.
+ */
+
+use Drupal\gathercontent\DAO\Content;
+use Drupal\gathercontent\DAO\Project;
+use Drupal\gathercontent\DAO\Template;
+use Drupal\gathercontent\Entity\GathercontentOperationItem;
+
+/**
+ * Helper function for fetching data from GatherContent.
+ *
+ * @param int $gc_id
+ *   ID of GatherContent piece of content.
+ * @param object|null $entity
+ *   Object of entity, if we are updating exiting content.
+ *
+ * @return int|FALSE
+ *   Return nid if operation was successful.
+ */
+function _gc_fetcher($gc_id, $uuid, $status = NULL, $entity = NULL, $parent_menu_item = NULL) {
+  $user = \Drupal::currentUser();
+
+  $tsid = NULL;
+
+  $content_obj = new Content();
+  $content = $content_obj->getContent($gc_id);
+
+  if (!empty($status)) {
+    $status_obj = new Project();
+    $status = $status_obj->getStatus($content->project_id, $status);
+  }
+
+  $temp_obj = new Template();
+  $template = $temp_obj->getTemplate($content->template_id);
+
+  $operation_item = \Drupal::entityManager()
+    ->getStorage('gc_operation_item')
+    ->create(array(
+      'operation_uuid' => $uuid,
+      'item_status' => (!empty($status) ? $status->name : $content->status->data->name),
+      'item_status_color' => (!empty($status) ? $status->color : $content->status->data->color),
+      'template_name' => $template->name,
+      'item_name' => $content->name,
+      'gc_id' => $gc_id,
+    ));
+
+  // Check if mapping exists.
+  $query = new EntityFieldQuery();
+  if (is_null($entity)) {
+    $result = $query->entityCondition('entity_type', 'gc_mapping')
+      ->propertyCondition('gc_project_id', $content->project_id)
+      ->propertyCondition('gc_template_id', $content->template_id)
+      ->execute();
+  }
+  else {
+    $result = $query->entityCondition('entity_type', 'gc_mapping')
+      ->propertyCondition('id', $entity->gc_mapping_id)
+      ->execute();
+  }
+
+  if (isset($result['gc_mapping'])) {
+    // If mapping exists, start mapping remote fields to local ones.
+    $mapping_ids = array_keys($result['gc_mapping']);
+    $entities = \Drupal::entityManager()->getStorage('gc_mapping');
+    $mapping = reset($entities);
+
+    $mapping_data = unserialize($mapping->data);
+
+    if (empty($mapping_data)) {
+      return FALSE;
+    }
+
+    $mapping_data_copy = $mapping_data;
+    $first = array_shift($mapping_data_copy);
+
+    if (is_null($entity)) {
+      $entity = \Drupal::entityManager()->getStorage('node')->create(array(
+        'type' => $mapping->content_type,
+        'gc_mapping_id' => $mapping->id,
+        'gc_id' => $content->id,
+        'uid' => $user->uid,
+        'language' => isset($first['language']) ? $first['language'] : \Drupal\Core\Language\Language::LANGCODE_NOT_SPECIFIED,
+      ));
+      $entity->save();
+    }
+
+    if ($entity !== FALSE) {
+      $node = entity_metadata_wrapper('node', $entity);
+      $metatags = array();
+      $_title_is_mapped = FALSE;
+      try {
+        foreach ($content->config as $pane) {
+          $is_translatable = \Drupal::moduleHandler()
+              ->moduleExists('entity_translation')
+            && entity_translation_node_supported_type($mapping->content_type)
+            && isset($mapping_data[$pane->name]['language'])
+            && ($mapping_data[$pane->name]['language'] != \Drupal\Core\Language\Language::LANGCODE_NOT_SPECIFIED);
+          if ($is_translatable) {
+            $language = $mapping_data[$pane->name]['language'];
+          }
+          else {
+            $language = \Drupal\Core\Language\Language::LANGCODE_NOT_SPECIFIED;
+          }
+          foreach ($pane->elements as $field) {
+            if (isset($mapping_data[$pane->name]['elements'][$field->name]) && !empty($mapping_data[$pane->name]['elements'][$field->name])) {
+              $local_field_name = $mapping_data[$pane->name]['elements'][$field->name];
+              if (isset($mapping_data[$pane->name]['type']) && ($mapping_data[$pane->name]['type'] === 'content') || !isset($mapping_data[$pane->name]['type'])) {
+                gc_gc_process_content_pane($node, $gc_id, $local_field_name, $field, $mapping->content_type, $is_translatable, $language, $parent_menu_item, $entity->nid, $tsid, $_title_is_mapped);
+              }
+              elseif (isset($mapping_data[$pane->name]['type']) && ($mapping_data[$pane->name]['type'] === 'metatag')) {
+                gc_gc_process_metatag_pane($node, $metatags, $gc_id, $local_field_name, $field, $mapping->content_type, $is_translatable, $language);
+              }
+            }
+            else {
+              $operation_item->status = "Operation failed: Template fields mismatch.";
+              $operation_item->save();
+            }
+          }
+          // We need to create new translation if is translatable.
+          if ($is_translatable && (!isset($node->language) || empty($node->language))) {
+            $node->language->set($language);
+            $node->save(TRUE);
+          }
+          elseif ($is_translatable && (isset($node->language) || !empty($node->language))) {
+            $handler = entity_translation_get_handler('node', $entity);
+            $translation = array(
+              'translate' => 0,
+              'status' => 1,
+              'language' => $language,
+              'source' => ($language === $node->language->value() ? '' : $node->language->value()),
+            );
+            $handler->setTranslation($translation, $node->value());
+          }
+        }
+
+        if (!$is_translatable && !$_title_is_mapped) {
+          $node->title->set($content->name);
+        }
+
+        $node->save(TRUE);
+        if (\Drupal::moduleHandler()
+            ->moduleExists('metatag') && metatag_entity_supports_metatags('node', $mapping->content_type)
+        ) {
+          module_load_include('module', 'metatag');
+          metatag_metatags_save('node', $entity->nid, $entity->vid, $metatags);
+        }
+        $operation_item->status = "Success";
+        $operation_item->nid = $entity->nid;
+        $operation_item->save();
+        return $entity->nid;
+      }
+      catch (\Exception $e) {
+        \Drupal::logger('gc_import')->error(print_r($e, TRUE), array());
+        $operation_item->status = "Operation failed: $e->getMessage()";
+        $operation_item->save();
+        return FALSE;
+      }
+    }
+    else {
+      $operation_item->status = "System error, please contact you administrator.";
+      $operation_item->save();
+      return FALSE;
+    }
+  }
+  else {
+    $operation_item->status = "Operation failed: Template not mapped.";
+    $operation_item->save();
+    return FALSE;
+  }
+}
+
+/**
+ * @param EntityMetadataWrapper $node
+ *   Object of node.
+ * @param array $metatags
+ *   Array of metatags.
+ * @param int $gc_id
+ *   ID of item in GatherContent.
+ * @param string $local_field_name
+ *   Name of local Drupal field.
+ * @param object $field
+ *   Object of GatherContent field.
+ * @param string $content_type
+ *   Name of Content type, we are mapping to.
+ * @param bool $is_translatable
+ *   Indicator if node is translatable.
+ * @param string $language
+ *   Language of translation if applicable.
+ *
+ * @throws \Exception
+ */
+function gc_gc_process_metatag_pane(EntityMetadataWrapper &$node, &$metatags, $gc_id, $local_field_name, $field, $content_type, $is_translatable = FALSE, $language = \Drupal\Core\Language\Language::LANGCODE_NOT_SPECIFIED) {
+  if (\Drupal::moduleHandler()
+      ->moduleExists('metatag') && metatag_entity_supports_metatags('node', $content_type)
+  ) {
+    $metatags[$language][$local_field_name] = array('value' => $field->value);
+  }
+  else {
+    throw new Exception("Metatag module not enabled or entity doesn't support 
+    metatags while trying to map values woth metatag content.");
+  }
+}
+
+/**
+ * @param EntityMetadataWrapper $node
+ *   Object of node.
+ * @param int $gc_id
+ *   ID of item in GatherContent.
+ * @param string $local_field_name
+ *   Name of local Drupal field.
+ * @param object $field
+ *   Object of GatherContent field.
+ * @param string $content_type
+ *   Name of Content type, we are mapping to.
+ * @param bool $is_translatable
+ *   Indicator if node is translatable.
+ * @param string $language
+ *   Language of translation if applicable.
+ */
+function gc_gc_process_content_pane(EntityMetadataWrapper &$node, $gc_id, $local_field_name, $field, $content_type, $is_translatable = FALSE, $language = \Drupal\Core\Language\Language::LANGCODE_NOT_SPECIFIED, $plid = NULL, $nid = NULL, &$tsid = NULL, &$_title_is_mapped = FALSE) {
+  $field_info = field_info_field($local_field_name);
+  $is_translatable = $is_translatable && $field_info['translatable'];
+  switch ($field->type) {
+    case 'files':
+      $content_obj = new Content();
+      $files = $content_obj->getFiles($gc_id);
+      gc_gc_process_files_field($node, $local_field_name, $field->name, $is_translatable, $language, $files);
+      break;
+
+    case 'choice_radio':
+      gc_gc_process_choice_radio_field($node, $local_field_name, $field->name, $is_translatable, $language, $field->options);
+      break;
+
+    case 'choice_checkbox':
+      gc_gc_process_choice_checkbox_field($node, $local_field_name, $field->name, $is_translatable, $language, $field->options);
+      break;
+
+    case 'section':
+      gc_gc_process_section_field($node, $local_field_name, $field->name, $is_translatable, $language, $field);
+      break;
+
+    default:
+      if ($local_field_name === 'title') {
+        $node->title->set($field->value);
+        $_title_is_mapped = TRUE;
+        gc_create_menu_link($nid, $field->value, $plid);
+      }
+      else {
+        if ($is_translatable) {
+          if (title_field_replacement_enabled('node', $content_type, 'title')
+            && title_field_replacement_info('node', 'title')['field']['field_name'] === $local_field_name
+          ) {
+            // If we are setting title for default language,
+            // we set it just into title attribute and
+            // it's synced automatically.
+            // @see http://andrejgaluf.com/blog/2015-11-27/drupal-7-setting-title-module-field-programmatically
+            if ($language === $node->language->value()) {
+              $node->title->set($field->value);
+            }
+            else {
+              $node->language($language)->{$local_field_name}->set($field->value);
+            }
+            gc_create_menu_link($nid, $field->value, $plid, $language, $tsid);
+          }
+          else {
+            $node->language($language)->{$local_field_name}->set(array(
+              'value' => $field->value,
+              'format' => ($field->plain_text ? 'plain_text' : 'filtered_html'),
+            ));
+          }
+        }
+        else {
+          $node->{$local_field_name}->set(array(
+            'value' => $field->value,
+            'format' => ($field->plain_text ? 'plain_text' : 'filtered_html'),
+          ));
+        }
+      }
+      break;
+  }
+}
+
+/**
+ * @param \EntityMetadataWrapper $node
+ * @param $field
+ * @param $plid
+ */
+function gc_create_menu_link($nid, $title, $plid, $lang = NULL, &$tsid = NULL) {
+  if (!empty($plid)) {
+    if (is_null($lang)) {
+      // Single language node.
+      list($menu_name, $mlid) = explode(':', $plid);
+      if ($menu_name === 'node') {
+        _gc_get_menu_by_gc_id($mlid, $menu_name);
+      }
+      $link = array(
+        'link_path' => 'node/' . $nid,
+        'link_title' => $title,
+        'menu_name' => $menu_name,
+        'plid' => $mlid,
+      );
+      menu_link_save($link);
+    }
+    elseif (\Drupal::moduleHandler()->moduleExists('i18n_menu')) {
+      if (!is_null($lang) && is_null($tsid)) {
+        // Multi language node - first language.
+        $menu_translation_set = i18n_translation_set_create('menu_link');
+        list($menu_name, $mlid) = explode(':', $plid);
+        if ($menu_name === 'node') {
+          _gc_get_menu_by_gc_id($mlid, $menu_name, $lang);
+        }
+        $link = array(
+          'link_path' => 'node/' . $nid,
+          'link_title' => $title,
+          'menu_name' => $menu_name,
+          'plid' => $mlid,
+          'language' => $lang,
+        );
+        menu_link_save($link);
+
+        $menu_translation_set->add_item($link);
+        $menu_translation_set->save_translations();
+
+        $tsid = $menu_translation_set->tsid;
+      }
+      elseif (!is_null($lang) && !is_null($tsid)) {
+        // Multi language node - other language.
+        $menu_translation_set = i18n_translation_set_load($tsid);
+        list($menu_name, $mlid) = explode(':', $plid);
+        if ($menu_name === 'node') {
+          _gc_get_menu_by_gc_id($mlid, $menu_name, $lang);
+        }
+        else {
+          // Load parent translation.
+          $item = menu_link_load($mlid);
+          $translation_set = i18n_translation_set_load($item['i18n_tsid']);
+          $translations = $translation_set->get_translations();
+          $mlid = $translations[$lang]['mlid'];
+        }
+        $link = array(
+          'link_path' => 'node/' . $nid,
+          'link_title' => $title,
+          'menu_name' => $menu_name,
+          'plid' => $mlid,
+          'language' => $lang,
+        );
+
+        menu_link_save($link);
+
+        $menu_translation_set->add_item($link);
+        $menu_translation_set->save_translations();
+      }
+    }
+  }
+}
+
+/**
+ * @param $mlid
+ * @param $menu_name
+ */
+function _gc_get_menu_by_gc_id(&$mlid, &$menu_name, $language = NULL) {
+  // Load node by gc_id.
+  $query = new EntityFieldQuery();
+  $node_result = $query->entityCondition('entity_type', 'node')
+    ->propertyCondition('gc_id', $mlid)
+    ->execute();
+  if (isset($node_result['node'])) {
+    // Load menu_link by node_id.
+    $nodes = reset(array_keys($node_result['node']));
+    $ml_result = $query->entityCondition('entity_type', 'menu_link')
+      ->propertyCondition('link_path', 'node/' . $nodes);
+    if (!is_null($language)) {
+      $ml_result->propertyCondition('language', $language);
+    }
+    $ml_result->execute();
+    if (isset($ml_result['menu_link'])) {
+      $ml = reset(array_keys($ml_result['menu_link']));
+      $ml_object = menu_link_load($ml);
+      $menu_name = $ml_object['menu_name'];
+      $mlid = $ml_object['mlid'];
+    }
+  }
+}
+
+/**
+ * @param EntityMetadataWrapper $node
+ *   Object of node.
+ * @param string $local_field_name
+ *   Local field name.
+ * @param string $gc_field_name
+ *   Name of field in GatherContent.
+ * @param bool $is_translatable
+ *   Indicator if node is translatable.
+ * @param string $language
+ *   Language of translation if applicable.
+ * @param object $field
+ *   Object with field attributes.
+ */
+function gc_gc_process_section_field(EntityMetadataWrapper &$node, $local_field_name, $gc_field_name, $is_translatable = FALSE, $language = 'und', $field) {
+  if ($is_translatable) {
+    $node->language($language)->$local_field_name->set(array(
+      'value' => '<h3>' . $field->title . '</h3>' . $field->subtitle,
+      'format' => 'filtered_html',
+    ));
+  }
+  else {
+    $node->$local_field_name->set(array(
+      'value' => '<h3>' . $field->title . '</h3>' . $field->subtitle,
+      'format' => 'filtered_html',
+    ));
+  }
+}
+
+/**
+ * @param EntityMetadataWrapper $node
+ *   Object of node.
+ * @param string $local_field_name
+ *   Local field name.
+ * @param string $gc_field_name
+ *   Name of field in GatherContent.
+ * @param bool $is_translatable
+ *   Indicator if node is translatable.
+ * @param string $language
+ *   Language of translation if applicable.
+ * @param array $options
+ *   Array of options.
+ */
+function gc_gc_process_choice_checkbox_field(EntityMetadataWrapper &$node, $local_field_name, $gc_field_name, $is_translatable = FALSE, $language = 'und', $options) {
+  foreach ($node->$local_field_name->getIterator() as $delta => $item) {
+    $node->$local_field_name->set(array(NULL));
+  }
+  $node->save(TRUE);
+  $selected_options = array();
+  foreach ($options as $option) {
+    if ($option->selected) {
+      $selected_options[] = $option->name;
+    }
+    if ($is_translatable) {
+      $node->language($language)->$local_field_name = $selected_options;
+    }
+    else {
+      $node->$local_field_name = $selected_options;
+    }
+  }
+}
+
+/**
+ * @param EntityMetadataWrapper $node
+ *   Object of node.
+ * @param string $local_field_name
+ *   Local field name.
+ * @param string $gc_field_name
+ *   Name of field in GatherContent.
+ * @param bool $is_translatable
+ *   Indicator if node is translatable.
+ * @param string $language
+ *   Language of translation if applicable.
+ * @param array $options
+ *   Array of options.
+ */
+function gc_gc_process_choice_radio_field(EntityMetadataWrapper &$node, $local_field_name, $gc_field_name, $is_translatable = FALSE, $language = 'und', $options) {
+  foreach ($options as $option) {
+    if ($option->selected) {
+      if (isset($option->value)) {
+        if ($is_translatable) {
+          $node->language($language)->$local_field_name->set($option->value);
+        }
+        else {
+          $node->$local_field_name->set($option->value);
+        }
+      }
+      else {
+        if ($is_translatable) {
+          $node->language($language)->$local_field_name->set($option->name);
+        }
+        else {
+          $node->$local_field_name->set($option->name);
+        }
+      }
+    }
+  }
+}
+
+/**
+ *
+ * @param EntityMetadataWrapper $node
+ *   Object of node.
+ * @param string $local_field_name
+ *   Local field name.
+ * @param string $gc_field_name
+ *   Name of field in GatherContent.
+ * @param bool $is_translatable
+ *   Indicator if node is translatable.
+ * @param string $language
+ *   Language of translation if applicable.
+ * @param array $files
+ *   Array of remote files.
+ */
+function gc_gc_process_files_field(EntityMetadataWrapper &$node, $local_field_name, $gc_field_name, $is_translatable = FALSE, $language = 'und', $files) {
+  $found_files = array();
+  foreach ($files as $file) {
+    if ($file->field === $gc_field_name) {
+      $found = FALSE;
+      foreach ($node->$local_field_name->value() as $file) {
+        if ($file['gc_id'] === $file->id) {
+          $found = TRUE;
+        }
+      }
+
+      if (!$found) {
+        $local_file = file_save_data(file_get_contents($file->url), 'public://' . $file->filename);
+        $local_file->gc_id = $file->id;
+        file_save($local_file);
+        $found_files[] = array('fid' => $local_file->fid);
+      }
+    }
+  }
+  if ($is_translatable) {
+    $node->language($language)->$local_field_name = $found_files;
+  }
+  else {
+    $node->$local_field_name = $found_files;
+  }
+}
+
+/**
+ * Batch operation callback.
+ *
+ * We are doing real import thing here.
+ *
+ * @param int $content_id
+ *   ID of content we want to import.
+ * @param int $status_id
+ *   ID of status, if 0 then we don't want to change status.
+ * @param string $uuid
+ *   UUID of operation.
+ * @param int|null $parent_menu_item
+ *   ID of mlid.
+ * @param array $context
+ *   Context of operation.
+ */
+function gc_import_process($content_id, $status_id, $uuid, $parent_menu_item = NULL, &$context) {
+  if (($nid = _gc_fetcher($content_id, $uuid, $status_id, NULL, $parent_menu_item)) !== FALSE) {
+    if ($status_id != 0) {
+      // Change status.
+      $content_obj = new Content();
+      $content_obj->updateStatus($content_id, $status_id);
+    }
+  };
+  $context['results']['uuid'] = $uuid;
+}
+
+/**
+ * Finished callback.
+ *
+ * @inheritdoc
+ */
+function gc_import_finished($success, $results, $operations) {
+  if ($success) {
+    // Select all items with uuid.
+    $result = \Drupal::entityQuery('gathercontent_operation_item')
+      ->condition('operation_uuid', $results['uuid'])
+      ->execute();
+    if (!empty($result)) {
+      $operation_items = GathercontentOperationItem::loadMultiple($result);
+      $success_counter = 0;
+      foreach ($operation_items as $operation_item) {
+        /** @var $operation_item  \Drupal\gathercontent\Entity\GathercontentOperationItem */
+        if ($operation_item->getStatus() === 'Success') {
+          $success_counter++;
+        }
+      }
+      $unsuccessful = count($result['gc_operation_item']) - $success_counter;
+      drupal_set_message(\Drupal::translation()
+        ->formatPlural($success_counter, '1 item was imported successfully.', '@count items were imported successfully.'));
+      if ($unsuccessful > 0) {
+        drupal_set_message(\Drupal::translation()
+          ->formatPlural($unsuccessful, '1 item was not imported. Check errors below.', '@count items were not imported. Check errors below.'), 'error');
+      }
+    }
+    \Drupal\Core\Url::fromUri('admin/config/gc/import/result/' . $results['uuid']);
+  }
+  else {
+    $error_operation = reset($operations);
+    drupal_set_message(
+      t('An error occurred while processing @operation with arguments : @args',
+        array(
+          '@operation' => $error_operation[0],
+          '@args' => print_r($error_operation[0], TRUE),
+        )
+      ),
+      'error'
+    );
+  }
+}
+

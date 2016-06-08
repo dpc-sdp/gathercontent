@@ -1,0 +1,25 @@
+gathercontent.admin_gathercontent:
+  title: 'GatherContent'
+  route_name: gathercontent.admin_gathercontent
+  parent: system.admin_config
+  description: 'Configure GatherContent.'
+  weight: 0
+
+gathercontent.config_form:
+  title: 'Authentication'
+  route_name: gathercontent.config_form
+  parent: gathercontent.admin_gathercontent
+  weight: 1
+
+entity.gathercontent_mapping.collection:
+  title: 'Manage Mappings'
+  route_name: entity.gathercontent_mapping.collection
+  parent: gathercontent.admin_gathercontent
+  weight: 2
+
+gathercontent.import_select_form:
+  title: 'Import content'
+  route_name: gathercontent.import_select_form
+  parent: gathercontent.admin_gathercontent
+  weight: 3
+

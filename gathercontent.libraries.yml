@@ -1,0 +1,13 @@
+theme:
+  version: 1.x
+  css:
+    theme:
+      css/gc_style.css: {}
+
+filter:
+  version: 1.x
+  css:
+    theme:
+      css/gc_style.css: {}
+  js:
+    js/gc-filter.js: {}

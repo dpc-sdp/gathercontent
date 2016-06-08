@@ -1,0 +1,246 @@
+<?php
+
+/**
+ * @file
+ * Install and uninstall script for GatherContent module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function gathercontent_install() {
+  $database = \Drupal::database()->schema();
+  $database->addField('node', 'gc_mapping_id', array(
+    'definition' => 'The ID of GatherContent mapping.',
+    'type' => 'int',
+    'unsigned' => TRUE,
+  ));
+  $database->addField(
+    'node',
+    'gc_id',
+    array(
+      'definition' => 'The ID of content in GatherContent.',
+      'type' => 'int',
+      'unsigned' => TRUE,
+    )
+  );
+  $database->addField(
+    'node',
+    'gc_import_status',
+    array(
+      'definition' => 'The ID of content in GatherContent.',
+      'type' => 'text',
+    )
+  );
+  $database->addField(
+    'file_managed',
+    'gc_id',
+    array(
+      'definition' => 'The ID of file in GatherContent.',
+      'type' => 'int',
+      'unsigned' => TRUE,
+    )
+  );
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function gathercontent_uninstall() {
+  \Drupal::config('gc.settings')->clear('gc_username')->save();
+  \Drupal::config('gc.settings')->clear('gc_api_key')->save();
+  \Drupal::config('gc.settings')->clear('gc_account')->save();
+
+  $database = \Drupal::database()->schema();
+  $database->dropField('node', 'gc_mapping_id');
+  $database->dropField('node', 'gc_id');
+  $database->dropField('node', 'gc_import_status');
+  $database->dropField('file_managed', 'gc_id');
+}
+
+/**
+ * Implements schema for our custom entity.
+ *
+ * @inheritdoc
+ */
+function gc_schema() {
+  $schema = array();
+
+  $schema['gc_mapping'] = array(
+    'description' => 'The base table for the Mapping entity',
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'gc_project_id' => array(
+        'type' => 'int',
+        'length' => 11,
+        'not null' => TRUE,
+      ),
+      'gc_project' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'gc_template_id' => array(
+        'type' => 'int',
+        'length' => 11,
+        'not null' => TRUE,
+      ),
+      'gc_template' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'content_type' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+        'default' => '',
+      ),
+      'data' => array(
+        'type' => 'blob',
+        'not null' => FALSE,
+        'size' => 'big',
+        'serialize' => TRUE,
+      ),
+      'created' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+      ),
+      'updated_drupal' => array(
+        'type' => 'int',
+        'not null' => FALSE,
+      ),
+      'template' => array(
+        'type' => 'blob',
+        'not null' => FALSE,
+        'size' => 'big',
+        'serialize' => TRUE,
+      ),
+    ),
+    'primary key' => array('id'),
+  );
+
+  $schema['gc_operation'] = array(
+    'description' => 'The base table for the GC Operation entity',
+    'fields' => array(
+      'uuid' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'type' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+    ),
+    'primary key' => array('uuid'),
+  );
+
+  $schema['gc_operation_item'] = array(
+    'description' => 'The base table for the GC Operation Item entity',
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'operation_uuid' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'item_status' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'item_status_color' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'item_name' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'template_name' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'status' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'gc_id' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'nid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => FALSE,
+      ),
+    ),
+    'primary key' => array('id'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_requirements().
+ */
+function gathercontent_requirements($phase) {
+  if ($phase !== 'runtime') {
+    return array();
+  }
+
+  $t = 't';
+  $requirements = array(
+    'gathercontent_tablesorter' => array(
+      'title' => $t('GatherContent: Tablesorter plugin'),
+      'value' => $t('Unavailable.'),
+      'description' => $t('Install <a href="@libraries-page">Libraries</a> module.', array(
+        '@libraries-page' => 'https://www.drupal.org/project/libraries',
+      )),
+      'severity' => REQUIREMENT_INFO,
+    ),
+  );
+
+  if (\Drupal::moduleHandler()->moduleExists('libraries')) {
+    $tablesorter_lib_info = libraries_detect('tablesorter-mottie');
+
+    if ($tablesorter_lib_info['installed'] && $tablesorter_lib_info['version']) {
+      $requirements['gathercontent_tablesorter']['value'] = $tablesorter_lib_info['version'];
+      $requirements['gathercontent_tablesorter']['severity'] = REQUIREMENT_OK;
+      unset($requirements['gathercontent_tablesorter']['description']);
+    }
+    else {
+      $requirements['gathercontent_tablesorter']['description'] = $t('Download <a href="@tablesorter-github">Mottie\'s tablesorter plugin</a> to <code>sites/all/libraries</code> toget sortable table headers at GatherContent admin UI. Rename it\'s folder to <code>tablesorter-mottie</code>.',
+        array(
+          '@tablesorter-github' => 'https://github.com/Mottie/tablesorter/archive/v2.25.8.zip',
+        ));
+    }
+  }
+
+  return $requirements;
+}

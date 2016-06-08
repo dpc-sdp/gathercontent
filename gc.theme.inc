@@ -1,0 +1,277 @@
+<?php
+/**
+ * @file
+ * Form elements and theme functions for GatherContent module.
+ */
+
+/**
+ * Implements hook_element_info().
+ */
+function gc_element_info() {
+  return array(
+    'gc_tableselect' => array(
+      '#input' => TRUE,
+      '#js_select' => TRUE,
+      '#multiple' => TRUE,
+      '#process' => array('form_process_tableselect'),
+      '#options' => array(),
+      '#empty' => '',
+      '#theme' => 'gc_tableselect',
+      '#type' => 'tableselect',
+      //
+      // Additional options compared to tableselect form element.
+      //
+      // Whether to add tablesorter plugin or not (if it's available).
+      '#tablesorter' => TRUE,
+      // DIV elements which have to be added to the table as prefix, array of
+      // class arrays keyed by an (internal) element name.
+      // These elements will be wrapped into a DIV with class gc-table--header.
+      //
+      // Example:
+      // @code
+      // $element['#filterwrapper'] = array(
+      //   'element_one' => array('class1', 'class2'),
+      //   'element_two' => array('class3', 'class4'),
+      // );
+      // @endcode
+      //
+      // Sample output in the case above:
+      // @code
+      // <div class="gc-table-header">
+      //   <div class="class1 class2"></div>
+      //   <div class="class3 class4"></div>
+      // </div>
+      // @endcode
+      '#filterwrapper' => array(),
+      '#filterdescription' => '',
+    ),
+  );
+}
+
+/**
+ * Implements hook_theme().
+ */
+function gc_theme() {
+  return array(
+    'gc_tableselect' => array(
+      'render element' => 'element',
+    ),
+  );
+}
+
+/**
+ * Returns HTML for a table with radio buttons or checkboxes.
+ *
+ * See Drupal core's theme_tableselect() as reference.
+ *
+ * @param array $variables
+ *   An associative array containing:
+ *   - element: An associative array containing the properties and children of
+ *     the tableselect element. Properties used: #header, #options, #empty,
+ *     and #js_select. The #options property is an array of selection options;
+ *     each array element of #options is an array of properties. These
+ *     properties can include #attributes, which is added to the
+ *     table row's HTML attributes; see theme_table().
+ *
+ * @return string
+ *   The rendered markup.
+ *
+ * @ingroup themeable
+ */
+function theme_gc_tableselect(array $variables) {
+  $output = '';
+  $element = $variables['element'];
+  $gc_module_path = drupal_get_path('module', 'gc');
+
+  // Libraries module and tablesorter plugin are optional.
+  // If tablesorter available, add it to the scope.
+  if (\Drupal::moduleHandler()->moduleExists('libraries')) {
+    $library = libraries_detect('tablesorter-mottie');
+    if ($library['installed'] && $element['#tablesorter']) {
+      $element['#attributes']['class'][] = 'tablesorter-enabled';
+      // @FIXME
+// The Assets API has totally changed. CSS, JavaScript, and libraries are now
+// attached directly to render arrays using the #attached property.
+// 
+// 
+// @see https://www.drupal.org/node/2169605
+// @see https://www.drupal.org/node/2408597
+// drupal_add_js($gc_module_path . '/js/gc-tablesorter.js');
+
+      libraries_load('tablesorter-mottie');
+    }
+  }
+
+  $rows = array();
+  $header = $element['#header'];
+  if (!empty($element['#options'])) {
+    // Generate a table row for each selectable item in #options.
+    foreach (\Drupal\Core\Render\Element::children($element) as $key) {
+      $row = array();
+
+      $row['data'] = array();
+      if (isset($element['#options'][$key]['#attributes'])) {
+        $row += $element['#options'][$key]['#attributes'];
+      }
+      // Render the checkbox / radio element.
+      $row['data'][] = \Drupal::service("renderer")->render($element[$key]);
+
+      // As theme_table only maps header and row columns by order, create the
+      // correct order by iterating over the header fields.
+      foreach ($element['#header'] as $fieldname => $title) {
+        $row['data'][] = $element['#options'][$key][$fieldname];
+      }
+      $rows[] = $row;
+    }
+  }
+
+  // Add an empty header or a "Select all" checkbox to provide room for the
+  // checkboxes/radios in the first table column.
+  if ($element['#js_select']) {
+    // Add a "Select all" checkbox.
+    // @FIXME
+// The Assets API has totally changed. CSS, JavaScript, and libraries are now
+// attached directly to render arrays using the #attached property.
+// 
+// 
+// @see https://www.drupal.org/node/2169605
+// @see https://www.drupal.org/node/2408597
+// drupal_add_js($gc_module_path . '/js/gc-tableselect.js');
+
+    array_unshift($header, array(
+      'class' => array('select-all'),
+      'data-sorter' => 'false',
+    ));
+  }
+  else {
+    // Add an empty header when radio buttons are displayed or a "Select all"
+    // checkbox is not desired.
+    array_unshift($header, '');
+  }
+
+  if (!empty($element['#filterwrapper']) && is_array($element['#filterwrapper'])) {
+    $filterwrapper = array(
+      '#type' => 'container',
+      '#attributes' => array(
+        'class' => array('gc-table--header'),
+      ),
+    );
+
+    foreach ($element['#filterwrapper'] as $key => $classes) {
+      $filterwrapper[$key] = array(
+        '#type' => 'container',
+        '#attributes' => array(
+          'class' => is_array($classes) ? $classes : array($classes),
+        ),
+      );
+    }
+    $output .= \Drupal::service("renderer")->render($filterwrapper);
+  }
+
+  if (!empty($element['#filterdescription'])) {
+    $filterdescription = array(
+      '#type' => 'html_tag',
+      '#tag' => 'div',
+      '#value' => $element['#filterdescription'],
+      '#attributes' => array(
+        'class' => array('description'),
+      ),
+    );
+    $output .= \Drupal::service("renderer")->render($filterdescription);
+  }
+
+  // @FIXME
+// theme() has been renamed to _theme() and should NEVER be called directly.
+// Calling _theme() directly can alter the expected output and potentially
+// introduce security issues (see https://www.drupal.org/node/2195739). You
+// should use renderable arrays instead.
+// 
+// 
+// @see https://www.drupal.org/node/2195739
+// $output .= theme('table', array(
+//     'header' => $header,
+//     'rows' => $rows,
+//     'empty' => $element['#empty'],
+//     'attributes' => $element['#attributes'],
+//   ));
+
+
+  return $output;
+}
+
+/**
+ * Creates checkbox or radio elements to populate a tableselect table.
+ *
+ * See Drupal's form_process_tableselect() as reference.
+ *
+ * @param array $element
+ *   An associative array containing the properties and children of the
+ *   tableselect element.
+ *
+ * @return array
+ *   The processed element.
+ */
+function gc_process_gc_tableselect(array $element) {
+  if (isset($element['#multiple']) && $element['#multiple']) {
+    $value = is_array($element['#value']) ? $element['#value'] : array();
+  }
+  else {
+    // Advanced selection behavior makes no sense for radios.
+    $element['#js_select'] = FALSE;
+  }
+
+  $element['#tree'] = TRUE;
+
+  if (isset($element['#options']) && (count($element['#options']) > 0)) {
+    if (!isset($element['#default_value']) || $element['#default_value'] === 0) {
+      $element['#default_value'] = array();
+    }
+
+    // Create a checkbox or radio for each item in #options in such a way that
+    // the value of the tableselect element behaves as if it had been of type
+    // checkboxes or radios.
+    foreach ($element['#options'] as $key => $choice) {
+      // Do not overwrite manually created children.
+      if (!isset($element[$key])) {
+        if ($element['#multiple']) {
+          $title = '';
+          if (!empty($element['#options'][$key]['title']['data']['#title'])) {
+            $title = t('Update @title', array(
+              '@title' => $element['#options'][$key]['title']['data']['#title'],
+            ));
+          }
+          $element[$key] = array(
+            '#type' => 'checkbox',
+            '#title' => $title,
+            '#title_display' => 'invisible',
+            '#return_value' => $key,
+            '#default_value' => isset($value[$key]) ? $key : NULL,
+            '#attributes' => $element['#attributes'],
+          );
+        }
+        else {
+          // Generate the parents as the autogenerator does, so we will have a
+          // unique id for each radio button.
+          $parents_for_id = array_merge($element['#parents'], array($key));
+          $element[$key] = array(
+            '#type' => 'radio',
+            '#title' => '',
+            '#return_value' => $key,
+            '#default_value' => ($element['#default_value'] == $key) ? $key : NULL,
+            '#attributes' => $element['#attributes'],
+            '#parents' => $element['#parents'],
+            '#id' => \Drupal\Component\Utility\Html::getId('edit-' . implode('-', $parents_for_id)),
+            '#ajax' => isset($element['#ajax']) ? $element['#ajax'] : NULL,
+          );
+        }
+        if (isset($element['#options'][$key]['#weight'])) {
+          $element[$key]['#weight'] = $element['#options'][$key]['#weight'];
+        }
+      }
+    }
+  }
+  else {
+    $element['#value'] = array();
+  }
+  return $element;
+}

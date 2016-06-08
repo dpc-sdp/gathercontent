@@ -1,0 +1,13 @@
+gathercontent.settings:
+  type: mapping
+  label: Settings
+  mapping:
+    gathercontent_username:
+      type: string
+      label: 'GatherContent username'
+    gathercontent_api_key:
+      type: string
+      label: 'GatherContent API key'
+    gathercontent_account:
+      type: string
+      label: 'GatherContent Account'
