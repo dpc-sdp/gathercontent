@@ -2,11 +2,11 @@
 
 namespace Drupal\gathercontent;
 
+use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\gathercontent\DAO\Project;
 use Drupal\gathercontent\DAO\Template;
-use Drupal\gathercontent\Entity\GathercontentMapping;
 
 /**
  * Provides a listing of GatherContent Mapping entities.
@@ -18,20 +18,67 @@ class GathercontentMappingListBuilder extends ConfigEntityListBuilder {
   /**
    * {@inheritdoc}
    */
+  public function load() {
+
+    /** @var \Drupal\Core\Config\Entity\ConfigEntityStorageInterface|\Drupal\Core\Entity\Query\QueryInterface $entity_query */
+    $entity_query = \Drupal::service('entity.query')->get('gathercontent_mapping');
+    $query_string = \Drupal::request()->query;
+    $headers = $this->buildHeader();
+
+    $entity_query->pager(100);
+    if ($query_string->has('order')) {
+      foreach ($headers as $header) {
+        if (is_array($header) && $header['data'] === $query_string->get('order')) {
+          $sort = 'ASC';
+          if ($query_string->has('sort') && $query_string->get('sort') === 'asc' || $query_string->get('sort') === 'desc') {
+            $sort = Unicode::strtoupper($query_string->get('sort'));
+          }
+          $entity_query->sort($header['field'], $sort);
+        }
+      }
+    }
+    $entity_query->tableSort($headers);
+    $entity_ids = $entity_query->execute();
+
+    return $this->storage->loadMultiple($entity_ids);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function buildHeader() {
-    $header['project'] = $this->t('GatherContent Project');
-    $header['gathercontent_template'] = $this->t('GatherContent Template');
-    $header['content_type'] = $this->t('Content type');
-    $header['updated_gathercontent'] = $this->t('Last updated in GatherContent');
-    $header['updated_drupal'] = $this->t('Updated in Drupal');
-    return $header + parent::buildHeader();
+    return [
+      'gathercontent_project' => [
+        'data' => $this->t('GatherContent Project'),
+        'field' => 'gathercontent_project',
+        'specifier' => 'gathercontent_project',
+      ],
+      'gathercontent_template' => [
+        'data' => $this->t('GatherContent Template'),
+        'field' => 'gathercontent_template',
+        'specifier' => 'gathercontent_template',
+      ],
+      'content_type_name' => [
+        'data' => $this->t('Content type'),
+        'field' => 'content_type_name',
+        'specifier' => 'content_type_name',
+      ],
+      'updated_gathercontent' => [
+        'data' => $this->t('Last updated in GatherContent'),
+      ],
+      'updated_drupal' => [
+        'data' => $this->t('Updated in Drupal'),
+        'field' => 'updated_drupal',
+        'specifier' => 'updated_drupal',
+      ],
+    ] + parent::buildHeader();
   }
 
   /**
    * {@inheritdoc}
    */
   public function buildRow(EntityInterface $entity) {
-    /** @var $entity GathercontentMapping */
+    /** @var \Drupal\gathercontent\Entity\GathercontentMapping $entity */
     $exists = isset($this->templates[$entity->getGathercontentTemplateId()]);
     $row['project'] = $entity->getGathercontentProject();
     $row['gathercontent_template'] = $entity->getGathercontentTemplate();
@@ -46,7 +93,7 @@ class GathercontentMappingListBuilder extends ConfigEntityListBuilder {
   }
 
   /**
-   * @inheritdoc
+   * {@inheritdoc}
    */
   public function render() {
     $project_obj = new Project();
