@@ -19,7 +19,7 @@ class GathercontentMappingEditForm extends EntityForm {
    */
   public function form(array $form, FormStateInterface $form_state) {
     $form = parent::form($form, $form_state);
-    /** @var $mapping GathercontentMapping */
+    /** @var GathercontentMapping $mapping */
     $mapping = $this->entity;
 
     $content_types = node_type_get_names();
@@ -36,23 +36,45 @@ class GathercontentMappingEditForm extends EntityForm {
     mapped to a single Drupal field. So each field can only be mapped to once.'),
     );
 
+    $form['gathercontent_project'] = [
+      '#type' => 'item',
+      '#title' => $this->t('Project name:'),
+      '#markup' => $mapping->getGathercontentProject(),
+      '#wrapper_attributes' => [
+        'class' => [
+          'inline-label',
+        ],
+      ],
+    ];
+    $form['gathercontent'] = [
+      '#type' => 'container',
+    ];
+
+    $form['gathercontent']['gathercontent_template'] = [
+      '#type' => 'item',
+      '#title' => $this->t('GatherContent template:'),
+      '#markup' => $mapping->getGathercontentTemplate(),
+      '#wrapper_attributes' => [
+        'class' => [
+          'inline-label',
+        ],
+      ],
+    ];
+
     if (!$new) {
       $mapping_data = unserialize($mapping->getData());
       $content_type = $mapping->getContentTypeName();
 
-      $form['info'] = array(
-        '#markup' =>
-          '<div class="project-name">' .
-          t('Project name: @name', array('@name' => $mapping->getGathercontentProject()))
-          . '</div>'
-          . '<div class="gather-content">'
-          . t('GatherContent template: @gc_template', array('@gc_template' => $mapping->getGathercontentTemplate()))
-          . '</div>'
-          . '<div class="drupal-content-type">'
-          . t('Drupal content type: @content_type', array('@content_type' => $content_type))
-          . '</div>',
-
-      );
+      $form['gathercontent']['content_type'] = [
+        '#type' => 'item',
+        '#title' => $this->t('Drupal content type:'),
+        '#markup' => $content_type,
+        '#wrapper_attributes' => [
+          'class' => [
+            'inline-label',
+          ],
+        ],
+      ];
 
       $form['mapping'] = array(
         '#prefix' => '<div id="edit-mapping">',
@@ -101,22 +123,21 @@ class GathercontentMappingEditForm extends EntityForm {
       }
     }
     else {
-      $form['info'] = array(
-        '#markup' => t('Project name: @name', array('@name' => $mapping->getGathercontentProject()))
-          . '<br>'
-          . t('GatherContent template: @gc_template', array('@gc_template' => $mapping->getGathercontentTemplate())),
-      );
-
       $form['updated'] = array(
         '#type' => 'value',
         '#value' => $template->updated_at,
       );
 
-      $form['content_type'] = array(
+      $form['gathercontent']['content_type'] = array(
         '#type' => 'select',
-        '#title' => t('Drupal Content Types'),
+        '#title' => $this->t('Drupal content type'),
         '#options' => $content_types,
         '#required' => TRUE,
+        '#wrapper_attributes' => [
+          'class' => [
+            'inline-label',
+          ],
+        ],
         '#ajax' => array(
           'callback' => 'Drupal\gathercontent\Form\GathercontentMappingEditForm::getMappingTable',
           'wrapper' => 'edit-mapping',
