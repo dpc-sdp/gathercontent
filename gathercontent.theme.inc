@@ -9,6 +9,9 @@
  */
 function gathercontent_element_info() {
   return array(
+    //
+    // Custom tableselect form element.
+    //
     'gathercontent_tableselect' => array(
       '#input' => TRUE,
       '#js_select' => TRUE,
@@ -25,7 +28,8 @@ function gathercontent_element_info() {
       '#tablesorter' => TRUE,
       // DIV elements which have to be added to the table as prefix, array of
       // class arrays keyed by an (internal) element name.
-      // These elements will be wrapped into a DIV with class gathercontent-table--header.
+      // These elements will be wrapped into a DIV with class
+      // gathercontent-table--header.
       //
       // Example:
       // @code
@@ -45,6 +49,32 @@ function gathercontent_element_info() {
       '#filterwrapper' => array(),
       '#filterdescription' => '',
     ),
+    //
+    // Checkbox counter form element.
+    //
+    // Sample usage:
+    // @code
+    // $form['counter'] = array(
+    //   '#type' => 'gathercontent_checkboxcounter',
+    //   '#checkboxes_selector' => '.custom-wrapper [type="checkbox"]',
+    //   '#counter_message_template' => array(
+    //     '1 node selected',
+    //     '@count nodes selected',
+    //   ),
+    //   '#counter_message_default' => format_plural(0,
+    //     '1 node selected',
+    //     '@count nodes selected'
+    //   ),
+    // );
+    // @endcode
+    'gathercontent_checkboxcounter' => array(
+      '#input' => FALSE,
+      '#theme' => 'gathercontent_checkboxcounter',
+      '#process' => array('form_process_container'),
+      '#checkboxes_selector' => '',
+      '#counter_message_js_template' => array(),
+      '#counter_message_default' => '',
+    ),
   );
 }
 
@@ -56,7 +86,53 @@ function gathercontent_theme() {
     'gathercontent_tableselect' => array(
       'render element' => 'element',
     ),
+    'gathercontent_checkboxcounter' => array(
+      'render element' => 'element',
+    ),
   );
+}
+
+/**
+ * Returns HTML markup for a checkbox counter.
+ *
+ * @param array $variables
+ *   An associative array containing:
+ *   - element: An associative array containing the properties and children of
+ *     the checkboxcounter element. Properties used (every one is optional):
+ *     #checkboxes_selector, #counter_message_js_template,
+ *     #counter_message_default.
+ *
+ * @return string
+ *   The rendered markup.
+ *
+ * @ingroup themeable
+ */
+function theme_gathercontent_checkboxcounter(array $variables) {
+  $output = '';
+  $element = $variables['element'];
+  $gathercontent_module_path = drupal_get_path('module', 'gathercontent');
+  $gathercontent_counter_id = drupal_html_id('gathercontent-checkbox-counter');
+  $gathercontent_counter_id_js = lcfirst(implode('', array_map('ucfirst', explode('-', $gathercontent_counter_id))));
+  $element['#attributes']['class'][] = 'gathercontent-checkboxcounter';
+  $element['#attributes']['data-gathercontent-counter-id'] = $gathercontent_counter_id_js;
+  $element['#children'] .= !empty($element['#counter_message_default']) ? format_plural(0, '1 item selected', '@count item selected') : $element['#counter_message_default'];
+  $js_settings = array();
+
+  if (!empty($element['#checkboxes_selector'])) {
+    $js_settings['checkboxesSelector'] = $element['#checkboxes_selector'];
+  }
+  if (!empty($element['#counter_message_js_template']) && is_array($element['#counter_message_js_template'])) {
+    $js_settings['counterMessage'] = $element['#counter_message_js_template'];
+  }
+
+  drupal_add_js($gathercontent_module_path . '/js/gathercontent-checkboxcounter.js', 'file');
+  drupal_add_js(array($gathercontent_counter_id_js => $js_settings), 'setting');
+
+  $output .= theme('container', array(
+    'element' => $element,
+  ));
+
+  return $output;
 }
 
 /**

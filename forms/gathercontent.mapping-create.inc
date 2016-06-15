@@ -11,7 +11,8 @@ use GatherContent\Template;
 /**
  * GatherContent template import.
  *
- * In this form, we load templates from gathercontent and create empty Mappings for them.
+ * In this form, we load templates from Gather Content and create empty Mappings
+ * for them.
  *
  * @inheritdoc
  */
@@ -26,8 +27,7 @@ function gathercontent_mapping_form_templates($form, &$form_state) {
   $form['description'] = array(
     '#type' => 'html_tag',
     '#tag' => 'div',
-    '#value' => t("Please select the GatherContent Templates you'd like 
-    to map. Only Templates you've not selected will be listed."),
+    '#value' => t("Please select the GatherContent Templates you'd like to map. Only Templates you've not selected will be listed."),
     '#attributes' => array(
       'class' => array('description'),
     ),
@@ -64,12 +64,23 @@ function gathercontent_mapping_form_templates($form, &$form_state) {
     );
   }
 
-  $form['submit'] = array(
+  $form['selected_templates_message'] = array(
+    '#type' => 'gathercontent_checkboxcounter',
+    '#counter_message_js_template' => array(
+      '1 template selected',
+      '@count templates selected',
+    ),
+    '#counter_message_default' => format_plural(0, '1 template selected', '@count templates selected'),
+  );
+
+  $form['actions'] = array(
+    '#type' => 'actions',
+  );
+  $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Select'),
   );
-
-  $form['close'] = array(
+  $form['actions']['close'] = array(
     '#type' => 'submit',
     '#value' => t('Close'),
   );
@@ -78,7 +89,7 @@ function gathercontent_mapping_form_templates($form, &$form_state) {
 }
 
 /**
- * Submit callback for GatherContent template import.
+ * Submit callback for Gather Content template import.
  *
  * @inheritdoc
  */
