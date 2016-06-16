@@ -31,7 +31,7 @@ use Drupal\gathercontent\GathercontentMappingInterface;
  *   },
  *   links = {
  *     "canonical" = "/admin/config/gathercontent/mapping/{gathercontent_mapping}",
- *     "add-form" = "/admin/config/gathercontent/mapping/add",
+ *     "add-form" = "/admin/config/gathercontent/mapping/create",
  *     "edit-form" = "/admin/config/gathercontent/mapping/{gathercontent_mapping}/edit",
  *     "delete-form" = "/admin/config/gathercontent/mapping/{gathercontent_mapping}/delete",
  *     "collection" = "/admin/config/gathercontent/mapping"
