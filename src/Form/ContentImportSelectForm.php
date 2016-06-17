@@ -70,7 +70,8 @@ class ContentImportSelectForm extends MultistepFormBase {
       '#type' => 'value',
     );
 
-    if ($form_state->hasValue('project') || $this->store->get('project_id')) {
+    if (($form_state->hasValue('project') || $this->store->get('project_id'))
+      && (!empty($form_state->getValue('project')) || !empty($this->store->get('project_id')))) {
       $project_id = $form_state->hasValue('project') ? $form_state->getValue('project') : $this->store->get('project_id');
       $content_obj = new Content();
       $content = $content_obj->getContents($project_id);
