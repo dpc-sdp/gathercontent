@@ -9,201 +9,20 @@
  * Implements hook_install().
  */
 function gathercontent_install() {
-  $database = \Drupal::database()->schema();
-  $database->addField('node', 'gc_mapping_id', array(
-    'definition' => 'The ID of GatherContent mapping.',
-    'type' => 'int',
-    'unsigned' => TRUE,
-  ));
-  $database->addField(
-    'node',
-    'gc_id',
-    array(
-      'definition' => 'The ID of content in GatherContent.',
-      'type' => 'int',
-      'unsigned' => TRUE,
-    )
-  );
-  $database->addField(
-    'node',
-    'gc_import_status',
-    array(
-      'definition' => 'The ID of content in GatherContent.',
-      'type' => 'text',
-    )
-  );
-  $database->addField(
-    'file_managed',
-    'gc_id',
-    array(
-      'definition' => 'The ID of file in GatherContent.',
-      'type' => 'int',
-      'unsigned' => TRUE,
-    )
-  );
+  $entity_manager = \Drupal::entityManager();
+  $definition = $entity_manager->getFieldStorageDefinitions('node')['gc_mapping_id'];
+  $entity_manager->onFieldStorageDefinitionCreate($definition);
+  $definition = $entity_manager->getFieldStorageDefinitions('node')['gc_id'];
+  $entity_manager->onFieldStorageDefinitionCreate($definition);
 }
 
 /**
  * Implements hook_uninstall().
  */
 function gathercontent_uninstall() {
-  \Drupal::config('gc.settings')->clear('gc_username')->save();
-  \Drupal::config('gc.settings')->clear('gc_api_key')->save();
-  \Drupal::config('gc.settings')->clear('gc_account')->save();
-
-  $database = \Drupal::database()->schema();
-  $database->dropField('node', 'gc_mapping_id');
-  $database->dropField('node', 'gc_id');
-  $database->dropField('node', 'gc_import_status');
-  $database->dropField('file_managed', 'gc_id');
-}
-
-/**
- * Implements schema for our custom entity.
- *
- * @inheritdoc
- */
-function gc_schema() {
-  $schema = array();
-
-  $schema['gc_mapping'] = array(
-    'description' => 'The base table for the Mapping entity',
-    'fields' => array(
-      'id' => array(
-        'type' => 'serial',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-      ),
-      'gc_project_id' => array(
-        'type' => 'int',
-        'length' => 11,
-        'not null' => TRUE,
-      ),
-      'gc_project' => array(
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'gc_template_id' => array(
-        'type' => 'int',
-        'length' => 11,
-        'not null' => TRUE,
-      ),
-      'gc_template' => array(
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'content_type' => array(
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => FALSE,
-        'default' => '',
-      ),
-      'data' => array(
-        'type' => 'blob',
-        'not null' => FALSE,
-        'size' => 'big',
-        'serialize' => TRUE,
-      ),
-      'created' => array(
-        'type' => 'int',
-        'not null' => TRUE,
-      ),
-      'updated_drupal' => array(
-        'type' => 'int',
-        'not null' => FALSE,
-      ),
-      'template' => array(
-        'type' => 'blob',
-        'not null' => FALSE,
-        'size' => 'big',
-        'serialize' => TRUE,
-      ),
-    ),
-    'primary key' => array('id'),
-  );
-
-  $schema['gc_operation'] = array(
-    'description' => 'The base table for the GC Operation entity',
-    'fields' => array(
-      'uuid' => array(
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'type' => array(
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-    ),
-    'primary key' => array('uuid'),
-  );
-
-  $schema['gc_operation_item'] = array(
-    'description' => 'The base table for the GC Operation Item entity',
-    'fields' => array(
-      'id' => array(
-        'type' => 'serial',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-      ),
-      'operation_uuid' => array(
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'item_status' => array(
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'item_status_color' => array(
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'item_name' => array(
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'template_name' => array(
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'status' => array(
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'gc_id' => array(
-        'type' => 'int',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-      ),
-      'nid' => array(
-        'type' => 'int',
-        'unsigned' => TRUE,
-        'not null' => FALSE,
-      ),
-    ),
-    'primary key' => array('id'),
-  );
-
-  return $schema;
+  \Drupal::config('gathercontent.settings')->clear('gathercontent_username')->save();
+  \Drupal::config('gathercontent.settings')->clear('gathercontent_api_key')->save();
+  \Drupal::config('gathercontent.settings')->clear('gathercontent_account')->save();
 }
 
 /**

@@ -18,7 +18,7 @@ use Drupal\user\UserInterface;
  *   id = "gathercontent_operation_item",
  *   label = @Translation("Gathercontent operation item"),
  *   handlers = {
- *     "views_data" = "Drupal\gathercontent\Entity\GathercontentOperationItemViewsData",
+ *     "views_data" = "Drupal\gathercontent\Entity\OperationItemViewsData",
  *   },
  *   base_table = "gathercontent_operation_item",
  *   admin_permission = "administer gathercontent operation item entities",
@@ -29,7 +29,7 @@ use Drupal\user\UserInterface;
  *   }
  * )
  */
-class GathercontentOperationItem extends ContentEntityBase implements GathercontentOperationItemInterface {
+class OperationItem extends ContentEntityBase implements OperationItemInterface {
 
   use EntityChangedTrait;
 
@@ -44,13 +44,21 @@ class GathercontentOperationItem extends ContentEntityBase implements Gathercont
     return $this->get('status')->value;
   }
 
+  public function getItemStatusColor() {
+    return $this->get('item_status_color')->value;
+  }
+
+  public function getItemStatus() {
+    return $this->get('item_status')->value;
+  }
+
   /**
    * {@inheritdoc}
    */
   public static function baseFieldDefinitions(EntityTypeInterface $entity_type) {
     $fields = parent::baseFieldDefinitions($entity_type);
 
-    $fields['operation_uuid'] = BaseFieldDefinition::create('uuid')
+    $fields['operation_uuid'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Operation UUID'));
 
     $fields['item_status'] = BaseFieldDefinition::create('string')

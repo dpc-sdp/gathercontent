@@ -1,13 +1,13 @@
 <?php
 
-namespace Drupal\gathercontent;
+namespace Drupal\gathercontent\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityInterface;
 
 /**
  * Provides an interface for defining GatherContent Mapping entities.
  */
-interface GathercontentMappingInterface extends ConfigEntityInterface {
+interface MappingInterface extends ConfigEntityInterface {
 
   public function getGathercontentProjectId();
 

@@ -19,7 +19,7 @@ gathercontent.config_form:
 gathercontent.import_select_form:
   path: '/admin/config/gathercontent/import'
   defaults:
-    _form: '\Drupal\gathercontent\Form\GathercontentContentImportSelectForm'
+    _form: '\Drupal\gathercontent\Form\ContentImportSelectForm'
     _title: 'Import content'
   requirements:
     _permission: 'administer gathercontent'
@@ -29,7 +29,7 @@ gathercontent.import_select_form:
 gathercontent.import_confirm_form:
   path: '/admin/config/gathercontent/import/confirm'
   defaults:
-    _form: '\Drupal\gathercontent\Form\GathercontentContentImportConfirmForm'
+    _form: '\Drupal\gathercontent\Form\ContentImportConfirmForm'
     _title: 'Confirm import selection'
   requirements:
     _permission: 'administer gathercontent'

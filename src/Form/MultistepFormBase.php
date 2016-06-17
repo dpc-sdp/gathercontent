@@ -3,6 +3,7 @@
 namespace Drupal\gathercontent\Form;
 
 use Drupal\Core\Datetime\DateFormatterInterface;
+use Drupal\Core\Entity\EntityManager;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Form\FormBase;
@@ -11,24 +12,24 @@ use Drupal\user\PrivateTempStoreFactory;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
- * Class GathercontentMultistepFormBase.
+ * Class MultistepFormBase.
  *
  * @package Drupal\gathercontent\Form
  */
-abstract class GathercontentMultistepFormBase extends FormBase {
+abstract class MultistepFormBase extends FormBase {
 
 
   /**
    * Drupal\Core\Entity\EntityManager definition.
    *
-   * @var EntityManager
+   * @var \Drupal\Core\Entity\EntityManager
    */
   protected $entity_manager;
 
   /**
    * Drupal\Core\Datetime\DateFormatter definition.
    *
-   * @var DateFormatter
+   * @var \Drupal\Core\Datetime\DateFormatter
    */
   protected $date_formatter;
 

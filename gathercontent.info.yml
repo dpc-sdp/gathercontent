@@ -5,11 +5,5 @@ core: 8.x
 dependencies:
   - image
   - file
-#  - entity
   - views
-#  - select_or_other
-  - composer_manager
-stylesheets:
-  all:
-    - css/gc_style.css
 type: module

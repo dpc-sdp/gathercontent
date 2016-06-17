@@ -11,7 +11,7 @@ use Drupal\gathercontent\DAO\Template;
 /**
  * Provides a listing of GatherContent Mapping entities.
  */
-class GathercontentMappingListBuilder extends ConfigEntityListBuilder {
+class MappingListBuilder extends ConfigEntityListBuilder {
 
   protected $templates;
 
@@ -21,7 +21,8 @@ class GathercontentMappingListBuilder extends ConfigEntityListBuilder {
   public function load() {
 
     /** @var \Drupal\Core\Config\Entity\ConfigEntityStorageInterface|\Drupal\Core\Entity\Query\QueryInterface $entity_query */
-    $entity_query = \Drupal::service('entity.query')->get('gathercontent_mapping');
+    $entity_query = \Drupal::service('entity.query')
+      ->get('gathercontent_mapping');
     $query_string = \Drupal::request()->query;
     $headers = $this->buildHeader();
 
@@ -78,7 +79,7 @@ class GathercontentMappingListBuilder extends ConfigEntityListBuilder {
    * {@inheritdoc}
    */
   public function buildRow(EntityInterface $entity) {
-    /** @var \Drupal\gathercontent\Entity\GathercontentMapping $entity */
+    /** @var \Drupal\gathercontent\Entity\Mapping $entity */
     $exists = isset($this->templates[$entity->getGathercontentTemplateId()]);
     $row['project'] = $entity->getGathercontentProject();
     $row['gathercontent_template'] = $entity->getGathercontentTemplate();
@@ -108,7 +109,11 @@ class GathercontentMappingListBuilder extends ConfigEntityListBuilder {
     return parent::render();
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function getDefaultOperations(EntityInterface $entity) {
+    $operations = [];
     if ($entity->access('update') && $entity->hasLinkTemplate('edit-form')) {
       $operations['edit'] = array(
         'title' => $entity->hasMapping() ? $this->t('Edit') : $this->t('Setup'),

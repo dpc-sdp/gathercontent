@@ -6,14 +6,14 @@ use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\gathercontent\DAO\Project;
 use Drupal\gathercontent\DAO\Template;
-use Drupal\gathercontent\Entity\GathercontentMapping;
+use Drupal\gathercontent\Entity\Mapping;
 
 /**
- * Class GathercontentMappingImportForm.
+ * Class MappingImportForm.
  *
  * @package Drupal\gathercontent\Form
  */
-class GathercontentMappingImportForm extends EntityForm {
+class MappingImportForm extends EntityForm {
 
   /**
    * {@inheritdoc}
@@ -40,11 +40,11 @@ class GathercontentMappingImportForm extends EntityForm {
       '#type' => 'vertical_tabs',
     );
 
-    $created_mapping_ids = GathercontentMapping::loadMultiple();
+    $created_mapping_ids = Mapping::loadMultiple();
     $local_templates = array();
 
     foreach ($created_mapping_ids as $mapping) {
-      /** @var $mapping GathercontentMapping */
+      /** @var Mapping $mapping */
       $local_templates[$mapping->getGathercontentTemplateId()] = $mapping->getGathercontentTemplate();
     }
 

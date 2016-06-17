@@ -71,7 +71,7 @@ class Content {
   public function updateStatus($content_id, $status_id) {
     try {
       $response = $this->client->post('/items/' . $content_id . '/choose_status', array(
-        'body' => array(
+        'form_params' => array(
           'status_id' => $status_id,
         ),
       ));

@@ -7,9 +7,9 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 
 /**
- * Builds the form to delete GatherContent Mapping entities.
+ * Builds the form to delete Mapping entities.
  */
-class GathercontentMappingDeleteForm extends EntityConfirmFormBase {
+class MappingDeleteForm extends EntityConfirmFormBase {
 
   /**
    * {@inheritdoc}

@@ -8,7 +8,7 @@ use Drupal\views\EntityViewsDataInterface;
 /**
  * Provides Views data for Gathercontent operation item entities.
  */
-class GathercontentOperationItemViewsData extends EntityViewsData implements EntityViewsDataInterface {
+class OperationItemViewsData extends EntityViewsData implements EntityViewsDataInterface {
 
   /**
    * {@inheritdoc}

@@ -4,14 +4,14 @@ namespace Drupal\gathercontent\Form;
 
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\gathercontent\DAO\Content;
-use Drupal\gathercontent\Entity\GathercontentMapping;
+use Drupal\gathercontent\Entity\Mapping;
 
 /**
- * Class GathercontentContentImportSelectForm.
+ * Class ContentImportSelectForm.
  *
  * @package Drupal\gathercontent\Form
  */
-class GathercontentContentImportSelectForm extends GathercontentMultistepFormBase {
+class ContentImportSelectForm extends MultistepFormBase {
 
   /**
    * {@inheritdoc}
@@ -24,14 +24,13 @@ class GathercontentContentImportSelectForm extends GathercontentMultistepFormBas
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $gc_module_path = drupal_get_path('module', 'gc');
     $form = parent::buildForm($form, $form_state);
 
-    $created_mapping_ids = GathercontentMapping::loadMultiple();
+    $created_mapping_ids = Mapping::loadMultiple();
     $projects = array();
     $mapping_array = array();
     foreach ($created_mapping_ids as $mapping) {
-      /** @var $mapping GathercontentMapping */
+      /** @var Mapping $mapping */
       if ($mapping->hasMapping()) {
         $projects[$mapping->getGathercontentProjectId()] = $mapping->getGathercontentProject();
         $mapping_array[$mapping->getGathercontentTemplateId()] = array(
@@ -48,7 +47,7 @@ class GathercontentContentImportSelectForm extends GathercontentMultistepFormBas
       '#empty_option' => t('- Select -'),
       '#required' => TRUE,
       '#ajax' => array(
-        'callback' => 'Drupal\gathercontent\Form\GathercontentContentImportSelectForm::getContentTable',
+        'callback' => 'Drupal\gathercontent\Form\ContentImportSelectForm::getContentTable',
         'wrapper' => 'edit-import',
         'method' => 'replace',
         'effect' => 'fade',
@@ -84,16 +83,21 @@ class GathercontentContentImportSelectForm extends GathercontentMultistepFormBas
           && $item->template_id != 'null'
           && isset($mapping_array[$item->template_id])
         ) {
-          // @FIXME
-// menu_parent_options() is gone in Drupal 8. To generate or work with menu trees, you'll need to
-// use the menu.link_tree service.
-//
-//
-// @see https://www.drupal.org/node/2226481
-// @see https://api.drupal.org/api/drupal/core%21lib%21Drupal%21Core%21Menu%21MenuLinkTree.php/class/MenuLinkTree/8
           $content_table[$item->id] = array(
             'status' => array(
-              'data' => '<div class="gc-item--status--color" style="background: ' . $item->status->data->color . ';"></div>' . $item->status->data->name,
+              'data' => array(
+                'color' => array(
+                  '#type' => 'html_tag',
+                  '#tag' => 'div',
+                  '#value' => ' ',
+                  '#attributes' => array(
+                    'style' => 'width:20px; height: 20px; float: left; margin-right: 5px; background: ' . $item->status->data->color,
+                  ),
+                ),
+                'label' => array(
+                  '#plain_text' => $item->status->data->name,
+                ),
+              ),
               'class' => array('gc-item', 'status-item'),
             ),
             'title' => array(
@@ -109,19 +113,20 @@ class GathercontentContentImportSelectForm extends GathercontentMultistepFormBas
               'data' => $mapping_array[$item->template_id]['gc_template'],
               'class' => array('template-name-item'),
             ),
-//             'menu' => array(
-//               'data' => array(
-//                 '#type' => 'select',
-//                 '#options' =>
-//                   array(
-//                     0 => t("- Don't create menu item -"),
-//                     -1 => t("Parent being imported"),
-//                   ) + menu_parent_options(menu_get_menus(), $mapping_array[$item->template_id]['ct']),
-//                 '#title' => t('Menu'),
-//                 '#title_display' => 'invisible',
-//                 '#name' => "menu[$item->id]",
-//               ),
-//             ),
+            'menu' => array(
+              'data' => array(
+                '#type' => 'select',
+                '#options' =>
+                  array(
+                    0 => t("- Don't create menu item -"),
+                    -1 => t("Parent being imported"),
+                  ) + \Drupal::service('menu.parent_form_selector')
+                    ->getParentSelectOptions(),
+                '#title' => t('Menu'),
+                '#title_display' => 'invisible',
+                '#name' => "menu[$item->id]",
+              ),
+            ),
           );
 
         }
@@ -132,9 +137,10 @@ class GathercontentContentImportSelectForm extends GathercontentMultistepFormBas
         'title' => t('Item Name'),
         'updated' => t('Last updated in GatherContent'),
         'template' => t('GatherContent Template Name'),
-//          'menu' => t('Menu'),
+        'menu' => t('Menu'),
       );
 
+      // @TODO: use custom form element
       $form['import']['content'] = array(
         '#type' => 'tableselect',
         '#header' => $header,

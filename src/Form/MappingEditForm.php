@@ -5,28 +5,26 @@ namespace Drupal\gathercontent\Form;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\gathercontent\DAO\Template;
-use Drupal\gathercontent\Entity\GathercontentMapping;
+use Drupal\gathercontent\Entity\Mapping;
 
 /**
- * Class GathercontentMappingEditForm.
+ * Class MappingEditForm.
  *
  * @package Drupal\gathercontent\Form
  */
-class GathercontentMappingEditForm extends EntityForm {
+class MappingEditForm extends EntityForm {
 
   /**
    * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state) {
-    $form = parent::form($form, $form_state);
-    /** @var GathercontentMapping $mapping */
+    /** @var Mapping $mapping */
     $mapping = $this->entity;
 
     $content_types = node_type_get_names();
     $tmp = new Template();
     $template = $tmp->getTemplate($mapping->getGathercontentTemplateId());
     $new = !$mapping->hasMapping();
-    $form = array();
     $form['#attached']['library'][] = 'gathercontent/theme';
     $form['form_description'] = array(
       '#type' => 'html_tag',
@@ -139,7 +137,7 @@ class GathercontentMappingEditForm extends EntityForm {
           ],
         ],
         '#ajax' => array(
-          'callback' => 'Drupal\gathercontent\Form\GathercontentMappingEditForm::getMappingTable',
+          'callback' => 'Drupal\gathercontent\Form\MappingEditForm::getMappingTable',
           'wrapper' => 'edit-mapping',
           'method' => 'replace',
           'effect' => 'fade',
@@ -306,7 +304,7 @@ class GathercontentMappingEditForm extends EntityForm {
   /**
    * {@inheritdoc}
    */
-  public function save(array $form, FormStateInterface $form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state) {
     if ($form_state->getTriggeringElement()['#id'] == 'edit-submit') {
       $form_definition_elements = array(
         'return',
@@ -320,6 +318,8 @@ class GathercontentMappingEditForm extends EntityForm {
         'content_type',
         'id',
         'updated',
+        'gathercontent_project',
+        'gathercontent_template',
       ));
 
       $mapping_data = array();
@@ -328,7 +328,7 @@ class GathercontentMappingEditForm extends EntityForm {
           $mapping_data[$key] = $value;
         }
       }
-      /** @var $mapping GathercontentMapping */
+      /** @var Mapping $mapping */
       $mapping = $this->entity;
 
       $new = !$mapping->hasMapping();

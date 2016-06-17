@@ -3,17 +3,19 @@
 namespace Drupal\gathercontent\Form;
 
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
 use Drupal\gathercontent\DAO\Content;
-use Drupal\gathercontent\DAO\Template;
 use Drupal\gathercontent\DAO\Project;
-use Drupal\gathercontent\Entity\GathercontentOperation;
+use Drupal\gathercontent\DAO\Template;
+use Drupal\gathercontent\Entity\Operation;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 
 /**
  * Class GathercontentContentImportConfirmForm.
  *
  * @package Drupal\gathercontent\Form
  */
-class GathercontentContentImportConfirmForm extends GathercontentMultistepFormBase {
+class ContentImportConfirmForm extends MultistepFormBase {
 
   /**
    * {@inheritdoc}
@@ -62,9 +64,25 @@ class GathercontentContentImportConfirmForm extends GathercontentMultistepFormBa
       $content = $content_obj->getContent($node);
 
       $options[$content->id] = array(
-        'status' => '<div style="width:20px; height: 20px; float: left; margin-right: 5px; background: ' . $content->status->data->color . ';"></div>' . $content->status->data->name,
+        'status' => array(
+          'data' => array(
+            'color' => array(
+              '#type' => 'html_tag',
+              '#tag' => 'div',
+              '#value' => ' ',
+              '#attributes' => array(
+                'style' => 'width:20px; height: 20px; float: left; margin-right: 5px; background: ' . $content->status->data->color,
+              ),
+            ),
+            'label' => array(
+              '#plain_text' => $content->status->data->name,
+            ),
+          ),
+        ),
+//        'status' => '<div style="width:20px; height: 20px; float: left; margin-right: 5px; background: ' . $content->status->data->color . ';"></div>' . $content->status->data->name,
         'title' => $content->name,
         'template' => $templates[$content->template_id],
+
       );
     }
 
@@ -102,7 +120,7 @@ class GathercontentContentImportConfirmForm extends GathercontentMultistepFormBa
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     if ($form_state->getTriggeringElement()['#id'] === 'edit-submit') {
-      $operation = GathercontentOperation::create(array(
+      $operation = Operation::create(array(
         'type' => 'import',
       ));
       $operation->save();
@@ -113,10 +131,10 @@ class GathercontentContentImportConfirmForm extends GathercontentMultistepFormBa
       $import_content = $this->store->get('nodes');
 
       foreach ($import_content as $k => $value) {
-        if ($this->store->get('menu')[$value] && $this->store->get('menu')[$value] != -1) {
-          $parent_menu_item = $this->store->get('menu')[$value] ? $this->store->get('menu')[$value] : NULL;
+        if ((isset($this->store->get('menu')[$value]) && $this->store->get('menu')[$value] != -1) || !isset($this->store->get('menu')[$value])) {
+          $parent_menu_item = isset($this->store->get('menu')[$value]) ? $this->store->get('menu')[$value] : NULL;
           $operations[] = array(
-            'gc_import_process',
+            'gathercontent_import_process',
             array(
               $value,
               $form_state->getValue('status'),
@@ -165,6 +183,8 @@ class GathercontentContentImportConfirmForm extends GathercontentMultistepFormBa
         }
       }
 
+      $this->deleteStore(array('project_id', 'nodes', 'menu'));
+
       $batch = array(
         'title' => t('Importing content ...'),
         'operations' => $operations,
@@ -178,7 +198,7 @@ class GathercontentContentImportConfirmForm extends GathercontentMultistepFormBa
       batch_set($batch);
     }
     else {
-      
+      new RedirectResponse(Url::fromRoute('gathercontent.import_select_form'));
     }
   }
 

@@ -18,7 +18,7 @@ use Drupal\user\UserInterface;
  *   id = "gathercontent_operation",
  *   label = @Translation("Gathercontent operation"),
  *   handlers = {
- *     "views_data" = "Drupal\gathercontent\Entity\GathercontentOperationViewsData",
+ *     "views_data" = "Drupal\gathercontent\Entity\OperationViewsData",
  *   },
  *   base_table = "gathercontent_operation",
  *   admin_permission = "administer gathercontent operation entities",
@@ -29,7 +29,7 @@ use Drupal\user\UserInterface;
  *   }
  * )
  */
-class GathercontentOperation extends ContentEntityBase implements GathercontentOperationInterface {
+class Operation extends ContentEntityBase implements OperationInterface {
 
   use EntityChangedTrait;
 

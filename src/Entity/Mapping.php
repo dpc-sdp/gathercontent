@@ -3,7 +3,6 @@
 namespace Drupal\gathercontent\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
-use Drupal\gathercontent\GathercontentMappingInterface;
 
 /**
  * Defines the GatherContent Mapping entity.
@@ -12,15 +11,15 @@ use Drupal\gathercontent\GathercontentMappingInterface;
  *   id = "gathercontent_mapping",
  *   label = @Translation("GatherContent Mapping"),
  *   handlers = {
- *     "list_builder" = "Drupal\gathercontent\GathercontentMappingListBuilder",
+ *     "list_builder" = "Drupal\gathercontent\MappingListBuilder",
  *     "form" = {
- *       "default" = "Drupal\gathercontent\Form\GathercontentMappingImportForm",
- *       "add" = "Drupal\gathercontent\Form\GathercontentMappingImportForm",
- *       "edit" = "Drupal\gathercontent\Form\GathercontentMappingEditForm",
- *       "delete" = "Drupal\gathercontent\Form\GathercontentMappingDeleteForm"
+ *       "default" = "Drupal\gathercontent\Form\MappingImportForm",
+ *       "add" = "Drupal\gathercontent\Form\MappingImportForm",
+ *       "edit" = "Drupal\gathercontent\Form\MappingEditForm",
+ *       "delete" = "Drupal\gathercontent\Form\MappingDeleteForm"
  *     },
  *     "route_provider" = {
- *       "html" = "Drupal\gathercontent\GathercontentMappingHtmlRouteProvider",
+ *       "html" = "Drupal\gathercontent\MappingHtmlRouteProvider",
  *     },
  *   },
  *   config_prefix = "gathercontent_mapping",
@@ -38,7 +37,7 @@ use Drupal\gathercontent\GathercontentMappingInterface;
  *   }
  * )
  */
-class GathercontentMapping extends ConfigEntityBase implements GathercontentMappingInterface {
+class Mapping extends ConfigEntityBase implements MappingInterface {
 
   /**
    * The GatherContent Mapping ID.
@@ -111,10 +110,48 @@ class GathercontentMapping extends ConfigEntityBase implements GathercontentMapp
   protected $template;
 
   /**
+   * @param $projectID
+   * @param $templateID
+   *
+   * @return FALSE|\Drupal\gathercontent\Entity\Mapping
+   */
+  public static function exists($projectID, $templateID) {
+    $mappings = self::loadMultiple();
+    foreach ($mappings as $mapping) {
+      /** @var Mapping $mapping */
+      if ($mapping->getGathercontentTemplateId() === $templateID && $mapping->getGathercontentProjectId() === $projectID) {
+        return $mapping;
+      }
+    }
+    return FALSE;
+  }
+
+  /**
+   * @return int
+   */
+  public function getGathercontentTemplateId() {
+    return $this->get('gathercontent_template_id');
+  }
+
+  /**
+   * @param int $gathercontent_template_id
+   */
+  public function setGathercontentTemplateId($gathercontent_template_id) {
+    $this->gathercontent_template_id = $gathercontent_template_id;
+  }
+
+  /**
    * @return int
    */
   public function getGathercontentProjectId() {
     return $this->get('gathercontent_project_id');
+  }
+
+  /**
+   * @param int $gathercontent_project_id
+   */
+  public function setGathercontentProjectId($gathercontent_project_id) {
+    $this->gathercontent_project_id = $gathercontent_project_id;
   }
 
   /**
@@ -125,10 +162,24 @@ class GathercontentMapping extends ConfigEntityBase implements GathercontentMapp
   }
 
   /**
+   * @param string $gathercontent_project
+   */
+  public function setGathercontentProject($gathercontent_project) {
+    $this->gathercontent_project = $gathercontent_project;
+  }
+
+  /**
    * @return string
    */
   public function getGathercontentTemplate() {
     return $this->get('gathercontent_template');
+  }
+
+  /**
+   * @param string $gathercontent_template
+   */
+  public function setGathercontentTemplate($gathercontent_template) {
+    $this->gathercontent_template = $gathercontent_template;
   }
 
   /**
@@ -139,6 +190,13 @@ class GathercontentMapping extends ConfigEntityBase implements GathercontentMapp
   }
 
   /**
+   * @param string $content_type
+   */
+  public function setContentType($content_type) {
+    $this->content_type = $content_type;
+  }
+
+  /**
    * @return string
    */
   public function getContentTypeName() {
@@ -146,10 +204,24 @@ class GathercontentMapping extends ConfigEntityBase implements GathercontentMapp
   }
 
   /**
+   * @param string $content_type_name
+   */
+  public function setContentTypeName($content_type_name) {
+    $this->content_type_name = $content_type_name;
+  }
+
+  /**
    * @return string
    */
   public function getUpdatedDrupal() {
     return $this->get('updated_drupal');
+  }
+
+  /**
+   * @param string $updated_drupal
+   */
+  public function setUpdatedDrupal($updated_drupal) {
+    $this->updated_drupal = $updated_drupal;
   }
 
   /**
@@ -180,17 +252,17 @@ class GathercontentMapping extends ConfigEntityBase implements GathercontentMapp
   }
 
   /**
-   * @return int
-   */
-  public function getGathercontentTemplateId() {
-    return $this->get('gathercontent_template_id');
-  }
-
-  /**
    * @return mixed
    */
   public function getTemplate() {
     return $this->get('template');
+  }
+
+  /**
+   * @param string $template
+   */
+  public function setTemplate($template) {
+    $this->template = $template;
   }
 
   /**
@@ -201,62 +273,6 @@ class GathercontentMapping extends ConfigEntityBase implements GathercontentMapp
   }
 
   /**
-   * @return bool
-   */
-  public function hasMapping() {
-    return !empty($this->get('data'));
-  }
-
-  /**
-   * @param int $gathercontent_project_id
-   */
-  public function setGathercontentProjectId($gathercontent_project_id) {
-    $this->gathercontent_project_id = $gathercontent_project_id;
-  }
-
-  /**
-   * @param string $gathercontent_project
-   */
-  public function setGathercontentProject($gathercontent_project) {
-    $this->gathercontent_project = $gathercontent_project;
-  }
-
-  /**
-   * @param int $gathercontent_template_id
-   */
-  public function setGathercontentTemplateId($gathercontent_template_id) {
-    $this->gathercontent_template_id = $gathercontent_template_id;
-  }
-
-  /**
-   * @param string $gathercontent_template
-   */
-  public function setGathercontentTemplate($gathercontent_template) {
-    $this->gathercontent_template = $gathercontent_template;
-  }
-
-  /**
-   * @param string $content_type
-   */
-  public function setContentType($content_type) {
-    $this->content_type = $content_type;
-  }
-
-  /**
-   * @param string $content_type_name
-   */
-  public function setContentTypeName($content_type_name) {
-    $this->content_type_name = $content_type_name;
-  }
-
-  /**
-   * @param string $updated_drupal
-   */
-  public function setUpdatedDrupal($updated_drupal) {
-    $this->updated_drupal = $updated_drupal;
-  }
-
-  /**
    * @param string $data
    */
   public function setData($data) {
@@ -264,9 +280,9 @@ class GathercontentMapping extends ConfigEntityBase implements GathercontentMapp
   }
 
   /**
-   * @param string $template
+   * @return bool
    */
-  public function setTemplate($template) {
-    $this->template = $template;
+  public function hasMapping() {
+    return !empty($this->get('data'));
   }
 }

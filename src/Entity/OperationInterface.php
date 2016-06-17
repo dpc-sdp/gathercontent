@@ -11,7 +11,7 @@ use Drupal\user\EntityOwnerInterface;
  *
  * @ingroup gathercontent
  */
-interface GathercontentOperationInterface extends ContentEntityInterface {
+interface OperationInterface extends ContentEntityInterface {
 
   // Add get/set methods for your configuration properties here.
 

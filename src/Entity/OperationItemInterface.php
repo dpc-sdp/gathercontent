@@ -11,6 +11,6 @@ use Drupal\user\EntityOwnerInterface;
  *
  * @ingroup gathercontent
  */
-interface GathercontentOperationItemInterface extends ContentEntityInterface {
+interface OperationItemInterface extends ContentEntityInterface {
 
 }
