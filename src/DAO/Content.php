@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains GatherContent\Accont class.
- */
-
 namespace Drupal\gathercontent\DAO;
 
 use GuzzleHttp\Client;
