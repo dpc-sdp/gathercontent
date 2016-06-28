@@ -4,7 +4,7 @@
  * Main module file for GatherContent module.
  */
 
-use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\gathercontent\DAO\Content;
 use Drupal\gathercontent\DAO\Project;
 use Drupal\gathercontent\DAO\Template;
@@ -14,18 +14,24 @@ use Drupal\gathercontent\Entity\OperationItem;
 /**
  * Implements hook_entity_base_field_info().
  *
+ * Add a 'GC mapping ID' and 'GC ID fields' base field to all node types.
+ *
  * {@inheritdoc}
  */
-function gathercontent_entity_base_field_info(EntityTypeInterface $entity_type) {
+function gathercontent_entity_base_field_info(\Drupal\Core\Entity\EntityTypeInterface $entity_type) {
   $fields = array();
-
-  // Add a 'GC mapping ID' and 'GC ID fields' base field to all node types.
   if ($entity_type->id() === 'node') {
-    $fields['gc_mapping_id'] = $storage_definition = \Drupal\Core\Field\BaseFieldDefinition::create('integer')
+    $fields['gc_mapping_id'] = $storage_definition = BaseFieldDefinition::create('integer')
       ->setLabel(t('GC mapping ID'))
       ->setDescription(t('The ID of GatherContent mapping.'))
       ->setReadOnly(TRUE);
-    $fields['gc_id'] = $storage_definition = \Drupal\Core\Field\BaseFieldDefinition::create('integer')
+    $fields['gc_id'] = $storage_definition = BaseFieldDefinition::create('integer')
+      ->setLabel(t('GC ID'))
+      ->setDescription(t('The ID of GatherContent content.'))
+      ->setReadOnly(TRUE);
+  }
+  if ($entity_type->id() === 'file') {
+    $fields['gc_id'] = $storage_definition = BaseFieldDefinition::create('integer')
       ->setLabel(t('GC ID'))
       ->setDescription(t('The ID of GatherContent content.'))
       ->setReadOnly(TRUE);
@@ -35,17 +41,20 @@ function gathercontent_entity_base_field_info(EntityTypeInterface $entity_type) 
 }
 
 /**
- * Helper function for fetching data from GatherContent.
- *
  * @param int $gc_id
  *   ID of GatherContent piece of content.
- * @param object|null $entity
+ * @param string $uuid
+ *   UUID of \Drupal\gathercontent\Entity\Operation.
+ * @param null $status
+ * @param \Drupal\Core\Entity\ContentEntityInterface|null $entity
  *   Object of entity, if we are updating exiting content.
+ * @param string|null $parent_menu_item
+ *   Parent menu item ID if we want to create menu item.
  *
- * @return int|FALSE
+ * @return bool
  *   Return nid if operation was successful.
  */
-function _gc_fetcher($gc_id, $uuid, $status = NULL, $entity = NULL, $parent_menu_item = NULL) {
+function _gc_fetcher($gc_id, $uuid, $status = NULL, \Drupal\Core\Entity\ContentEntityInterface $entity = NULL, $parent_menu_item = NULL) {
   $user = \Drupal::currentUser();
 
   $tsid = NULL;
@@ -101,13 +110,16 @@ function _gc_fetcher($gc_id, $uuid, $status = NULL, $entity = NULL, $parent_menu
       try {
         foreach ($content->config as $pane) {
           $is_translatable = \Drupal::moduleHandler()
-              ->moduleExists('entity_translation')
+              ->moduleExists('content_translation')
             && \Drupal::service('content_translation.manager')
               ->isEnabled('node', $mapping->getContentType())
             && isset($mapping_data[$pane->name]['language'])
             && ($mapping_data[$pane->name]['language'] != \Drupal\Core\Language\Language::LANGCODE_NOT_SPECIFIED);
           if ($is_translatable) {
             $language = $mapping_data[$pane->name]['language'];
+            if (!$entity->hasTranslation($language)) {
+              $entity->addTranslation($language);
+            }
           }
           else {
             $language = \Drupal\Core\Language\Language::LANGCODE_NOT_SPECIFIED;
@@ -118,43 +130,18 @@ function _gc_fetcher($gc_id, $uuid, $status = NULL, $entity = NULL, $parent_menu
               if (isset($mapping_data[$pane->name]['type']) && ($mapping_data[$pane->name]['type'] === 'content') || !isset($mapping_data[$pane->name]['type'])) {
                 gc_gc_process_content_pane($entity, $gc_id, $local_field_name, $field, $mapping->getContentType(), $is_translatable, $language, $parent_menu_item, $entity->id(), $tsid, $_title_is_mapped);
               }
-//              elseif (isset($mapping_data[$pane->name]['type']) && ($mapping_data[$pane->name]['type'] === 'metatag')) {
-//                gc_gc_process_metatag_pane($entity, $metatags, $gc_id, $local_field_name, $field, $mapping->getContentType(), $is_translatable, $language);
-//              }
+              elseif (isset($mapping_data[$pane->name]['type']) && ($mapping_data[$pane->name]['type'] === 'metatag')) {
+                gc_gc_process_metatag_pane($entity, $gc_id, $local_field_name, $field, $mapping->getContentType(), $is_translatable, $language);
+              }
             }
-//            else {
-//              $operation_item->status = "Operation failed: Template fields mismatch.";
-//              $operation_item->save();
-//              return NULL;
-//            }
           }
-//          // We need to create new translation if is translatable.
-//          if ($is_translatable && (!isset($entity->language) || empty($entity->language))) {
-//            $entity->language->set($language);
-//            $entity->save(TRUE);
-//          }
-//          elseif ($is_translatable && (isset($entity->language) || !empty($entity->language))) {
-//            $handler = entity_translation_get_handler('entity', $entity);
-//            $translation = array(
-//              'translate' => 0,
-//              'status' => 1,
-//              'language' => $language,
-//              'source' => ($language === $entity->language->value() ? '' : $entity->language->value()),
-//            );
-//            $handler->setTranslation($translation, $entity->value());
-//          }
         }
 
         if (!$is_translatable && !$_title_is_mapped) {
           $entity->title->value = $content->name;
         }
         $entity->save();
-//        if (\Drupal::moduleHandler()
-//            ->moduleExists('metatag') && metatag_entity_supports_metatags('entity', $mapping->getContentType())
-//        ) {
-//          module_load_include('module', 'metatag');
-//          metatag_metatags_save('entity', $entity->nid, $entity->vid, $metatags);
-//        }
+
         $operation_item->status = "Success";
         $operation_item->nid = $entity->id();
         $operation_item->save();
@@ -181,10 +168,8 @@ function _gc_fetcher($gc_id, $uuid, $status = NULL, $entity = NULL, $parent_menu
 }
 
 /**
- * @param \Drupal\Core\Entity\ContentEntityInterface $node
+ * @param \Drupal\Core\Entity\ContentEntityInterface $entity
  *   Object of node.
- * @param array $metatags
- *   Array of metatags.
  * @param int $gc_id
  *   ID of item in GatherContent.
  * @param string $local_field_name
@@ -200,11 +185,23 @@ function _gc_fetcher($gc_id, $uuid, $status = NULL, $entity = NULL, $parent_menu
  *
  * @throws \Exception
  */
-function gc_gc_process_metatag_pane(\Drupal\Core\Entity\ContentEntityInterface &$node, &$metatags, $gc_id, $local_field_name, $field, $content_type, $is_translatable = FALSE, $language = \Drupal\Core\Language\Language::LANGCODE_NOT_SPECIFIED) {
+function gc_gc_process_metatag_pane(\Drupal\Core\Entity\ContentEntityInterface &$entity, $gc_id, $local_field_name, $field, $content_type, $is_translatable = FALSE, $language = \Drupal\Core\Language\Language::LANGCODE_NOT_SPECIFIED) {
   if (\Drupal::moduleHandler()
-      ->moduleExists('metatag') && metatag_entity_supports_metatags('node', $content_type)
+      ->moduleExists('metatag') && checkMetatag($content_type)
   ) {
-    $metatags[$language][$local_field_name] = array('value' => $field->value);
+    $metatag_fields = getMetatagFields($content_type);
+    foreach ($metatag_fields as $metatag_field) {
+      if ($is_translatable) {
+        $current_value = unserialize($entity->getTranslation($language)->{$metatag_field}->value);
+        $current_value[$local_field_name] = $field->value;
+        $entity->getTranslation($language)->{$metatag_field}->value = serialize($current_value);
+      }
+      else {
+        $current_value = unserialize($entity->{$metatag_field}->value);
+        $current_value[$local_field_name] = $field->value;
+        $entity->{$metatag_field}->value = serialize($field->value);
+      }
+    }
   }
   else {
     throw new Exception("Metatag module not enabled or entity doesn't support 
@@ -282,9 +279,11 @@ function gc_gc_process_content_pane(\Drupal\Core\Entity\ContentEntityInterface &
 }
 
 /**
- * @param \Drupal\Core\Entity\ContentEntityInterface $node
- * @param $field
- * @param $plid
+ * @param int $nid
+ * @param string $title
+ * @param string $plid
+ * @param null $lang
+ * @param null $tsid
  */
 function gc_create_menu_link($nid, $title, $plid, $lang = NULL, &$tsid = NULL) {
   if (!empty($plid)) {
@@ -358,6 +357,7 @@ function gc_create_menu_link($nid, $title, $plid, $lang = NULL, &$tsid = NULL) {
 /**
  * @param $mlid
  * @param $menu_name
+ * @param null $language
  */
 function _gc_get_menu_by_gc_id(&$mlid, &$menu_name, $language = NULL) {
   // Load node by gc_id.
@@ -500,21 +500,22 @@ function gc_gc_process_files_field(\Drupal\Core\Entity\ContentEntityInterface &$
   foreach ($files as $file) {
     if ($file->field === $gc_field_name) {
       $found = FALSE;
-      foreach ($node->$local_field_name->value() as $file) {
-        if ($file['gc_id'] === $file->id) {
+      foreach ($node->{$local_field_name} as $local_file) {
+        if ($local_file->gc_id->value === $file->id) {
           $found = TRUE;
         }
       }
 
       if (!$found) {
         $local_file = file_save_data(file_get_contents($file->url), 'public://' . $file->filename);
-        $local_file->gc_id = $file->id;
+        $local_file->gc_id->value = $file->id;
         $local_file->save();
-        $found_files[] = array('fid' => $local_file->fid);
+        $found_files[] = array('target_id' => $local_file->id());
       }
     }
   }
   if ($is_translatable) {
+
     $node->getTranslation($language)->{$local_field_name} = $found_files;
   }
   else {

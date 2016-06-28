@@ -4,6 +4,7 @@ namespace Drupal\gathercontent\Form;
 
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Language\LanguageInterface;
 use Drupal\gathercontent\DAO\Template;
 use Drupal\gathercontent\Entity\Mapping;
 
@@ -82,12 +83,42 @@ class MappingEditForm extends EntityForm {
       foreach ($template->config as $i => $fieldset) {
         if ($fieldset->hidden === FALSE) {
           $form['mapping'][$fieldset->name] = array(
-            '#type' => 'fieldset',
+            '#type' => 'details',
             '#title' => $fieldset->label,
-            '#collapsible' => TRUE,
-            '#collapsed' => ($i === 0 ? FALSE : TRUE),
+            '#open' => ($i === 0 ? TRUE : FALSE),
             '#tree' => TRUE,
           );
+
+          if (\Drupal::moduleHandler()->moduleExists('metatag')) {
+            $form['mapping'][$fieldset->name]['type'] = array(
+              '#type' => 'select',
+              '#options' => array(
+                'content' => t('Content'),
+                'metatag' => t('Metatag'),
+              ),
+              '#title' => t('Type'),
+              '#default_value' => (isset($mapping_data[$fieldset->name]['type']) || $form_state->hasValue($fieldset->name)['type']) ? ($form_state->hasValue($fieldset->name)['type'] ? $form_state->getValue($fieldset->name)['type'] : $mapping_data[$fieldset->name]['type']) : 'content',
+              '#ajax' => array(
+                'callback' => 'Drupal\gathercontent\Form\MappingEditForm::getMappingTable',
+                'wrapper' => 'edit-mapping',
+                'method' => 'replace',
+                'effect' => 'fade',
+              ),
+            );
+          }
+
+          if (\Drupal::moduleHandler()->moduleExists('content_translation') &&
+            \Drupal::service('content_translation.manager')
+              ->isEnabled('node', $form_state->getValue('content_type'))
+          ) {
+
+            $form['mapping'][$fieldset->name]['language'] = array(
+              '#type' => 'select',
+              '#options' => array('und' => t('None')) + $this->getLanguageList(),
+              '#title' => t('Language'),
+              '#default_value' => isset($mapping_data[$fieldset->name]['language']) ? $mapping_data[$fieldset->name]['language'] : 'und',
+            );
+          }
 
           foreach ($fieldset->elements as $gc_field) {
             $d_fields = array();
@@ -95,18 +126,27 @@ class MappingEditForm extends EntityForm {
               // We need different handling for changed fieldset.
               if ($form_state->getTriggeringElement()['#array_parents'][1] === $fieldset->name) {
                 if ($form_state->getTriggeringElement()['#value'] === 'content') {
-                  $d_fields = self::filter_fields($gc_field, $mapping->getContentType());
+                  $d_fields = $this->filterFields($gc_field, $mapping->getContentType());
+                }
+                elseif ($form_state->getTriggeringElement()['#value'] === 'metatag') {
+                  $d_fields = $this->filterMetatags($gc_field);
                 }
               }
               else {
                 if ($form_state->getValue($fieldset->name)['type'] === 'content') {
-                  $d_fields = self::filter_fields($gc_field, $mapping->getContentType());
+                  $d_fields = $this->filterFields($gc_field, $mapping->getContentType());
+                }
+                elseif ($form_state->getTriggeringElement()['#value'] === 'metatag') {
+                  $d_fields = $this->filterMetatags($gc_field);
                 }
               }
             }
             else {
               if ((isset($mapping_data[$fieldset->name]['type']) && $mapping_data[$fieldset->name]['type'] === 'content') || !isset($mapping_data[$fieldset->name]['type'])) {
-                $d_fields = self::filter_fields($gc_field, $mapping->getContentType());
+                $d_fields = $this->filterFields($gc_field, $mapping->getContentType());
+              }
+              else {
+                $d_fields = $this->filterMetatags($gc_field);
               }
             }
             $form['mapping'][$fieldset->name]['elements'][$gc_field->name] = array(
@@ -167,6 +207,37 @@ class MappingEditForm extends EntityForm {
               $form['mapping'][$fieldset->name]['#suffix'] = '</div>';
             }
 
+            if (\Drupal::moduleHandler()->moduleExists('metatag')) {
+              $form['mapping'][$fieldset->name]['type'] = array(
+                '#type' => 'select',
+                '#options' => array(
+                  'content' => t('Content'),
+                  'metatag' => t('Metatag'),
+                ),
+                '#title' => t('Type'),
+                '#default_value' => $form_state->hasValue($fieldset->name)['type'] ? $form_state->getValue($fieldset->name)['type'] : 'content',
+                '#ajax' => array(
+                  'callback' => 'Drupal\gathercontent\Form\MappingEditForm::getMappingTable',
+                  'wrapper' => 'edit-mapping',
+                  'method' => 'replace',
+                  'effect' => 'fade',
+                ),
+              );
+            }
+
+            if (\Drupal::moduleHandler()->moduleExists('content_translation') &&
+              \Drupal::service('content_translation.manager')
+                ->isEnabled('node', $form_state->getValue('content_type'))
+            ) {
+
+              $form['mapping'][$fieldset->name]['language'] = array(
+                '#type' => 'select',
+                '#options' => array('und' => t('None')) + $this->getLanguageList(),
+                '#title' => t('Language'),
+                '#default_value' => $form_state->hasValue($fieldset->name)['language'] ? $form_state->getValue($fieldset->name)['language'] : 'und',
+              );
+            }
+
             foreach ($fieldset->elements as $gc_field) {
               $d_fields = array();
               $content_type = $form_state->getValue('content_type');
@@ -174,23 +245,31 @@ class MappingEditForm extends EntityForm {
                 // We need different handling for changed fieldset.
                 if ($form_state->getTriggeringElement()['#array_parents'][1] === $fieldset->name) {
                   if ($form_state->getTriggeringElement()['#value'] === 'content') {
-                    $d_fields = self::filter_fields($gc_field, $content_type);
+                    $d_fields = $this->filterFields($gc_field, $content_type);
+                  }
+                  elseif ($form_state->getTriggeringElement()['#value'] === 'metatag') {
+                    $d_fields = $this->filterMetatags($gc_field);
                   }
                 }
                 else {
-                  if ($form_state['values'][$fieldset->name]['type'] === 'content') {
-                    $d_fields = self::filter_fields($gc_field, $content_type);
+                  if ($form_state->getValue($fieldset->name)['type'] === 'content') {
+                    $d_fields = $this->filterFields($gc_field, $content_type);
+                  }
+                  elseif ($form_state->getValue($fieldset->name)['type'] === 'metatag') {
+                    $d_fields = $this->filterMetatags($gc_field);
                   }
                 }
               }
               else {
-                $d_fields = self::filter_fields($gc_field, $content_type);
+                $d_fields = $this->filterFields($gc_field, $content_type);
               }
               $form['mapping'][$fieldset->name]['elements'][$gc_field->name] = array(
                 '#type' => 'select',
                 '#options' => $d_fields,
                 '#title' => (isset($gc_field->label) ? $gc_field->label : $gc_field->title),
-                '#empty_option' => t("Don't map"),
+                '#empty_option' => $this->t("Don't map"),
+                '#default_value' => $form_state->hasValue($fieldset->name)['elements'][$gc_field->name]
+                  ? $form_state->getValue($fieldset->name)['elements'][$gc_field->name] : NULL,
               );
             }
           }
@@ -213,7 +292,7 @@ class MappingEditForm extends EntityForm {
    * @return array
    *   Associative array with equivalent fields.
    */
-  public function filter_fields($gc_field, $content_type) {
+  protected function filterFields($gc_field, $content_type) {
     $mapping_array = array(
       'files' => array(
         'file',
@@ -286,6 +365,47 @@ class MappingEditForm extends EntityForm {
     }
 
     return $fields;
+  }
+
+  /**
+   * Return only supported metatag fields.
+   *
+   * @param object $gathercontent_field
+   *   Object of field from GatherContent.
+   *
+   * @return array
+   *   Array of supported metatag fields.
+   */
+  protected function filterMetatags($gathercontent_field) {
+    if ($gathercontent_field->type === 'text' && $gathercontent_field->plain_text) {
+      return array(
+        'title' => t('Title'),
+        'description' => t('Description'),
+        'abstract' => t('Abstract'),
+        'keywords' => t('Keywords'),
+      );
+    }
+
+    else {
+      return array();
+    }
+  }
+
+  /**
+   * Get list of languages as assoc array.
+   *
+   * @return array
+   *   Assoc array of languages keyed by lang code, value is language name.
+   */
+  protected function getLanguageList() {
+    $languages = \Drupal::service('language_manager')
+      ->getLanguages(LanguageInterface::STATE_CONFIGURABLE);
+    $language_list = [];
+    foreach ($languages as $lang_code => $language) {
+      /** @var \Drupal\Core\Language\Language $language */
+      $language_list[$lang_code] = $language->getName();
+    }
+    return $language_list;
   }
 
   /**
@@ -398,25 +518,6 @@ class MappingEditForm extends EntityForm {
     }
 
     $form_state->setRedirect('entity.gathercontent_mapping.collection');
-  }
-
-  /**
-   * Check if content type has any metatag fields.
-   *
-   * @param $content_type
-   *   Machine name of content type.
-   *
-   * @return bool
-   *   TRUE if metatag field exists.
-   */
-  public function checkMetatag($content_type) {
-    $instances = $this->entityManager->getFieldDefinitions('node', $content_type);
-    foreach ($instances as $name => $instance) {
-      if ($instance->getType() === 'metatag') {
-        return TRUE;
-      }
-    }
-    return FALSE;
   }
 
   /**
