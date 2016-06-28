@@ -40,6 +40,20 @@ class MappingImportForm extends EntityForm {
       '#type' => 'vertical_tabs',
     );
 
+    $form['template_counter'] = [
+      '#type' => 'container',
+      '#attributes' => [
+        'class' => [
+          'gather-content-counter-message',
+        ],
+      ],
+      '#attached' => [
+        'library' => [
+          'gathercontent/template_counter',
+        ],
+      ],
+    ];
+
     $created_mapping_ids = Mapping::loadMultiple();
     $local_templates = array();
 
@@ -66,6 +80,11 @@ class MappingImportForm extends EntityForm {
         '#type' => 'checkboxes',
         '#title' => $project,
         '#options' => $templates,
+        '#attributes' => [
+          'class' => [
+            'gather-content-counted',
+          ],
+        ],
       );
     }
 
@@ -97,7 +116,9 @@ class MappingImportForm extends EntityForm {
             'gathercontent_template' => $template->name,
             'template' => serialize($template),
           );
-          $mapping = \Drupal::entityManager()->getStorage('gathercontent_mapping')->create($mapping_values);
+          $mapping = \Drupal::entityManager()
+            ->getStorage('gathercontent_mapping')
+            ->create($mapping_values);
           if (is_object($mapping)) {
             $mapping->save();
           }

@@ -11,3 +11,11 @@ filter:
       css/gathercontent.admin.css: {}
   js:
     js/gc-filter.js: {}
+
+template_counter:
+  js:
+    js/gathercontent.counter.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupal
+    - core/jquery.once
