@@ -29,17 +29,23 @@ function gathercontent_import_form($step = NULL) {
     'next callback' => 'gathercontent_import_wizard_next',
     'finish callback' => 'gathercontent_import_wizard_finish',
     'finish text' => t('Import'),
+    'back text' => t('Back'),
+    'no back validate' => TRUE,
 
     // Define forms order.
     'order' => array(
-      'select' => t('Select content'),
+      'select-project' => t('Select project'),
+      'select-content' => t('Select content'),
       'confirm' => t('Confirmation'),
     ),
 
     // Define forms.
     'forms' => array(
-      'select' => array(
-        'form id' => 'gathercontent_import_form_select',
+      'select-project' => array(
+        'form id' => 'gathercontent_import_form_project_select',
+      ),
+      'select-content' => array(
+        'form id' => 'gathercontent_import_form_content_select',
       ),
       'confirm' => array(
         'form id' => 'gathercontent_import_form_confirm',
@@ -49,11 +55,11 @@ function gathercontent_import_form($step = NULL) {
 
   $object_id = 1;
 
-  if (empty($step)) {
+  if (empty($step) || $step === 'select-project') {
     // We reset the form when $step is NULL because that means they have
     // for whatever reason started over.
     gathercontent_import_cache_clear($object_id);
-    $step = 'select';
+    $step = 'select-project';
   }
 
   // This automatically gets defaults if there wasn't anything saved.
@@ -69,6 +75,7 @@ function gathercontent_import_form($step = NULL) {
   // Send this all off to our form. This is like drupal_get_form only wizardy.
   ctools_include('wizard');
   $form = ctools_wizard_multistep_form($form_info, $step, $form_state);
+
   $output = drupal_render($form);
 
   if ($output === FALSE || !empty($form_state['complete'])) {
@@ -134,11 +141,11 @@ function gathercontent_import_wizard_next(&$form_state) {
 }
 
 /**
- * Import form.
+ * Project select form.
  *
  * @inheritdoc
  */
-function gathercontent_import_form_select($form, &$form_state) {
+function gathercontent_import_form_project_select($form, &$form_state) {
   $gathercontent_module_path = drupal_get_path('module', 'gathercontent');
   $query = db_select('gathercontent_mapping', 'm')
     ->distinct()
@@ -152,15 +159,58 @@ function gathercontent_import_form_select($form, &$form_state) {
     '#title' => t('Select project'),
     '#options' => $projects,
     '#empty_option' => t('- Select -'),
+    '#empty_value' => 0,
+    '#required' => TRUE,
+    '#default_value' => isset($form_state['object']->project_id) ? $form_state['object']->project_id : '',
+    '#description' => t('You can only see projects with mapped templates in the dropdown.'),
+    '#attributes' => array('class' => array('gathercontent-autosubmit')),
+    '#attached' => array(
+      'js' => array($gathercontent_module_path . '/js/gathercontent-autosubmit.js'),
+    ),
+  );
+  return $form;
+}
+
+/**
+ * Content select import form.
+ *
+ * @inheritdoc
+ */
+function gathercontent_import_form_content_select($form, &$form_state) {
+  $gathercontent_module_path = drupal_get_path('module', 'gathercontent');
+  $query = db_select('gathercontent_mapping', 'm')
+    ->distinct()
+    ->fields('m', array('gathercontent_project', 'gathercontent_project_id'))
+    ->isNotNull('data')
+    ->execute();
+  $projects = $query->fetchAllKeyed(1, 0);
+
+  $form['project_wrapper'] = array(
+    '#type' => 'container',
+  );
+
+  $form['project_wrapper']['project'] = array(
+    '#type' => 'select',
+    '#title' => t('Select project'),
+    '#options' => $projects,
     '#required' => TRUE,
     '#ajax' => array(
-      'callback' => 'gathercontent_import_form_select_fetch_content',
+      'callback' => 'gathercontent_import_form_content_select_fetch_content',
       'wrapper' => 'edit-import',
       'method' => 'replace',
       'effect' => 'fade',
     ),
     '#default_value' => isset($form_state['object']->project_id) ? $form_state['object']->project_id : 0,
     '#description' => t('You can only see projects with mapped templates in the dropdown.'),
+  );
+
+  $form['project_wrapper']['fetch_content'] = array(
+    '#type' => 'button',
+    '#executes_submit_callback' => FALSE,
+    '#value' => t('Fetch contents of the selected project'),
+    '#name' => 'fetch_content',
+    '#attributes' => array('class' => array('js-hide')),
+    // No additional #submit handler needed.
   );
 
   $form['import'] = array(
@@ -271,11 +321,6 @@ function gathercontent_import_form_select($form, &$form_state) {
         '#default_value' => isset($form_state['object']->nodes) ? $form_state['object']->nodes : NULL,
       );
     }
-
-    $form['import']['back_button'] = array(
-      '#type' => 'markup',
-      '#markup' => l(t('Back'), '/admin/config/gathercontent/import', array('attributes' => array('class' => array('button')))),
-    );
   }
 
   return $form;
@@ -286,7 +331,7 @@ function gathercontent_import_form_select($form, &$form_state) {
  *
  * @inheritdoc
  */
-function gathercontent_import_form_select_fetch_content($form, &$form_state) {
+function gathercontent_import_form_content_select_fetch_content($form, &$form_state) {
   return $form['import'];
 }
 
@@ -298,7 +343,7 @@ function gathercontent_import_form_select_fetch_content($form, &$form_state) {
  *
  * @inheritdoc
  */
-function gathercontent_import_form_select_validate($form, &$form_state) {
+function gathercontent_import_form_content_select_validate($form, &$form_state) {
   if ($form_state['triggering_element']['#type'] === 'submit') {
     $stack = array();
     $import_content = array_filter($form_state['values']['content']);
@@ -354,10 +399,19 @@ function gathercontent_import_form_select_validate($form, &$form_state) {
  *
  * @inheritdoc
  */
-function gathercontent_import_form_select_submit($form, &$form_state) {
+function gathercontent_import_form_content_select_submit($form, &$form_state) {
   $form_state['object']->project_id = $form_state['values']['project'];
   $form_state['object']->nodes = array_filter($form_state['values']['content']);
   $form_state['object']->menu = array_intersect_key(array_filter($form_state['values']['menu']), array_filter($form_state['values']['content']));
+}
+
+/**
+ * Submit handler for `gathercontent_import` form.
+ *
+ * @inheritdoc
+ */
+function gathercontent_import_form_project_select_submit($form, &$form_state) {
+  $form_state['object']->project_id = $form_state['values']['project'];
 }
 
 /**
@@ -458,7 +512,7 @@ function gathercontent_import_form_confirm_submit($form, &$form_state) {
     }
   }
 
-  // If there are any items
+  // If there are any items.
   if (!empty($import_content)) {
     // Load all by project_id.
     $first = reset($import_content);
