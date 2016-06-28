@@ -152,7 +152,7 @@ class ContentImportSelectForm extends MultistepFormBase {
 //          'counter_wrapper' => array('gc-table--counter', 'clearfix'),
 //        ),
 //        '#filterdescription' => t('You can only see items with mapped templates in the table.'),
-        '#default_value' => $this->store->get('nodes') ? $this->store->get('nodes') : NULL,
+        '#default_value' => $this->store->get('nodes') ? $this->store->get('nodes') : [],
       );
 
       // @FIXME
