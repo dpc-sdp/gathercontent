@@ -36,3 +36,43 @@ gathercontent.import_confirm_form:
   options:
     _admin_route: TRUE
 
+gathercontent.update_select_form:
+  path: '/admin/content/update'
+  defaults:
+    _form: '\Drupal\gathercontent\Form\ContentUpdateSelectForm'
+    _title: 'Update content from GatherContent'
+  requirements:
+    _permission: 'administer gathercontent'
+  options:
+    _admin_route: TRUE
+
+gathercontent.update_confirm_form:
+  path: '/admin/content/update/confirm'
+  defaults:
+    _form: '\Drupal\gathercontent\Form\ContentUpdateConfirmForm'
+    _title: 'Confirm update selection'
+  requirements:
+    _permission: 'administer gathercontent'
+  options:
+    _admin_route: TRUE
+
+gathercontent.upload_select_form:
+  path: '/admin/content/upload'
+  defaults:
+    _form: '\Drupal\gathercontent\Form\ContentUploadSelectForm'
+    _title: 'Upload changes to GatherContent'
+  requirements:
+    _permission: 'administer gathercontent'
+  options:
+    _admin_route: TRUE
+
+gathercontent.upload_confirm_form:
+  path: '/admin/content/upload/confirm'
+  defaults:
+    _form: '\Drupal\gathercontent\Form\ContentUploadConfirmForm'
+    _title: 'Confirm upload selection'
+  requirements:
+    _permission: 'administer gathercontent'
+  options:
+    _admin_route: TRUE
+

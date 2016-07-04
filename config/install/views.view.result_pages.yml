@@ -1,10 +1,8 @@
-uuid: 3d453e14-b8e2-4bf2-b7dd-36b4df81f544
 langcode: en
 status: true
 dependencies:
   module:
     - gathercontent
-    - views
 id: result_pages
 label: 'Result pages'
 module: gathercontent
@@ -611,6 +609,44 @@ display:
     display_options:
       display_extenders: {  }
       path: admin/config/gathercontent/import/result/%
+    cache_metadata:
+      max-age: 0
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+      tags: {  }
+  page_2:
+    display_plugin: page
+    id: page_2
+    display_title: Page
+    position: 1
+    display_options:
+      display_extenders: {  }
+      path: admin/config/gathercontent/upload/result/%
+      title: 'Upload result page'
+      defaults:
+        title: false
+    cache_metadata:
+      max-age: 0
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+      tags: {  }
+  page_3:
+    display_plugin: page
+    id: page_3
+    display_title: Page
+    position: 1
+    display_options:
+      display_extenders: {  }
+      path: admin/config/gathercontent/update/result/%
+      title: 'Update result page'
+      defaults:
+        title: false
     cache_metadata:
       max-age: 0
       contexts:

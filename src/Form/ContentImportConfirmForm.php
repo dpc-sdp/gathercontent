@@ -79,7 +79,6 @@ class ContentImportConfirmForm extends MultistepFormBase {
             ),
           ),
         ),
-//        'status' => '<div style="width:20px; height: 20px; float: left; margin-right: 5px; background: ' . $content->status->data->color . ';"></div>' . $content->status->data->name,
         'title' => $content->name,
         'template' => $templates[$content->template_id],
 

@@ -3,7 +3,6 @@
 namespace Drupal\gathercontent\Form;
 
 use Drupal\Core\Datetime\DateFormatterInterface;
-use Drupal\Core\Entity\EntityManager;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Form\FormBase;
@@ -90,17 +89,6 @@ abstract class MultistepFormBase extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-
-  }
-
-  /**
-   * Saves the data from the multistep form.
-   */
-  protected function saveData() {
-    // Logic for saving data goes here...
-    $this->deleteStore([]);
-    drupal_set_message($this->t('The form has been saved.'));
-
   }
 
   /**

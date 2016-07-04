@@ -2,11 +2,16 @@
 
 namespace Drupal\gathercontent\Form;
 
+use Drupal\Core\Entity\ContentEntityType;
 use Drupal\Core\Entity\EntityForm;
+use Drupal\Core\Field\Annotation\FieldWidget;
+use Drupal\Core\Field\WidgetPluginManager;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageInterface;
+use Drupal\field\Entity\FieldConfig;
 use Drupal\gathercontent\DAO\Template;
 use Drupal\gathercontent\Entity\Mapping;
+use Drupal\node\Entity\Node;
 
 /**
  * Class MappingEditForm.
@@ -280,6 +285,23 @@ class MappingEditForm extends EntityForm {
   }
 
   /**
+   * Get list of languages as assoc array.
+   *
+   * @return array
+   *   Assoc array of languages keyed by lang code, value is language name.
+   */
+  protected function getLanguageList() {
+    $languages = \Drupal::service('language_manager')
+      ->getLanguages(LanguageInterface::STATE_CONFIGURABLE);
+    $language_list = [];
+    foreach ($languages as $lang_code => $language) {
+      /** @var \Drupal\Core\Language\Language $language */
+      $language_list[$lang_code] = $language->getName();
+    }
+    return $language_list;
+  }
+
+  /**
    * Helper function.
    *
    * Use for filtering only equivalent fields.
@@ -392,23 +414,6 @@ class MappingEditForm extends EntityForm {
   }
 
   /**
-   * Get list of languages as assoc array.
-   *
-   * @return array
-   *   Assoc array of languages keyed by lang code, value is language name.
-   */
-  protected function getLanguageList() {
-    $languages = \Drupal::service('language_manager')
-      ->getLanguages(LanguageInterface::STATE_CONFIGURABLE);
-    $language_list = [];
-    foreach ($languages as $lang_code => $language) {
-      /** @var \Drupal\Core\Language\Language $language */
-      $language_list[$lang_code] = $language->getName();
-    }
-    return $language_list;
-  }
-
-  /**
    * Ajax callback for mapping multistep form.
    *
    * @return array
@@ -467,48 +472,43 @@ class MappingEditForm extends EntityForm {
       $mapping->save();
 
       // We need to modify field for checkboxes and field instance for radios.
-//      foreach ($template->config as $i => $fieldset) {
-//        if ($fieldset->hidden === FALSE) {
-//          foreach ($fieldset->elements as $gc_field) {
-//            if ($gc_field->type === 'choice_checkbox') {
-//              if (!empty($mapping_data[$gc_field->name])) {
-//                $local_options = array();
-//                foreach ($gc_field->options as $option) {
-//                  $local_options[$option->name] = $option->label;
-//                }
-//
-//                $field_data = array(
-//                  'field_name' => $mapping_data[$gc_field->name],
-//                  'settings' => array(
-//                    'allowed_values' => $local_options,
-//                  ),
-//                );
-//                try {
-//                  $field_data->save();
-//                }
-//                catch (Exception $e) {
-//                  // Log something.
-//                }
-//              }
-//            }
-//            elseif ($gc_field->type === 'choice_radio') {
-//              if (!empty($mapping_data[$gc_field->name])) {
-//                $local_options = array();
-//                foreach ($gc_field->options as $option) {
-//                  if ($option != end($gc_field->options)) {
-//                    $local_options[] = $option->name . "|" . $option->label;
-//                  }
-//                }
-//                $instance = field_read_instance('node', $mapping_data[$gc_field->name], $mapping->content_type);
-//                // Make the change.
-//                $instance['widget']['settings']['available_options'] = implode("\n", $local_options);
-//                // Save the instance.
-//                $instance->save();
-//              }
-//            }
-//          }
-//        }
-//      }
+      foreach ($template->config as $i => $fieldset) {
+        if ($fieldset->hidden === FALSE) {
+          foreach ($fieldset->elements as $gc_field) {
+            if ($gc_field->type === 'choice_checkbox') {
+              if (!empty($mapping_data[$gc_field->name])) {
+                $local_options = array();
+                foreach ($gc_field->options as $option) {
+                  $local_options[$option->name] = $option->label;
+                }
+                $field_info = FieldConfig::loadByName('node', $mapping->getContentType(), $mapping_data[$gc_field->name]);
+                $field_info = $field_info->getFieldStorageDefinition();
+                // Make the change.
+                $field_info->setSetting('allowed_values', $local_options);
+                try {
+                  $field_info->save();
+                }
+                catch (\Exception $e) {
+                  // Log something.
+                }
+              }
+            }
+            elseif ($gc_field->type === 'choice_radio') {
+              if (!empty($mapping_data[$gc_field->name])) {
+                $local_options = array();
+                foreach ($gc_field->options as $option) {
+                  if ($option != end($gc_field->options)) {
+                    $local_options[] = $option->name . '|' . $option->label;
+                  }
+                }
+                $entity = \Drupal::entityManager()->getStorage('entity_form_display')->load('node.article.default');
+                /** @var \Drupal\Core\Entity\Entity\EntityFormDisplay $entity */
+                $entity->getRenderer('field_other')->setSetting('available_options',implode("\n", $local_options));
+              }
+            }
+          }
+        }
+      }
       if ($new) {
         drupal_set_message(t('Mapping has been created.'));
       }

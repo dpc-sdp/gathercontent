@@ -23,3 +23,15 @@ gathercontent.import_select_form:
   parent: gathercontent.admin_gathercontent
   weight: 3
 
+gathercontent.update_select_form:
+  title: 'Update content from GatherContent'
+  route_name: gathercontent.update_select_form
+  parent: system.admin_content
+  weight: 99
+
+gathercontent.upload_select_form:
+  title: 'Upload changes to GatherContent'
+  route_name: gathercontent.upload_select_form
+  parent: system.admin_content
+  weight: 100
+

@@ -29,8 +29,7 @@ class MappingImportForm extends EntityForm {
     $form['description'] = array(
       '#type' => 'html_tag',
       '#tag' => 'div',
-      '#value' => t("Please select the GatherContent Templates you'd like 
-    to map. Only Templates you've not selected will be listed."),
+      '#value' => t("Please select the GatherContent Templates you'd like to map. Only Templates you've not selected will be listed."),
       '#attributes' => array(
         'class' => array('description'),
       ),
