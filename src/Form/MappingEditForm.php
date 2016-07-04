@@ -104,7 +104,7 @@ class MappingEditForm extends EntityForm {
               '#title' => t('Type'),
               '#default_value' => (isset($mapping_data[$fieldset->name]['type']) || $form_state->hasValue($fieldset->name)['type']) ? ($form_state->hasValue($fieldset->name)['type'] ? $form_state->getValue($fieldset->name)['type'] : $mapping_data[$fieldset->name]['type']) : 'content',
               '#ajax' => array(
-                'callback' => 'Drupal\gathercontent\Form\MappingEditForm::getMappingTable',
+                'callback' => '::getMappingTable',
                 'wrapper' => 'edit-mapping',
                 'method' => 'replace',
                 'effect' => 'fade',
@@ -182,7 +182,7 @@ class MappingEditForm extends EntityForm {
           ],
         ],
         '#ajax' => array(
-          'callback' => 'Drupal\gathercontent\Form\MappingEditForm::getMappingTable',
+          'callback' => '::getMappingTable',
           'wrapper' => 'edit-mapping',
           'method' => 'replace',
           'effect' => 'fade',
@@ -222,7 +222,7 @@ class MappingEditForm extends EntityForm {
                 '#title' => t('Type'),
                 '#default_value' => $form_state->hasValue($fieldset->name)['type'] ? $form_state->getValue($fieldset->name)['type'] : 'content',
                 '#ajax' => array(
-                  'callback' => 'Drupal\gathercontent\Form\MappingEditForm::getMappingTable',
+                  'callback' => '::getMappingTable',
                   'wrapper' => 'edit-mapping',
                   'method' => 'replace',
                   'effect' => 'fade',

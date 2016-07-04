@@ -47,7 +47,7 @@ class ContentImportSelectForm extends MultistepFormBase {
       '#empty_option' => t('- Select -'),
       '#required' => TRUE,
       '#ajax' => array(
-        'callback' => 'Drupal\gathercontent\Form\ContentImportSelectForm::getContentTable',
+        'callback' => '::getContentTable',
         'wrapper' => 'edit-import',
         'method' => 'replace',
         'effect' => 'fade',
