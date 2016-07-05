@@ -9,8 +9,8 @@
   Drupal.behaviors.gcImportSelectedCounter = {
     attach: function (context) {
       var self = this;
-      if ($('#edit-import table:not(.sticky-header)', context).length) {
-        $('.gc-table--counter', context).once('gc-import-selected-counter').each(function () {
+      if ($('table.tablesorter-enabled:not(.sticky-header)', context).length) {
+        $('.gc-table--counter', context).each(function () {
           $('<div class="form-item form-item--gc-import">\n' +
             '  <em class="select-counter"></em>\n' +
             '</div>')
@@ -19,16 +19,16 @@
 
         self.updateCount();
 
-        $('#edit-import table', context).on('change', 'input:checkbox', function () {
+        $('table.tablesorter-enabled', context).on('change', 'input:checkbox', function () {
           self.updateCount();
         });
       }
     },
 
     updateCount: function () {
-      var checkedCount = $('#edit-import tbody input:checkbox:checked').length;
-      var visibleCount = $('#edit-import tbody input:checkbox:visible').length;
-      var totalCount = $('#edit-import tbody input:checkbox').length;
+      var checkedCount = $('.tablesorter-enabled tbody input:checkbox:checked').length;
+      var visibleCount = $('.tablesorter-enabled tbody input:checkbox:visible').length;
+      var totalCount = $('.tablesorter-enabled tbody input:checkbox').length;
 
       $('.select-counter').html(Drupal.formatPlural(
         visibleCount,
@@ -45,7 +45,7 @@
   Drupal.behaviors.gcImportFilter = {
     attach: function (context, settings) {
       var self = this;
-      $('#edit-import table:not(.sticky-header)', context).once('gc-import-filter').each(function () {
+      $('table.tablesorter-enabled:not(.sticky-header)', context).each(function () {
         $('.gc-filter').remove();
 
         $('.gc-table--filter-wrapper')
@@ -69,7 +69,7 @@
           );
 
         // Populate status select.
-        $('tbody .status-item', $(this)).each(function () {
+        $('.status-item', $(this)).each(function () {
           var optionText = $(this).text();
           var optionvalue = optionText.toLowerCase().replace(/[^a-z0-9]/g, '-');
           $(this).closest('tr').attr('data-status', optionvalue);
@@ -79,7 +79,7 @@
         });
 
         // Populate template value select.
-        $('#edit-import .template-name-item').each(function () {
+        $('.template-name-item').each(function () {
           var optionText = $(this).text();
           var optionvalue = optionText.toLowerCase().replace(/[^a-z0-9]/g, '-');
           $(this).closest('tr').attr('data-template', optionvalue);
@@ -104,7 +104,7 @@
         });
 
         // Loop through every rows.
-        $('#edit-import table tbody tr').each(function () {
+        $('table.tablesorter-enabled tbody tr').each(function () {
           // The default value is the show 'all' items. There is no hidden value
           // by default.
           var hidden = false;
@@ -135,11 +135,11 @@
         });
 
         // Fixing odd/even classes.
-        self.fixZebra('#edit-import table');
+        self.fixZebra('table.tablesorter-enabled');
         // Update select all checkbox value.
-        self.fixSelectAll('#edit-import table');
+        self.fixSelectAll('table.tablesorter-enabled');
         // Trigger counter update.
-        $('#edit-import table input:checkbox').trigger('change');
+        $('table.tablesorter-enabled input:checkbox').trigger('change');
         // Trigger 'resize' on window for sticky table (avoiding messed sticky
         // header cells). Sticky header and it's cells dimensions will be
         // recalculated.

@@ -67,6 +67,19 @@ class ContentImportSelectForm extends MultistepFormBase {
 
     if (($form_state->hasValue('project') || $this->store->get('project_id'))
       && (!empty($form_state->getValue('project')) || !empty($this->store->get('project_id')))) {
+
+      $form['import']['filter'] = [
+        '#type' => 'markup',
+        '#markup' => '<div class="gc-table--filter-wrapper clearfix"></div>',
+        '#weight' => 0,
+      ];
+
+      $form['import']['counter'] = [
+        '#type' => 'markup',
+        '#markup' => '<div class="gc-table--counter"></div>',
+        '#weight' => 1,
+      ];
+
       $project_id = $form_state->hasValue('project') ? $form_state->getValue('project') : $this->store->get('project_id');
       $content_obj = new Content();
       $content = $content_obj->getContents($project_id);
@@ -136,18 +149,6 @@ class ContentImportSelectForm extends MultistepFormBase {
         'menu' => t('Menu'),
       );
 
-      $form['import']['filter'] = [
-        '#type' => 'markup',
-        '#markup' => '<div class="gc-table--filter-wrapper clearfix"></div>',
-        '#weight' => 0,
-      ];
-
-      $form['import']['counter'] = [
-        '#type' => 'markup',
-        '#markup' => '<div class="gc-table--counter"></div>',
-        '#weight' => 1,
-      ];
-
       $form['import']['content'] = array(
         '#type' => 'tableselect',
         '#weight' => 2,
@@ -179,21 +180,8 @@ class ContentImportSelectForm extends MultistepFormBase {
         '#header' => $header,
         '#options' => $content_table,
         '#empty' => $this->t('No content available.'),
-//        '#filterwrapper' => array(
-//          'filter_wrapper' => array('gc-table--filter-wrapper', 'clearfix'),
-//          'counter_wrapper' => array('gc-table--counter', 'clearfix'),
-//        ),
-//        '#filterdescription' => t('You can only see items with mapped templates in the table.'),
         '#default_value' => $this->store->get('nodes') ? $this->store->get('nodes') : [],
       );
-
-      // @FIXME
-// l() expects a Url object, created from a route name or external URI.
-// $form['import']['back_button'] = array(
-//       '#type' => 'markup',
-//       '#markup' => l(t('Back'), '/admin/config/gc/import', array('attributes' => array('class' => array('button')))),
-//     );
-
     }
 
     $form['actions']['submit']['#value'] = $this->t('Next');

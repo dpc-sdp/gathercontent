@@ -5,6 +5,7 @@ namespace Drupal\gathercontent\Form;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Form\ConfirmFormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Link;
 use Drupal\Core\Url;
 use Drupal\gathercontent\DAO\Content;
 use Drupal\gathercontent\Entity\Mapping;
@@ -143,6 +144,9 @@ class ContentConfirmForm extends ConfirmFormBase {
       }
     }
 
+    $base_url = 'http://' . \Drupal::config('gathercontent.settings')
+        ->get('gathercontent_urlkey') . '.gathercontent.com/item/';
+
     $content_table = array();
     foreach ($nodes as $item) {
       /** @var Node $item */
@@ -190,6 +194,14 @@ class ContentConfirmForm extends ConfirmFormBase {
           'data' => $mapping_array[$item->gc_mapping_id->value]['gc_template'],
           'class' => array('template-name-item'),
         ),
+        'drupal_open' => array(
+          'data' => Link::fromTextAndUrl($this->t('Open'), Url::fromUri('entity:node/' . $item->id()))
+            ->toRenderable(),
+        ),
+        'gathercontent_open' => array(
+          'data' => Link::fromTextAndUrl($this->t('Open'), Url::fromUri($base_url . $item->gc_id->value))
+            ->toRenderable(),
+        ),
       );
     }
 
@@ -202,6 +214,8 @@ class ContentConfirmForm extends ConfirmFormBase {
       'gathercontent_updated' => $this->t('Last updated in GatherContent'),
       'content_type' => $this->t('Content type name'),
       'gathercontent_template' => $this->t('GatherContent template'),
+      'drupal_open' => $this->t('Open in Drupal'),
+      'gathercontent_open' => $this->t('Open in GatherContent'),
     );
 
     $form['nodes'] = array(

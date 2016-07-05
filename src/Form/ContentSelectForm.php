@@ -3,6 +3,8 @@
 namespace Drupal\gathercontent\Form;
 
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Link;
+use Drupal\Core\Url;
 use Drupal\gathercontent\DAO\Content;
 use Drupal\gathercontent\Entity\Mapping;
 use Drupal\node\Entity\Node;
@@ -64,8 +66,28 @@ class ContentSelectForm extends MultistepFormBase {
       }
     }
 
+    $form['filter'] = [
+      '#type' => 'markup',
+      '#markup' => '<div class="gc-table--filter-wrapper clearfix"></div>',
+      '#weight' => 0,
+    ];
+
+    $form['counter'] = [
+      '#type' => 'markup',
+      '#markup' => '<div class="gc-table--counter"></div>',
+      '#weight' => 1,
+    ];
+
+    $base_url = 'http://' . \Drupal::config('gathercontent.settings')
+        ->get('gathercontent_urlkey') . '.gathercontent.com/item/';
+
     $content_table = array();
     foreach ($nodes as $item) {
+      if (!isset($contents[$item->gc_id->value]['status']->data->name)) {
+        // Don't show deleted items or items which belong to another account.
+        continue;
+      }
+
       /** @var Node $item */
       $content_table[$item->id()] = array(
         'status' => array(
@@ -111,6 +133,14 @@ class ContentSelectForm extends MultistepFormBase {
           'data' => $mapping_array[$item->gc_mapping_id->value]['gc_template'],
           'class' => array('template-name-item'),
         ),
+        'drupal_open' => array(
+          'data' => Link::fromTextAndUrl($this->t('Open'), Url::fromUri('entity:node/' . $item->id()))
+            ->toRenderable(),
+        ),
+        'gathercontent_open' => array(
+          'data' => Link::fromTextAndUrl($this->t('Open'), Url::fromUri($base_url . $item->gc_id->value))
+            ->toRenderable(),
+        ),
       );
     }
 
@@ -123,20 +153,45 @@ class ContentSelectForm extends MultistepFormBase {
       'gathercontent_updated' => $this->t('Last updated in GatherContent'),
       'content_type' => $this->t('Content type name'),
       'gathercontent_template' => $this->t('GatherContent template'),
+      'drupal_open' => $this->t('Open in Drupal'),
+      'gathercontent_open' => $this->t('Open in GatherContent'),
     );
 
-    // @TODO: use custom form element
     $form['nodes'] = array(
+      '#weight' => 2,
       '#type' => 'tableselect',
       '#header' => $header,
       '#options' => $content_table,
       '#empty' => t('No content available.'),
-//        '#filterwrapper' => array(
-//          'filter_wrapper' => array('gc-table--filter-wrapper', 'clearfix'),
-//          'counter_wrapper' => array('gc-table--counter', 'clearfix'),
-//        ),
-//        '#filterdescription' => t('You can only see items with mapped templates in the table.'),
       '#default_value' => $this->store->get('nodes') ? $this->store->get('nodes') : NULL,
+      '#attributes' => [
+        'class' => [
+          'tablesorter-enabled',
+        ],
+      ],
+      '#attached' => [
+        'library' => [
+          'gathercontent/tablesorter-mottie',
+          'gathercontent/filter',
+        ],
+        'drupalSettings' => [
+          'gatherContent' => [
+            'tableSorterOptionOverrides' => [
+              'headers' => [
+                '0' => [
+                  'sorter' => FALSE,
+                ],
+                '9' => [
+                  'sorter' => FALSE,
+                ],
+                '10' => [
+                  'sorter' => FALSE,
+                ],
+              ],
+            ],
+          ],
+        ],
+      ],
     );
 
     $form['actions']['submit']['#value'] = $this->t('Next');
