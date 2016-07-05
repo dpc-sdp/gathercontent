@@ -23,7 +23,7 @@ filter:
     theme:
       css/gathercontent.admin.css: {}
   js:
-    js/gc-filter.js: {}
+    js/gathercontent.filter.js: {}
 
 template_counter:
   js:
