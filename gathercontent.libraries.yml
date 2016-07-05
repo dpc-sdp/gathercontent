@@ -1,7 +1,7 @@
 tablesorter-mottie:
   js:
     /libraries/tablesorter-mottie/dist/js/jquery.tablesorter.combined.min.js: {}
-    js/gc-tablesorter.js: {}
+    js/gathercontent.tablesorter.js: {}
   css:
     theme:
       /libraries/tablesorter-mottie/dist/css/theme.default.min.css: {}
