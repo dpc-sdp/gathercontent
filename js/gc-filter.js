@@ -10,7 +10,7 @@
     attach: function (context) {
       var self = this;
       if ($('#edit-import table:not(.sticky-header)', context).length) {
-        $('.gc-table--counter', context).once('gc-import-selected-counter', function () {
+        $('.gc-table--counter', context).once('gc-import-selected-counter').each(function () {
           $('<div class="form-item form-item--gc-import">\n' +
             '  <em class="select-counter"></em>\n' +
             '</div>')
@@ -19,11 +19,12 @@
 
         self.updateCount();
 
-        $('#edit-import table', context).delegate('input:checkbox', 'change', function () {
+        $('#edit-import table', context).on('change', 'input:checkbox', function () {
           self.updateCount();
         });
       }
     },
+
     updateCount: function () {
       var checkedCount = $('#edit-import tbody input:checkbox:checked').length;
       var visibleCount = $('#edit-import tbody input:checkbox:visible').length;
@@ -44,7 +45,7 @@
   Drupal.behaviors.gcImportFilter = {
     attach: function (context, settings) {
       var self = this;
-      $('#edit-import table:not(.sticky-header)', context).once('gc-import-filter', function () {
+      $('#edit-import table:not(.sticky-header)', context).once('gc-import-filter').each(function () {
         $('.gc-filter').remove();
 
         $('.gc-table--filter-wrapper')
@@ -56,18 +57,19 @@
             '  </select>\n' +
             '</div>\n' +
             '<div class="form-item gc-filter">\n' +
+            '  <label for="ga-form-select-search">' + Drupal.t('Item name') + '</label>\n' +
+            '  <input placeholder="' + Drupal.t('Filter by Item Name') + '" type="text" id="ga-form-select-search" class="form-text form-text--gc-import">\n' +
+            '</div>\n' +
+            '<div class="form-item gc-filter">\n' +
             '  <label for="ga-form-select-template">' + Drupal.t('GatherContent Template Name') + '</label>\n' +
             '  <select id="ga-form-select-template" class="form-select form-select--gc-import">\n' +
             '    <option value="all">' + Drupal.t('All') + '</option>\n' +
             '  </select>\n' +
-            '</div>\n' +
-            '<div class="form-item gc-filter">\n' +
-            '  <label for="ga-form-select-search">' + Drupal.t('Search') + '</label>\n' +
-            '  <input placeholder="' + Drupal.t('Filter by Item Name') + '" type="text" id="ga-form-select-search" class="form-text form-text--gc-import">\n' +
-            '</div>');
+            '</div>'
+          );
 
         // Populate status select.
-        $('#edit-import tbody .status-item').each(function () {
+        $('tbody .status-item', $(this)).each(function () {
           var optionText = $(this).text();
           var optionvalue = optionText.toLowerCase().replace(/[^a-z0-9]/g, '-');
           $(this).closest('tr').attr('data-status', optionvalue);
@@ -94,7 +96,7 @@
         var templateValue = $('#ga-form-select-template').val();
         var searchValue = $('#ga-form-select-search').val().replace(/([.*+?^=!:${}()|\[\]\/\\])/g, '');
 
-        $('.gc-import-filter-processed .selected:hidden').each(function () {
+        $('.selected:hidden', $(this)).each(function () {
           // It removes te bg color from the table rows and uncheckes it's
           // checkbox.
           $(this).removeClass('selected')
@@ -110,7 +112,8 @@
           // Checking filter values.
           if ((($(this).data('status') !== statusValue) && statusValue !== 'all') ||
             (($(this).data('template') !== templateValue) && templateValue !== 'all') ||
-            ($(this).find('.gc-item--name').text().search(new RegExp(searchValue, 'i')) === -1)) {
+            ($(this).find('.gc-item--name').text().search(new RegExp(searchValue, 'i')) === -1)
+          ) {
             hidden = true;
           }
 

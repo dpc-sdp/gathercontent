@@ -2,16 +2,12 @@
 
 namespace Drupal\gathercontent\Form;
 
-use Drupal\Core\Entity\ContentEntityType;
 use Drupal\Core\Entity\EntityForm;
-use Drupal\Core\Field\Annotation\FieldWidget;
-use Drupal\Core\Field\WidgetPluginManager;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\gathercontent\DAO\Template;
 use Drupal\gathercontent\Entity\Mapping;
-use Drupal\node\Entity\Node;
 
 /**
  * Class MappingEditForm.
@@ -331,10 +327,10 @@ class MappingEditForm extends EntityForm {
         'string',
       ),
       'choice_radio' => array(
-        'text',
+        'string',
       ),
       'choice_checkbox' => array(
-        'list_text',
+        'list_string',
       ),
     );
     $instances = $this->entityManager->getFieldDefinitions('node', $content_type);
@@ -360,13 +356,6 @@ class MappingEditForm extends EntityForm {
               continue 2;
             }
             break;
-
-          case 'choise_radio':
-            if ($instance['widget']['module'] !== 'select_or_other') {
-              continue 2;
-            }
-            break;
-
           case 'section':
             if (in_array($instance->getType(), array(
               'string',
@@ -475,13 +464,14 @@ class MappingEditForm extends EntityForm {
       foreach ($template->config as $i => $fieldset) {
         if ($fieldset->hidden === FALSE) {
           foreach ($fieldset->elements as $gc_field) {
+            $local_field_name = $mapping_data[$fieldset->name]['elements'][$gc_field->name];
             if ($gc_field->type === 'choice_checkbox') {
-              if (!empty($mapping_data[$gc_field->name])) {
+              if (!empty($local_field_name)) {
                 $local_options = array();
                 foreach ($gc_field->options as $option) {
                   $local_options[$option->name] = $option->label;
                 }
-                $field_info = FieldConfig::loadByName('node', $mapping->getContentType(), $mapping_data[$gc_field->name]);
+                $field_info = FieldConfig::loadByName('node', $mapping->getContentType(), $local_field_name);
                 $field_info = $field_info->getFieldStorageDefinition();
                 // Make the change.
                 $field_info->setSetting('allowed_values', $local_options);
@@ -494,16 +484,19 @@ class MappingEditForm extends EntityForm {
               }
             }
             elseif ($gc_field->type === 'choice_radio') {
-              if (!empty($mapping_data[$gc_field->name])) {
+              if (!empty($mapping_data[$fieldset->name]['elements'][$gc_field->name])) {
                 $local_options = array();
                 foreach ($gc_field->options as $option) {
                   if ($option != end($gc_field->options)) {
                     $local_options[] = $option->name . '|' . $option->label;
                   }
                 }
-                $entity = \Drupal::entityManager()->getStorage('entity_form_display')->load('node.article.default');
+                $entity = \Drupal::entityManager()
+                  ->getStorage('entity_form_display')
+                  ->load('node.'.$mapping->getContentType().'.default');
                 /** @var \Drupal\Core\Entity\Entity\EntityFormDisplay $entity */
-                $entity->getRenderer('field_other')->setSetting('available_options',implode("\n", $local_options));
+                $entity->getRenderer($local_field_name)
+                  ->setSetting('available_options', implode("\n", $local_options));
               }
             }
           }

@@ -59,11 +59,6 @@ class ContentImportSelectForm extends MultistepFormBase {
     $form['import'] = array(
       '#prefix' => '<div id="edit-import">',
       '#suffix' => '</div>',
-      '#attached' => array(
-        'library' => array(
-          'gathercontent/filter',
-        ),
-      ),
     );
 
     $form['menu'] = array(
@@ -141,12 +136,49 @@ class ContentImportSelectForm extends MultistepFormBase {
         'menu' => t('Menu'),
       );
 
-      // @TODO: use custom form element
+      $form['import']['filter'] = [
+        '#type' => 'markup',
+        '#markup' => '<div class="gc-table--filter-wrapper clearfix"></div>',
+        '#weight' => 0,
+      ];
+
+      $form['import']['counter'] = [
+        '#type' => 'markup',
+        '#markup' => '<div class="gc-table--counter"></div>',
+        '#weight' => 1,
+      ];
+
       $form['import']['content'] = array(
         '#type' => 'tableselect',
+        '#weight' => 2,
+        '#attributes' => [
+          'class' => [
+            'tablesorter-enabled',
+          ],
+        ],
+        '#attached' => [
+          'library' => [
+            'gathercontent/tablesorter-mottie',
+            'gathercontent/filter',
+          ],
+          'drupalSettings' => [
+            'gatherContent' => [
+              'tableSorterOptionOverrides' => [
+                'headers' => [
+                  '0' => [
+                    'sorter' => FALSE,
+                  ],
+                  '5' => [
+                    'sorter' => FALSE,
+                  ],
+                ],
+              ],
+            ],
+          ],
+        ],
         '#header' => $header,
         '#options' => $content_table,
-        '#empty' => t('No content available.'),
+        '#empty' => $this->t('No content available.'),
 //        '#filterwrapper' => array(
 //          'filter_wrapper' => array('gc-table--filter-wrapper', 'clearfix'),
 //          'counter_wrapper' => array('gc-table--counter', 'clearfix'),
@@ -181,6 +213,7 @@ class ContentImportSelectForm extends MultistepFormBase {
 
   public function getContentTable(array &$form, FormStateInterface $form_state) {
     $form_state->setRebuild(TRUE);
+
     return $form['import'];
   }
 

@@ -22,10 +22,7 @@ This module integrates Gather Content into Drupal.
 
 1. Download and install dependent packages. You'll need [Composer][composer].
 2. Install this module and update Composer managed packages.
-3. If you want Gather Content admin forms have sortable table columns, enable
-   [Libraries module][libraries], download the most recent release of [Tablesorter][tablesorter releases],
-   and place it into `sites/all/libraries` Rename it's directory to
-   `tablesorter-mottie`.
+3. Download the most recent release of [Tablesorter][tablesorter releases], and place it into `libraries/`. Rename it's directory to `tablesorter-mottie`.
 
 ## Usage
 
