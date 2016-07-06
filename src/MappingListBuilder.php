@@ -116,7 +116,7 @@ class MappingListBuilder extends ConfigEntityListBuilder {
     $operations = [];
     if ($entity->access('update') && $entity->hasLinkTemplate('edit-form')) {
       $operations['edit'] = array(
-        'title' => $entity->hasMapping() ? $this->t('Edit') : $this->t('Setup'),
+        'title' => $entity->hasMapping() ? $this->t('Edit') : $this->t('Create'),
         'weight' => 10,
         'url' => $entity->urlInfo('edit-form'),
       );
