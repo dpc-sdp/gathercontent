@@ -76,3 +76,13 @@ gathercontent.upload_confirm_form:
   options:
     _admin_route: TRUE
 
+
+gathercontent.mapping_controller_testConnectionPage:
+  path: '/admin/config/gathercontent/config/test'
+  defaults:
+    _controller: '\Drupal\gathercontent\Controller\MappingController::testConnectionPage'
+    _title: 'Test connection'
+  requirements:
+    _permission: 'administer gathercontent'
+  options:
+    _admin_route: TRUE

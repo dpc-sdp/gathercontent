@@ -1,0 +1,12 @@
+gathercontent.config_form:
+  route_name: gathercontent.config_form
+  title: 'Authentication'
+  base_route: gathercontent.config_form
+  weight: 0
+
+gathercontent.mapping_controller_testConnectionPage:
+  route_name: gathercontent.mapping_controller_testConnectionPage
+  title: 'Test connection'
+  base_route: gathercontent.config_form
+  weight: 1
+
