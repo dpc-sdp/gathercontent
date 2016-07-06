@@ -10,7 +10,7 @@
     attach: function (context) {
       var self = this;
       if ($('table.tablesorter-enabled:not(.sticky-header)', context).length) {
-        $('.gc-table--counter', context).each(function () {
+        $('.gc-table--counter', context).once('gc-selected-counter').each(function () {
           $('<div class="form-item form-item--gc-import">\n' +
             '  <em class="select-counter"></em>\n' +
             '</div>')
