@@ -111,7 +111,7 @@ class Content {
       drupal_set_message($e->getMessage(), 'error');
       \Drupal::logger('gathercontent')->error($e->getMessage(), array());
     }
-    
+
     return $accounts;
   }
 
@@ -159,15 +159,18 @@ class Content {
    */
   public function postContent($content_id, array $config) {
     try {
-      $response = $this->client->post('/items/' . $content_id . '/save', array('body' => array('config' => base64_encode(json_encode($config)))));
+      $response = $this->client->post('/items/' . $content_id . '/save', array('form_params' => array('config' => base64_encode(json_encode($config)))));
       if ($response->getStatusCode() === 202) {
         return TRUE;
       }
       else {
+        \Drupal::logger('gathercontent')
+          ->alert('Upload return code:' . $response->getStatusCode(), TRUE));
         return FALSE;
       }
     }
     catch (\Exception $e) {
+      \Drupal::logger('gathercontent')->alert(print_r($e->getMessage(), TRUE));
       return FALSE;
     }
   }

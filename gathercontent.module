@@ -685,7 +685,7 @@ function gathercontent_upload_process(\Drupal\Core\Entity\ContentEntityInterface
     try {
       foreach ($config as &$pane) {
         $is_translatable = \Drupal::moduleHandler()
-            ->moduleExists('entity_translation')
+            ->moduleExists('content_translation')
           && \Drupal::service('content_translation.manager')
             ->isEnabled('node', $mapping->getContentType())
           && isset($mapping_data[$pane->name]['language'])
@@ -701,7 +701,7 @@ function gathercontent_upload_process(\Drupal\Core\Entity\ContentEntityInterface
             && !empty($mapping_data[$pane->name]['elements'][$field->name])
           ) {
             $local_field_name = $mapping_data[$pane->name]['elements'][$field->name];
-            if ($mapping_data[$pane->name]['type'] === 'content') {
+            if ((isset($mapping_data[$pane->name]['type']) && $mapping_data[$pane->name]['type'] === 'content') || !isset($mapping_data[$pane->name]['type'])) {
               $field_info = \Drupal\field\Entity\FieldConfig::loadByName('node', $entity->bundle(), $local_field_name);
               if (!is_null($field_info)) {
                 $is_translatable = $is_translatable && $field_info->isTranslatable();
@@ -819,7 +819,6 @@ function gathercontent_upload_process(\Drupal\Core\Entity\ContentEntityInterface
           }
         }
       }
-
       if ($cont_obj->postContent($entity->gc_id->value, $config)) {
         $operation_item->status = "Success";
         $operation_item->save();
