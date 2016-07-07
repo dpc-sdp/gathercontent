@@ -3,12 +3,10 @@
 namespace Drupal\gathercontent\Form;
 
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Core\Url;
 use Drupal\gathercontent\DAO\Content;
 use Drupal\gathercontent\DAO\Project;
 use Drupal\gathercontent\DAO\Template;
 use Drupal\gathercontent\Entity\Operation;
-use Symfony\Component\HttpFoundation\RedirectResponse;
 
 /**
  * Class GathercontentContentImportConfirmForm.
@@ -109,6 +107,7 @@ class ContentImportConfirmForm extends MultistepFormBase {
     $form['actions']['back'] = array(
       '#type' => 'submit',
       '#value' => $this->t('Back'),
+      '#weight' => 11,
     );
 
     return $form;
@@ -197,7 +196,7 @@ class ContentImportConfirmForm extends MultistepFormBase {
       batch_set($batch);
     }
     else {
-      new RedirectResponse(Url::fromRoute('gathercontent.import_select_form'));
+      $form_state->setRedirect('gathercontent.import_select_form');
     }
   }
 

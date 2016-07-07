@@ -24,7 +24,7 @@ class ContentImportSelectForm extends MultistepFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $form = parent::buildForm($form, $form_state);
+    $form = [];
 
     $created_mapping_ids = Mapping::loadMultiple();
     $projects = array();
@@ -66,7 +66,8 @@ class ContentImportSelectForm extends MultistepFormBase {
     );
 
     if (($form_state->hasValue('project') || $this->store->get('project_id'))
-      && (!empty($form_state->getValue('project')) || !empty($this->store->get('project_id')))) {
+      && (!empty($form_state->getValue('project')) || !empty($this->store->get('project_id')))
+    ) {
 
       $form['import']['filter'] = [
         '#type' => 'markup',
@@ -182,9 +183,20 @@ class ContentImportSelectForm extends MultistepFormBase {
         '#empty' => $this->t('No content available.'),
         '#default_value' => $this->store->get('nodes') ? $this->store->get('nodes') : [],
       );
-    }
 
-    $form['actions']['submit']['#value'] = $this->t('Next');
+      $form['import']['actions']['#type'] = 'actions';
+      $form['import']['actions']['submit'] = array(
+        '#type' => 'submit',
+        '#value' => $this->t('Next'),
+        '#button_type' => 'primary',
+        '#weight' => 10,
+      );
+      $form['import']['actions']['back'] = array(
+        '#type' => 'submit',
+        '#value' => $this->t('Back'),
+        '#weight' => 11,
+      );
+    }
 
     return $form;
   }
@@ -193,10 +205,19 @@ class ContentImportSelectForm extends MultistepFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $this->store->set('project_id', $form_state->getValue('project'));
-    $this->store->set('nodes', array_filter($form_state->getValue('content')));
-    $this->store->set('menu', array_intersect_key(array_filter($form_state->getValue('menu')), array_filter($form_state->getValue('content'))));
-    $form_state->setRedirect('gathercontent.import_confirm_form');
+    if ($form_state->getTriggeringElement()['#id'] === 'edit-submit') {
+      $this->store->set('project_id', $form_state->getValue('project'));
+      $this->store->set('nodes', array_filter($form_state->getValue('content')));
+      $this->store->set('menu', array_intersect_key(array_filter($form_state->getValue('menu')), array_filter($form_state->getValue('content'))));
+      $form_state->setRedirect('gathercontent.import_confirm_form');
+    }
+    else {
+      $form_state->setValue('project', NULL);
+      $form_state->setValue('content', NULL);
+      $form_state->setValue('menu', NULL);
+      $this->deleteStore(array('project_id', 'nodes', 'menu'));
+      $form_state->setRebuild(TRUE);
+    }
   }
 
   public function getContentTable(array &$form, FormStateInterface $form_state) {
