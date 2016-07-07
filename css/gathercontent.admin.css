@@ -25,28 +25,28 @@
  * Mapping.
  ******************************************************************************/
 
-form[data-drupal-selector="gathercontent-mapping-edit-form"] .form-item.inline-label label {
+form.gathercontent-mapping-edit-form .form-item.inline-label label {
   display: inline-block;
 }
 
-form[data-drupal-selector="gathercontent-mapping-edit-form"] div[data-drupal-selector="edit-gathercontent"] > .form-item {
+form.gathercontent-mapping-edit-form div[data-drupal-selector="edit-gathercontent"] > .form-item {
   display: inline-block;
   padding-right: 3em;
 }
 
-#gathercontent-mapping-edit-form details .form-type-select label {
+.gathercontent-mapping-edit-form details .form-type-select label {
   min-width: 400px;
   padding-right: 100px;
   background: url(../images/arrow.png) no-repeat right center;
 }
 
-#gathercontent-mapping-edit-form details .form-type-select select {
+.gathercontent-mapping-edit-form details .form-type-select select {
   min-width: 150px;
   margin-left: 100px;
 }
 
-#gathercontent-mapping-edit-form details .form-type-select label,
-#gathercontent-mapping-edit-form details .form-type-select select {
+.gathercontent-mapping-edit-form details .form-type-select label,
+.gathercontent-mapping-edit-form details .form-type-select select {
   display: inline-block;
 }
 

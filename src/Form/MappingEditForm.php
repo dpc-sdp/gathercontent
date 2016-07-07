@@ -415,6 +415,119 @@ class MappingEditForm extends EntityForm {
     return $form['mapping'];
   }
 
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+    if ($form_state->getTriggeringElement()['#id'] == 'edit-submit') {
+      $form_definition_elements = array(
+        'return',
+        'form_build_id',
+        'form_token',
+        'form_id',
+        'op',
+      );
+      $non_data_elements = array_merge($form_definition_elements, array(
+        'content_type',
+        'id',
+        'updated',
+        'gathercontent_project',
+        'gathercontent_template',
+      ));
+
+      $mapping_data = array();
+      foreach ($form_state->getValues() as $key => $value) {
+        if (!in_array($key, $non_data_elements) && substr_compare($key, 'tab', 0, 3) === 0) {
+          $mapping_data[$key] = $value;
+        }
+      }
+      // Check if is translatable.
+      /** @var \Drupal\gathercontent\Entity\Mapping $mapping */
+      $mapping = $this->entity;
+      $content_type = (empty($mapping->getContentType()) ? $form_state->getValue('content_type') : $mapping->getContentType());
+      $translatable = \Drupal::moduleHandler()
+          ->moduleExists('content_translation')
+        && \Drupal::service('content_translation.manager')
+          ->isEnabled('node', $content_type);
+      // Validate if each language is used only once
+      // for translatable content types.
+      $content_lang = array();
+      $metatag_lang = array();
+      if ($translatable) {
+        foreach ($mapping_data as $tab_id => $tab) {
+          $tab_type = (isset($tab['type']) ? $tab['type'] : 'content');
+          if ($tab['language'] != 'und') {
+            if (!in_array($tab['language'], ${$tab_type . '_lang'})) {
+              ${$tab_type . '_lang'}[] = $tab['language'];
+            }
+            else {
+              $element = $tab_id . '[language]';
+              $form_state->setErrorByName($element, $this->t('Each language can be used only once'));
+            }
+          }
+        }
+      }
+
+      // Validate if each field is used only once.
+      $content_fields = array();
+      $metatag_fields = array();
+      if ($translatable) {
+        foreach ($content_lang as $lang) {
+          $content_fields[$lang] = array();
+        }
+        foreach ($metatag_lang as $lang) {
+          $metatag_fields[$lang] = array();
+        }
+        $content_fields['und'] = $metatag_fields['und'] = array();
+      }
+      foreach ($mapping_data as $tab_id => $tab) {
+        $tab_type = (isset($tab['type']) ? $tab['type'] : 'content');
+        if (isset($tab['elements'])) {
+          foreach ($tab['elements'] as $k => $element) {
+            if (empty($element)) {
+              continue;
+            }
+            if ($translatable) {
+              if (!in_array($element, ${$tab_type . '_fields'}[$tab['language']])) {
+                ${$tab_type . '_fields'}[$tab['language']][] = $element;
+              }
+              else {
+                $form_state->setErrorByName($tab_id, $this->t('A GatherContent field can only be mapped to a single Drupal field. So each field can only be mapped to once.'));
+              }
+            }
+            else {
+              if (!in_array($element, ${$tab_type . '_fields'})) {
+                ${$tab_type . '_fields'}[] = $element;
+              }
+              else {
+                $form_state->setErrorByName($tab_id, $this->t('A GatherContent field can only be mapped to a single Drupal field. So each field can only be mapped to once.'));
+              }
+            }
+          }
+        }
+      }
+
+      // Validate if at least one field in mapped.
+      if (!$translatable && empty($content_fields) && empty($metatag_fields)) {
+        $form_state->setErrorByName('form', t('You need to map at least one field to create mapping.'));
+      }
+      elseif ($translatable &&
+        count($content_fields) === 1
+        && empty($content_fields['und'])
+        && empty($metatag_fields['und'])
+        && count($metatag_fields) === 1
+      ) {
+        $form_state->setErrorByName('form', t('You need to map at least one field to create mapping.'));
+      }
+
+      // Validate if title is mapped for translatable content.
+      if ($translatable) {
+        foreach ($content_fields as $k => $lang_fields) {
+          if (!in_array('title', $lang_fields) && $k != 'und') {
+            $form_state->setErrorByName('form', t('You have to map Drupal Title field for translatable content.'));
+          }
+        }
+      }
+    }
+  }
+
   /**
    * {@inheritdoc}
    */
@@ -493,7 +606,7 @@ class MappingEditForm extends EntityForm {
                 }
                 $entity = \Drupal::entityManager()
                   ->getStorage('entity_form_display')
-                  ->load('node.'.$mapping->getContentType().'.default');
+                  ->load('node.' . $mapping->getContentType() . '.default');
                 /** @var \Drupal\Core\Entity\Entity\EntityFormDisplay $entity */
                 $entity->getRenderer($local_field_name)
                   ->setSetting('available_options', implode("\n", $local_options));
