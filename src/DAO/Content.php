@@ -165,7 +165,7 @@ class Content {
       }
       else {
         \Drupal::logger('gathercontent')
-          ->alert('Upload return code:' . $response->getStatusCode(), TRUE));
+          ->alert('Upload return code:' . $response->getStatusCode(), TRUE);
         return FALSE;
       }
     }

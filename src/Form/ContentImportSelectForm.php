@@ -211,7 +211,7 @@ class ContentImportSelectForm extends MultistepFormBase {
       $this->store->set('menu', array_intersect_key(array_filter($form_state->getValue('menu')), array_filter($form_state->getValue('content'))));
       $form_state->setRedirect('gathercontent.import_confirm_form');
     }
-    else {
+    elseif ($form_state->getTriggeringElement()['#id'] === 'edit-back') {
       $form_state->setValue('project', NULL);
       $form_state->setValue('content', NULL);
       $form_state->setValue('menu', NULL);
