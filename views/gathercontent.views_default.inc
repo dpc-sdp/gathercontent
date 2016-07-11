@@ -825,3 +825,11 @@ Template fields mismatch: This could be because the template in GatherContent ha
 
   return $views;
 }
+
+/**
+ * Implements hook_views_default_views_alter().
+ */
+function gathercontent_views_default_views_alter(&$views) {
+  $handler = &$views['mapping']->display['default']->handler;
+  $handler->display->display_options['style_options']['default'] = 'gathercontent_project';
+}
