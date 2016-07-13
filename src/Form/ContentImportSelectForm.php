@@ -38,7 +38,6 @@ class ContentImportSelectForm extends FormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     $form = [];
-    $data = $form_state->getStorage();
 
     if (empty($this->step)) {
       $this->step = 1;
@@ -73,7 +72,7 @@ class ContentImportSelectForm extends FormBase {
           'method' => 'replace',
           'effect' => 'fade',
         ),
-        '#default_value' => $data['project_id'] ? $data['project_id'] : 0,
+        '#default_value' => !empty($this->projectId) ? $this->projectId : 0,
         '#description' => t('You can only see projects with mapped templates in the dropdown.'),
       );
 
@@ -86,8 +85,8 @@ class ContentImportSelectForm extends FormBase {
         '#type' => 'value',
       );
 
-      if (($form_state->hasValue('project') || $data['project_id'])
-        && (!empty($form_state->getValue('project')) || !empty($data['project_id']))
+      if (($form_state->hasValue('project') || !empty($this->projectId))
+        && (!empty($form_state->getValue('project')))
       ) {
 
         $form['import']['filter'] = [
@@ -102,7 +101,7 @@ class ContentImportSelectForm extends FormBase {
           '#weight' => 1,
         ];
 
-        $project_id = $form_state->hasValue('project') ? $form_state->getValue('project') : $data['project_id'];
+        $project_id = $form_state->hasValue('project') ? $form_state->getValue('project') : $this->projectId;
         $content_obj = new Content();
         $content = $content_obj->getContents($project_id);
         $content_table = array();
@@ -208,8 +207,7 @@ class ContentImportSelectForm extends FormBase {
           '#header' => $header,
           '#options' => $content_table,
           '#empty' => $this->t('No content available.'),
-          '#default_value' => $data['nodes'] ? $data['nodes'] : [],
-          '#required' => TRUE,
+          '#default_value' => !empty($this->nodes) ? $this->nodes : [],
         );
 
         $form['import']['actions']['#type'] = 'actions';
@@ -227,7 +225,6 @@ class ContentImportSelectForm extends FormBase {
       }
     }
     elseif ($this->step === 2) {
-      $nodes = $data['nodes'];
       $form['title'] = array(
         'form_title' => array(
           '#type' => 'html_tag',
@@ -251,14 +248,7 @@ class ContentImportSelectForm extends FormBase {
       );
 
       $options = array();
-
-//      $tmp_obj = new Template();
-//      $templates = $tmp_obj->getTemplates($this->store->get('project_id'));
-
       foreach ($this->nodes as $node) {
-//        $content_obj = new Content();
-//        $content = $content_obj->getContent($node);
-
         $options[$node] = array(
           'status' => array(
             'data' => array(
@@ -277,7 +267,6 @@ class ContentImportSelectForm extends FormBase {
           ),
           'title' => $this->items[$node]['title'],
           'template' => $this->items[$node]['template'],
-
         );
       }
 
@@ -323,14 +312,12 @@ class ContentImportSelectForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $data = $form_state->getStorage();
     if ($form_state->getTriggeringElement()['#id'] === 'edit-submit') {
       if ($this->step === 1) {
-        $data['project_id'] = $this->projectId = $form_state->getValue('project');
-        $data['nodes'] = $this->nodes = array_filter($form_state->getValue('content'));
-        $data['menu'] = $this->menu = array_intersect_key(array_filter($form_state->getValue('menu')), array_filter($form_state->getValue('content')));
+        $this->projectId = $form_state->getValue('project');
+        $this->nodes = array_filter($form_state->getValue('content'));
+        $this->menu = array_intersect_key(array_filter($form_state->getValue('menu')), array_filter($form_state->getValue('content')));
         $this->step = 2;
-        $form_state->setStorage($data);
         $form_state->setRebuild(TRUE);
       }
       elseif ($this->step === 2) {
@@ -340,10 +327,8 @@ class ContentImportSelectForm extends FormBase {
         $operation->save();
 
         $operations = array();
-
         $stack = array();
         $import_content = $this->nodes;
-
         foreach ($import_content as $k => $value) {
           if ((isset($this->menu[$value]) && $this->menu[$value] != -1) || !isset($this->menu[$value])) {
             $parent_menu_item = isset($this->menu[$value]) ? $this->menu[$value] : NULL;
@@ -408,9 +393,7 @@ class ContentImportSelectForm extends FormBase {
       }
     }
     elseif ($form_state->getTriggeringElement()['#id'] === 'edit-back') {
-      $data['step'] = 1;
       $this->step = 1;
-      $form_state->setStorage($data);
       $form_state->setRebuild(TRUE);
     }
   }
