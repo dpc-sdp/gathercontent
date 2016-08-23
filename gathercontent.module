@@ -903,7 +903,7 @@ function gathercontent_gathercontent_process_files_field(EntityMetadataWrapper &
   foreach ($files as $file) {
     if ($file->field === $gathercontent_field_name) {
       $found = FALSE;
-      foreach ($node->$local_field_name->value() as $file) {
+      foreach ($node->{$local_field_name}->value() as $file) {
         if ($file['gathercontent_id'] === $file->id) {
           $found = TRUE;
         }
@@ -918,10 +918,10 @@ function gathercontent_gathercontent_process_files_field(EntityMetadataWrapper &
     }
   }
   if ($is_translatable) {
-    $node->language($language)->$local_field_name = $found_files;
+    $node->language($language)->{$local_field_name} = $found_files;
   }
   else {
-    $node->$local_field_name = $found_files;
+    $node->{$local_field_name} = $found_files;
   }
 }
 
@@ -1541,4 +1541,3 @@ function gathercontent_preprocess_views_view_table(&$variables) {
       break;
   }
 }
-
