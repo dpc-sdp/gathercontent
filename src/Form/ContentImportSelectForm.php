@@ -88,7 +88,6 @@ class ContentImportSelectForm extends FormBase {
       if (($form_state->hasValue('project') || !empty($this->projectId))
         && (!empty($form_state->getValue('project')))
       ) {
-
         $form['import']['filter'] = [
           '#type' => 'markup',
           '#markup' => '<div class="gc-table--filter-wrapper clearfix"></div>',
@@ -393,6 +392,9 @@ class ContentImportSelectForm extends FormBase {
       }
     }
     elseif ($form_state->getTriggeringElement()['#id'] === 'edit-back') {
+      if ($this->step === 1) {
+        return $form_state->setRedirect('gathercontent.import_select_form');
+      }
       $this->step = 1;
       $form_state->setRebuild(TRUE);
     }
