@@ -33,7 +33,7 @@ class GathercontentContentLink extends Path {
   public function render(ResultRow $values) {
     $gc_id = $this->getValue($values, 'gc_id');
     if (is_numeric($gc_id)) {
-      $base_url = 'http://' . \Drupal::config('gathercontent.settings')
+      $base_url = 'https://' . \Drupal::config('gathercontent.settings')
           ->get('gathercontent_urlkey') . '.gathercontent.com/item/';
       $url = Url::fromUri($base_url . $gc_id);
       return Link::fromTextAndUrl($this->t('Open'), $url)->toRenderable();
