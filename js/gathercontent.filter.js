@@ -162,4 +162,83 @@
       $(context).find('th.select-all input:checkbox').attr('checked', selectAllChecked);
     }
   };
+
+  Drupal.behaviors.gcTableSelect = {
+    attach: function (context, settings) {
+      $(context).find('th.select-all').closest('table').once('table-select').each(Drupal.gcTableSelect);
+    }
+  };
+
+  Drupal.gcTableSelect = function () {
+    if ($('td input:checkbox', this).length === 0) {
+      return;
+    }
+
+    var table = this;
+    var checkboxes;
+    var lastChecked;
+    var strings = {
+      selectAll: Drupal.t('Select all rows in this table'),
+      selectNone: Drupal.t('Deselect all rows in this table')
+    };
+    var updateSelectAll = function (state) {
+      $(table).prev('table.sticky-header').andSelf().find('th.select-all input:checkbox').each(function () {
+        $(this).attr('title', state ? strings.selectNone : strings.selectAll);
+        this.checked = state;
+      });
+    };
+
+    $('th.select-all', table).prepend($('<input type="checkbox" class="form-checkbox" />').attr('title', strings.selectAll)).click(function (event) {
+      if ($(event.target).is('input:checkbox')) {
+        checkboxes.each(function () {
+          if ($(this).is(':visible')) {
+            this.checked = event.target.checked;
+            $(this).closest('tr').toggleClass('selected', this.checked);
+          }
+          else {
+            $(this).closest('tr').removeClass('selected');
+          }
+        });
+        updateSelectAll(event.target.checked);
+      }
+    });
+
+    checkboxes = $('td input:checkbox:enabled', table).click(function (e) {
+      $(this).closest('tr').toggleClass('selected', this.checked);
+
+      if (e.shiftKey && lastChecked && lastChecked !== e.target) {
+        Drupal.gcTableSelectRange($(e.target).closest('tr')[0], $(lastChecked).closest('tr')[0], e.target.checked);
+      }
+
+      updateSelectAll((checkboxes.length === $(checkboxes).filter(':visible:checked').length));
+
+      lastChecked = e.target;
+    });
+
+    updateSelectAll((checkboxes.length === $(checkboxes).filter(':checked').length));
+  };
+
+  Drupal.gcTableSelectRange = function (from, to, state) {
+    var mode = from.rowIndex > to.rowIndex ? 'previousSibling' : 'nextSibling';
+
+    for (var i = from[mode]; i; i = i[mode]) {
+      if (i.nodeType !== 1) {
+        continue;
+      }
+
+      $(i).toggleClass('selected', state);
+      $('input:checkbox', i).each(function () {
+        this.checked = state;
+      });
+
+      if (to.nodeType) {
+        if (i === to) {
+          break;
+        }
+      }
+      else if ($.filter(to, [i]).r.length) {
+        break;
+      }
+    }
+  };
 })(jQuery, Drupal, window);
