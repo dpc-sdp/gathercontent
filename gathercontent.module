@@ -4,6 +4,7 @@
  * Main module file for GatherContent module.
  */
 
+use Drupal\Component\Render\PlainTextOutput;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\gathercontent\DAO\Content;
 use Drupal\gathercontent\DAO\Project;
@@ -503,7 +504,14 @@ function gc_gc_process_files_field(\Drupal\Core\Entity\ContentEntityInterface &$
       }
 
       if (!$found) {
-        $local_file = file_save_data(file_get_contents($file->url), 'public://' . $file->filename);
+        $file_dir = $node->getFieldDefinition($local_field_name)->getSetting('file_directory');
+        $uri_scheme = $node->getFieldDefinition($local_field_name)->getFieldStorageDefinition()->getSetting('uri_scheme');
+        $file_dir = PlainTextOutput::renderFromHtml(\Drupal::token()->replace($file_dir, []));
+
+        $create_d = \Drupal::service('file_system')->realpath($uri_scheme . '://') . '/' . $file_dir;
+        file_prepare_directory($create_d, FILE_CREATE_DIRECTORY);
+
+        $local_file = file_save_data(file_get_contents($file->url), $uri_scheme . '://' . $file_dir . '/' . $file->filename);
         $local_file->gc_id->value = $file->id;
         $local_file->save();
         $found_files[] = array('target_id' => $local_file->id());
