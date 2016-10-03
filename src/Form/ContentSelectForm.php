@@ -163,7 +163,7 @@ class ContentSelectForm extends MultistepFormBase {
       '#header' => $header,
       '#options' => $content_table,
       '#empty' => t('No content available.'),
-      '#default_value' => $this->store->get('nodes') ? $this->store->get('nodes') : NULL,
+      '#default_value' => $this->store->get('nodes') ? $this->store->get('nodes') : [],
       '#attributes' => [
         'class' => [
           'tablesorter-enabled',
