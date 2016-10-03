@@ -23,6 +23,12 @@ gathercontent.import_select_form:
   parent: gathercontent.admin_gathercontent
   weight: 3
 
+gathercontent.remove_local_data_form:
+  title: 'Remove local data'
+  route_name: gathercontent.remove_local_data_form
+  parent: gathercontent.admin_gathercontent
+  weight: 4
+
 gathercontent.update_select_form:
   title: 'Update content from GatherContent'
   route_name: gathercontent.update_select_form

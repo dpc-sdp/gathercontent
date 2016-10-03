@@ -17,15 +17,6 @@ function gathercontent_install() {
 }
 
 /**
- * Implements hook_uninstall().
- */
-function gathercontent_uninstall() {
-  \Drupal::config('gathercontent.settings')->clear('gathercontent_username')->save();
-  \Drupal::config('gathercontent.settings')->clear('gathercontent_api_key')->save();
-  \Drupal::config('gathercontent.settings')->clear('gathercontent_account')->save();
-}
-
-/**
  * Implements hook_requirements().
  */
 function gathercontent_requirements($phase) {

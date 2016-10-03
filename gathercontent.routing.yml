@@ -26,6 +26,16 @@ gathercontent.import_select_form:
   options:
     _admin_route: TRUE
 
+gathercontent.remove_local_data_form:
+  path: '/admin/config/gathercontent/remove'
+  defaults:
+    _form: '\Drupal\gathercontent\Form\RemoveGatherContentLocalData'
+    _title: 'Remove local data'
+  requirements:
+    _permission: 'administer gathercontent'
+  options:
+    _admin_route: TRUE
+
 gathercontent.import_confirm_form:
   path: '/admin/config/gathercontent/import/confirm'
   defaults:
