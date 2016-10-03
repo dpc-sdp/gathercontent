@@ -200,7 +200,7 @@ function gc_gc_process_metatag_pane(\Drupal\Core\Entity\ContentEntityInterface &
       else {
         $current_value = unserialize($entity->{$metatag_field}->value);
         $current_value[$local_field_name] = $field->value;
-        $entity->{$metatag_field}->value = serialize($field->value);
+        $entity->{$metatag_field}->value = serialize($current_value);
       }
     }
   }
