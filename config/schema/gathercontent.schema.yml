@@ -11,6 +11,9 @@ gathercontent.settings:
     gathercontent_account:
       type: string
       label: 'GatherContent Account'
+    gathercontent_urlkey:
+      type: string
+      label: 'GatherContent URL key'
 
 field.widget.settings.select_other_widget:
   type: mapping
