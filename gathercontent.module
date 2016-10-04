@@ -493,37 +493,41 @@ function gc_gc_process_choice_radio_field(\Drupal\Core\Entity\ContentEntityInter
  *   Array of remote files.
  */
 function gc_gc_process_files_field(\Drupal\Core\Entity\ContentEntityInterface &$node, $local_field_name, $gc_field_name, $is_translatable = FALSE, $language = 'und', $files) {
-  $found_files = array();
+  $found_files = [];
+  /** @var \Drupal\field\Entity\FieldConfig $translatable_file */
+  $translatable_file = $node->getFieldDefinition($local_field_name)->get('third_party_settings')['content_translation']['translation_sync']['file'];
   foreach ($files as $file) {
     if ($file->field === $gc_field_name) {
-      $found = FALSE;
-      foreach ($node->{$local_field_name} as $local_file) {
-        if ($local_file->gc_id->value === $file->id) {
-          $found = TRUE;
+      $drupal_files = \Drupal::entityQuery('file')
+        ->condition('gc_id', $file->id)
+        ->condition('filename', $file->filename)
+        ->execute();
+      if (empty($drupal_files)) {
+        if (!($node->language()->getId() !== $language && $translatable_file === '0')) {
+          $file_dir = $node->getFieldDefinition($local_field_name)->getSetting('file_directory');
+          $file_dir = PlainTextOutput::renderFromHtml(\Drupal::token()->replace($file_dir, []));
+          $uri_scheme = $node->getFieldDefinition($local_field_name)->getFieldStorageDefinition()->getSetting('uri_scheme') . '://';
+          $create_dir = \Drupal::service('file_system')->realpath($uri_scheme) . '/' . $file_dir;
+          file_prepare_directory($create_dir, FILE_CREATE_DIRECTORY);
+          $local_file = file_save_data(file_get_contents($file->url), $uri_scheme . $file_dir . '/' . $file->filename);
+          $local_file
+            ->set('gc_id', $file->id)
+            ->set('langcode', $language)
+            ->set('filesize', $file->size);
+          $found_files[] = ['target_id' => $local_file->id()];
         }
       }
-
-      if (!$found) {
-        $file_dir = $node->getFieldDefinition($local_field_name)->getSetting('file_directory');
-        $uri_scheme = $node->getFieldDefinition($local_field_name)->getFieldStorageDefinition()->getSetting('uri_scheme');
-        $file_dir = PlainTextOutput::renderFromHtml(\Drupal::token()->replace($file_dir, []));
-
-        $create_d = \Drupal::service('file_system')->realpath($uri_scheme . '://') . '/' . $file_dir;
-        file_prepare_directory($create_d, FILE_CREATE_DIRECTORY);
-
-        $local_file = file_save_data(file_get_contents($file->url), $uri_scheme . '://' . $file_dir . '/' . $file->filename);
-        $local_file->gc_id->value = $file->id;
-        $local_file->save();
-        $found_files[] = array('target_id' => $local_file->id());
+      else {
+        $drupal_file = reset($drupal_files);
+        $found_files[] = ['target_id' => $drupal_file];
       }
     }
   }
-  if ($is_translatable) {
 
-    $node->getTranslation($language)->{$local_field_name} = $found_files;
-  }
-  else {
-    $node->{$local_field_name} = $found_files;
+  if ($is_translatable) {
+    $node->getTranslation($language)->set($local_field_name, $found_files);
+  } else {
+    $node->set($local_field_name, $found_files);
   }
 }
 
