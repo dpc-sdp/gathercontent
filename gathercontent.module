@@ -628,7 +628,7 @@ function gathercontent_gathercontent_process_content_pane(EntityMetadataWrapper 
       }
       else {
         if ($is_translatable) {
-          if (title_field_replacement_enabled('node', $content_type, 'title')
+          if (module_exists('title') && title_field_replacement_enabled('node', $content_type, 'title')
             && title_field_replacement_info('node', 'title')['field']['field_name'] === $local_field_name
           ) {
             // If we are setting title for default language,
@@ -653,7 +653,7 @@ function gathercontent_gathercontent_process_content_pane(EntityMetadataWrapper 
           }
         }
         else {
-          if (title_field_replacement_enabled('node', $content_type, 'title')
+          if (module_exists('title') && title_field_replacement_enabled('node', $content_type, 'title')
             && title_field_replacement_info('node', 'title')['field']['field_name'] === $local_field_name
           ) {
             // If we are setting title for default language,
@@ -1281,7 +1281,7 @@ function gathercontent_upload_process($entity, $uuid, &$context) {
                   }
                   else {
                     if ($is_translatable) {
-                      if (title_field_replacement_enabled('node', $mapping->content_type, 'title')
+                      if (module_exists('title') && title_field_replacement_enabled('node', $mapping->content_type, 'title')
                         && title_field_replacement_info('node', 'title')['field']['field_name'] === $local_field_name
                       ) {
                         $field->value = $node->language($language)->{$local_field_name}->value();
