@@ -913,8 +913,13 @@ function gathercontent_gathercontent_process_files_field(EntityMetadataWrapper &
         $local_file = file_save_data(file_get_contents($file->url), 'public://' . $file->filename);
         $local_file->gathercontent_id = $file->id;
         file_save($local_file);
-        $found_files[] = array('fid' => $local_file->fid);
+        $field_info = field_info_field($local_field_name);
+        $file_data = array('fid' => $local_file->fid);
+        if ($field_info['cardinality'] == 1) {
+          $found_files = $file_data;
       }
+        else {
+          $found_files[] = $file_data;
     }
   }
   if ($is_translatable) {
@@ -922,6 +927,8 @@ function gathercontent_gathercontent_process_files_field(EntityMetadataWrapper &
   }
   else {
     $node->{$local_field_name} = $found_files;
+  }
+}
   }
 }
 
