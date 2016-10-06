@@ -325,6 +325,8 @@ class MappingEditForm extends EntityForm {
         'text_with_summary',
         'string_long',
         'string',
+        'email',
+        'telephone',
       ),
       'choice_radio' => array(
         'string',
@@ -348,9 +350,11 @@ class MappingEditForm extends EntityForm {
         // - do not map section (GC) to plain text (Drupal).
         switch ($gc_field->type) {
           case 'text':
-            if ($gc_field->plain_text && !in_array($instance->getType(), array(
+            if (!$gc_field->plain_text && in_array($instance->getType(), array(
                 'string',
-                'string_long'
+                'string_long',
+                'email',
+                'telephone',
               ))
             ) {
               continue 2;
