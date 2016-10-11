@@ -614,9 +614,20 @@ function gathercontent_import_finished($success, $results, $operations) {
     if (isset($result['gathercontent_operation_item'])) {
       $operation_items = entity_load('gathercontent_operation_item', array_keys($result['gathercontent_operation_item']));
       $success_counter = 0;
+      $nids = array('success' => array(), 'failed' => array());
       foreach ($operation_items as $operation_item) {
         if ($operation_item->status === 'Success') {
           $success_counter++;
+          $nids['success'][] = array(
+            'nid' => $operation_item->nid,
+            'gathercontent_id' => $operation_item->gathercontent_id,
+          );
+        }
+        else {
+          $nids['failed'][] = array(
+            'nid' => $operation_item->nid,
+            'gathercontent_id' => $operation_item->gathercontent_id,
+          );
         }
       }
       $unsuccessful = count($result['gathercontent_operation_item']) - $success_counter;
@@ -624,6 +635,7 @@ function gathercontent_import_finished($success, $results, $operations) {
       if ($unsuccessful > 0) {
         drupal_set_message(format_plural($unsuccessful, '1 item was not imported. Check errors below.', '@count items were not imported. Check errors below.'), 'error');
       }
+      module_invoke_all('gathercontent_post_import',$nids['success'], $nids['failed'], $results['uuid']);
     }
     drupal_goto('admin/config/gathercontent/import/result/' . $results['uuid']);
   }

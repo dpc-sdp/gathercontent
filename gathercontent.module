@@ -396,18 +396,22 @@ function gathercontent_upload(&$entity, array &$context) {
 /**
  * Helper function for fetching data from GatherContent.
  *
- * @param int $gathercontent_id
+ * @param $gathercontent_id
  *   ID of GatherContent piece of content.
- * @param object|null $entity
+ * @param int $uuid
+ *   UUID of Operation entity.
+ * @param null $status
+ *   ID of status in GatherContent.
+ * @param null $entity
  *   Object of entity, if we are updating exiting content.
+ * @param null $parent_menu_item
+ *   Parent menu item ID if we want to create menu item.
  *
  * @return int|FALSE
  *   Return nid if operation was successful.
  */
 function _gathercontent_fetcher($gathercontent_id, $uuid, $status = NULL, $entity = NULL, $parent_menu_item = NULL) {
   global $user;
-
-  $tsid = NULL;
 
   $content_obj = new Content();
   $content = $content_obj->getContent($gathercontent_id);
@@ -466,7 +470,6 @@ function _gathercontent_fetcher($gathercontent_id, $uuid, $status = NULL, $entit
         'uid' => $user->uid,
         'language' => isset($first['language']) ? $first['language'] : LANGUAGE_NONE,
       ));
-      entity_save('node', $entity);
     }
 
     if ($entity !== FALSE) {
@@ -474,6 +477,8 @@ function _gathercontent_fetcher($gathercontent_id, $uuid, $status = NULL, $entit
       $metatags = array();
       $_title_is_mapped = FALSE;
       try {
+        $content_obj = new Content();
+        $files = $content_obj->getFiles($gathercontent_id);
         foreach ($content->config as $pane) {
           $is_translatable = module_exists('entity_translation')
             && entity_translation_node_supported_type($mapping->content_type)
@@ -489,7 +494,7 @@ function _gathercontent_fetcher($gathercontent_id, $uuid, $status = NULL, $entit
             if (isset($mapping_data[$pane->name]['elements'][$field->name]) && !empty($mapping_data[$pane->name]['elements'][$field->name])) {
               $local_field_name = $mapping_data[$pane->name]['elements'][$field->name];
               if (isset($mapping_data[$pane->name]['type']) && ($mapping_data[$pane->name]['type'] === 'content') || !isset($mapping_data[$pane->name]['type'])) {
-                gathercontent_gathercontent_process_content_pane($node, $gathercontent_id, $local_field_name, $field, $mapping->content_type, $is_translatable, $language, $parent_menu_item, $entity->nid, $tsid, $_title_is_mapped);
+                gathercontent_gathercontent_process_content_pane($node, $local_field_name, $field, $mapping->content_type, $is_translatable, $language, $files, $_title_is_mapped);
               }
               elseif (isset($mapping_data[$pane->name]['type']) && ($mapping_data[$pane->name]['type'] === 'metatag')) {
                 gathercontent_gathercontent_process_metatag_pane($node, $metatags, $gathercontent_id, $local_field_name, $field, $mapping->content_type, $is_translatable, $language);
@@ -519,14 +524,45 @@ function _gathercontent_fetcher($gathercontent_id, $uuid, $status = NULL, $entit
 
         if (!$is_translatable && !$_title_is_mapped) {
           $node->title->set($content->name);
-          gathercontent_create_menu_link($entity->nid, $content->name, $parent_menu_item);
         }
 
+        drupal_alter('gathercontent_pre_node_save', $entity, $content, $files);
         $node->save(TRUE);
+
+        // Create menu link item.
+        if ($is_translatable) {
+          if (module_exists('locale')) {
+            $languages = locale_language_list();
+            $tsid = NULL;
+            foreach ($languages as $langcode => $language) {
+              if (module_exists('title') && title_field_replacement_enabled('node', $node->get('type')
+                  ->value(), 'title')
+              ) {
+                if(language_default('language') === $langcode) {
+                  gathercontent_create_menu_link($entity->nid, $node->title->value(), $parent_menu_item, $langcode, $tsid);
+                } else {
+                  $title_field = title_field_replacement_info('node', 'title')['field']['field_name'];
+                  gathercontent_create_menu_link($entity->nid, $node->language($langcode)->{$title_field}->value(), $parent_menu_item, $langcode, $tsid);
+                }
+              }
+              else {
+                gathercontent_create_menu_link($entity->nid, $node->language($langcode)->title->value(), $parent_menu_item, $langcode, $tsid);
+              }
+            }
+          }
+        }
+        else {
+          gathercontent_create_menu_link($entity->nid, $entity->title, $parent_menu_item);
+        }
+
+        // Save metatags.
         if (module_exists('metatag') && metatag_entity_supports_metatags('node', $mapping->content_type)) {
           module_load_include('module', 'metatag');
           metatag_metatags_save('node', $entity->nid, $entity->vid, $metatags);
         }
+
+        module_invoke_all('gathercontent_post_node_save', $entity, $content, $files);
+
         $operation_item->status = "Success";
         $operation_item->nid = $entity->nid;
         entity_save('gathercontent_operation_item', $operation_item);
@@ -598,13 +634,11 @@ function gathercontent_gathercontent_process_metatag_pane(EntityMetadataWrapper 
  * @param string $language
  *   Language of translation if applicable.
  */
-function gathercontent_gathercontent_process_content_pane(EntityMetadataWrapper &$node, $gathercontent_id, $local_field_name, $field, $content_type, $is_translatable = FALSE, $language = LANGUAGE_NONE, $plid = NULL, $nid = NULL, &$tsid = NULL, &$_title_is_mapped = FALSE) {
+function gathercontent_gathercontent_process_content_pane(EntityMetadataWrapper &$node, $local_field_name, $field, $content_type, $is_translatable, $language, $files, &$_title_is_mapped = FALSE) {
   $field_info = field_info_field($local_field_name);
   $is_translatable = $is_translatable && $field_info['translatable'];
   switch ($field->type) {
     case 'files':
-      $content_obj = new Content();
-      $files = $content_obj->getFiles($gathercontent_id);
       gathercontent_gathercontent_process_files_field($node, $local_field_name, $field->name, $is_translatable, $language, $files);
       break;
 
@@ -624,7 +658,6 @@ function gathercontent_gathercontent_process_content_pane(EntityMetadataWrapper 
       if ($local_field_name === 'title') {
         $node->title->set($field->value);
         $_title_is_mapped = TRUE;
-        gathercontent_create_menu_link($nid, $field->value, $plid);
       }
       else {
         if ($is_translatable) {
@@ -641,7 +674,6 @@ function gathercontent_gathercontent_process_content_pane(EntityMetadataWrapper 
             else {
               $node->language($language)->{$local_field_name}->set($field->value);
             }
-            gathercontent_create_menu_link($nid, $field->value, $plid, $language, $tsid);
             $_title_is_mapped = TRUE;
 
           }
@@ -666,7 +698,6 @@ function gathercontent_gathercontent_process_content_pane(EntityMetadataWrapper 
             else {
               $node->language($language)->{$local_field_name}->set($field->value);
             }
-            gathercontent_create_menu_link($nid, $field->value, $plid, $language, $tsid);
             $_title_is_mapped = TRUE;
           }
           else {
@@ -682,9 +713,11 @@ function gathercontent_gathercontent_process_content_pane(EntityMetadataWrapper 
 }
 
 /**
- * @param \EntityMetadataWrapper $node
- * @param $field
+ * @param $nid
+ * @param $title
  * @param $plid
+ * @param null $lang
+ * @param null $tsid
  */
 function gathercontent_create_menu_link($nid, $title, $plid, $lang = NULL, &$tsid = NULL) {
   if (!empty($plid)) {
@@ -917,18 +950,18 @@ function gathercontent_gathercontent_process_files_field(EntityMetadataWrapper &
         $file_data = array('fid' => $local_file->fid);
         if ($field_info['cardinality'] == 1) {
           $found_files = $file_data;
-      }
+        }
         else {
           $found_files[] = $file_data;
+        }
+      }
+      if ($is_translatable) {
+        $node->language($language)->{$local_field_name} = $found_files;
+      }
+      else {
+        $node->{$local_field_name} = $found_files;
+      }
     }
-  }
-  if ($is_translatable) {
-    $node->language($language)->{$local_field_name} = $found_files;
-  }
-  else {
-    $node->{$local_field_name} = $found_files;
-  }
-}
   }
 }
 
@@ -1098,9 +1131,20 @@ function gathercontent_update_finished($success, $results, $operations) {
     if (isset($result['gathercontent_operation_item'])) {
       $operation_items = entity_load('gathercontent_operation_item', array_keys($result['gathercontent_operation_item']));
       $success_counter = 0;
+      $nids = array('success' => array(), 'failed' => array());
       foreach ($operation_items as $operation_item) {
         if ($operation_item->status === 'Success') {
           $success_counter++;
+          $nids['success'][] = array(
+            'nid' => $operation_item->nid,
+            'gathercontent_id' => $operation_item->gathercontent_id,
+          );
+        }
+        else {
+          $nids['failed'][] = array(
+            'nid' => $operation_item->nid,
+            'gathercontent_id' => $operation_item->gathercontent_id,
+          );
         }
       }
       $unsuccessful = count($result['gathercontent_operation_item']) - $success_counter;
@@ -1108,6 +1152,7 @@ function gathercontent_update_finished($success, $results, $operations) {
       if ($unsuccessful > 0) {
         drupal_set_message(format_plural($unsuccessful, '1 item was not updated. Check errors below.', '@count items were not updated. Check errors below.'), 'error');
       }
+      module_invoke_all('gathercontent_post_import',$nids['success'], $nids['failed'], $results['uuid']);
     }
     drupal_goto('admin/content/update/result/' . $results['uuid']);
   }
@@ -1327,6 +1372,8 @@ function gathercontent_upload_process($entity, $uuid, &$context) {
         }
       }
 
+      drupal_alter('gathercontent_pre_node_upload', $entity, $config);
+
       if ($cont_obj->postContent($entity->gathercontent_id, $config)) {
         $operation_item->status = "Success";
         entity_save('gathercontent_operation_item', $operation_item);
@@ -1334,6 +1381,7 @@ function gathercontent_upload_process($entity, $uuid, &$context) {
       else {
         $operation_item->status = 'Mapping doesn\'t match';
         entity_save('gathercontent_operation_item', $operation_item);
+        module_invoke_all('gathercontent_post_node_upload', $entity, $config);
       }
 
     }
@@ -1366,9 +1414,20 @@ function gathercontent_upload_finished($success, $results, $operations) {
     if (isset($result['gathercontent_operation_item'])) {
       $operation_items = entity_load('gathercontent_operation_item', array_keys($result['gathercontent_operation_item']));
       $success_counter = 0;
+      $nids = array('success' => array(), 'failed' => array());
       foreach ($operation_items as $operation_item) {
         if ($operation_item->status === 'Success') {
           $success_counter++;
+          $nids['success'][] = array(
+            'nid' => $operation_item->nid,
+            'gathercontent_id' => $operation_item->gathercontent_id,
+          );
+        }
+        else {
+          $nids['failed'][] = array(
+            'nid' => $operation_item->nid,
+            'gathercontent_id' => $operation_item->gathercontent_id,
+          );
         }
       }
       $unsuccessful = count($result['gathercontent_operation_item']) - $success_counter;
@@ -1376,6 +1435,7 @@ function gathercontent_upload_finished($success, $results, $operations) {
       if ($unsuccessful > 0) {
         drupal_set_message(format_plural($unsuccessful, '1 item was not uploaded. Check errors below.', '@count items were not uploaded. Check errors below.'), 'error');
       }
+      module_invoke_all('gathercontent_post_upload',$nids['success'], $nids['failed'], $results['uuid']);
     }
     drupal_goto('admin/content/upload/result/' . $results['uuid']);
   }
