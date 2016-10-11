@@ -99,7 +99,7 @@ function _gc_fetcher($gc_id, $uuid, $status = NULL, NodeInterface $entity = NULL
       'gc_id' => $gc_id,
     ));
 
-  $mapping_id = Drupal::entityQuery('mapping')
+  $mapping_id = Drupal::entityQuery('gathercontent_mapping')
     ->condition('gathercontent_project_id', $content->project_id)
     ->condition('gathercontent_template_id', $content->template_id)
     ->execute();
