@@ -78,7 +78,7 @@ class ContentUploadConfirmForm extends ContentConfirmForm {
           'gathercontent_upload_process',
           array(
             $node,
-            $operation->uuid()
+            $operation->uuid(),
           ),
         );
       }

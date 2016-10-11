@@ -3,8 +3,6 @@
 namespace Drupal\gathercontent\Entity;
 
 use Drupal\Core\Entity\ContentEntityInterface;
-use Drupal\Core\Entity\EntityChangedInterface;
-use Drupal\user\EntityOwnerInterface;
 
 /**
  * Provides an interface for defining Gathercontent operation entities.
@@ -12,7 +10,5 @@ use Drupal\user\EntityOwnerInterface;
  * @ingroup gathercontent
  */
 interface OperationInterface extends ContentEntityInterface {
-
-  // Add get/set methods for your configuration properties here.
 
 }

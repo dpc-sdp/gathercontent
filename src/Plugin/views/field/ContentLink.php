@@ -16,7 +16,6 @@ use Drupal\views\ResultRow;
  */
 class ContentLink extends Path {
 
-
   /**
    * {@inheritdoc}
    */

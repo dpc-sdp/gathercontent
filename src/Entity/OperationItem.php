@@ -7,7 +7,6 @@ use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityChangedTrait;
 use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\user\UserInterface;
 
 /**
  * Defines the Gathercontent operation item entity.
@@ -40,14 +39,23 @@ class OperationItem extends ContentEntityBase implements OperationItemInterface 
     parent::preCreate($storage_controller, $values);
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function getStatus() {
     return $this->get('status')->value;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function getItemStatusColor() {
     return $this->get('item_status_color')->value;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function getItemStatus() {
     return $this->get('item_status')->value;
   }

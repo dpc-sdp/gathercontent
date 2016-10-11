@@ -7,7 +7,6 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\gathercontent\DAO\Template;
-use Drupal\gathercontent\Entity\Mapping;
 
 /**
  * Class MappingEditForm.
@@ -20,7 +19,7 @@ class MappingEditForm extends EntityForm {
    * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state) {
-    /** @var Mapping $mapping */
+    /** @var \Drupal\gathercontent\Entity\Mapping $mapping */
     $mapping = $this->entity;
 
     $content_types = node_type_get_names();
@@ -270,7 +269,7 @@ class MappingEditForm extends EntityForm {
                 '#title' => (isset($gc_field->label) ? $gc_field->label : $gc_field->title),
                 '#empty_option' => $this->t("Don't map"),
                 '#default_value' => $form_state->hasValue($fieldset->name)['elements'][$gc_field->name]
-                  ? $form_state->getValue($fieldset->name)['elements'][$gc_field->name] : NULL,
+                ? $form_state->getValue($fieldset->name)['elements'][$gc_field->name] : NULL,
               );
             }
           }
@@ -351,19 +350,20 @@ class MappingEditForm extends EntityForm {
         switch ($gc_field->type) {
           case 'text':
             if (!$gc_field->plain_text && in_array($instance->getType(), array(
-                'string',
-                'string_long',
-                'email',
-                'telephone',
-              ))
+              'string',
+              'string_long',
+              'email',
+              'telephone',
+            ))
             ) {
               continue 2;
             }
             break;
+
           case 'section':
             if (in_array($instance->getType(), array(
               'string',
-              'string_long'
+              'string_long',
             ))) {
               continue 2;
             }
@@ -419,6 +419,9 @@ class MappingEditForm extends EntityForm {
     return $form['mapping'];
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function validateForm(array &$form, FormStateInterface $form_state) {
     if ($form_state->getTriggeringElement()['#id'] == 'edit-submit') {
       $form_definition_elements = array(
@@ -447,7 +450,7 @@ class MappingEditForm extends EntityForm {
       $mapping = $this->entity;
       $content_type = (empty($mapping->getContentType()) ? $form_state->getValue('content_type') : $mapping->getContentType());
       $translatable = \Drupal::moduleHandler()
-          ->moduleExists('content_translation')
+        ->moduleExists('content_translation')
         && \Drupal::service('content_translation.manager')
           ->isEnabled('node', $content_type);
       // Validate if each language is used only once
@@ -559,7 +562,7 @@ class MappingEditForm extends EntityForm {
           $mapping_data[$key] = $value;
         }
       }
-      /** @var Mapping $mapping */
+      /** @var \Drupal\gathercontent\Entity\Mapping $mapping */
       $mapping = $this->entity;
 
       $new = !$mapping->hasMapping();
@@ -631,7 +634,7 @@ class MappingEditForm extends EntityForm {
   }
 
   /**
-   * @inheritdoc
+   * {@inheritdoc}
    */
   protected function actions(array $form, FormStateInterface $form_state) {
     $actions = parent::actions($form, $form_state);

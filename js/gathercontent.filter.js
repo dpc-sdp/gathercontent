@@ -11,9 +11,7 @@
       var self = this;
       if ($('table.tablesorter-enabled:not(.sticky-header)', context).length) {
         $('.gc-table--counter', context).once('gc-selected-counter').each(function () {
-          $('<div class="form-item form-item--gc-import">\n' +
-            '  <em class="select-counter"></em>\n' +
-            '</div>')
+          $('<div class="form-item form-item--gc-import">\n<em class="select-counter"></em>\n</div>')
             .appendTo('.gc-table--counter');
         });
 
@@ -53,18 +51,14 @@
             '<div class="form-item gc-filter project-status">\n' +
             '  <label for="ga-form-select-status">' + Drupal.t('Status') + '</label>\n' +
             '  <select id="ga-form-select-status" class="form-select form-select--gc-import">\n' +
-            '    <option value="all">' + Drupal.t('All') + '</option>\n' +
-            '  </select>\n' +
-            '</div>\n' +
-            '<div class="form-item gc-filter">\n' +
+            '    <option value="all">' + Drupal.t('All') + '</option>\n</select>\n' +
+            '</div>\n<div class="form-item gc-filter">\n' +
             '  <label for="ga-form-select-search">' + Drupal.t('Item name') + '</label>\n' +
             '  <input placeholder="' + Drupal.t('Filter by Item Name') + '" type="text" id="ga-form-select-search" class="form-text form-text--gc-import">\n' +
-            '</div>\n' +
-            '<div class="form-item gc-filter">\n' +
+            '</div>\n<div class="form-item gc-filter">\n' +
             '  <label for="ga-form-select-template">' + Drupal.t('GatherContent Template Name') + '</label>\n' +
             '  <select id="ga-form-select-template" class="form-select form-select--gc-import">\n' +
-            '    <option value="all">' + Drupal.t('All') + '</option>\n' +
-            '  </select>\n' +
+            '    <option value="all">' + Drupal.t('All') + '</option>\n</select>\n' +
             '</div>'
           );
 

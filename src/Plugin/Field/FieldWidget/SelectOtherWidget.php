@@ -57,10 +57,10 @@ class SelectOtherWidget extends WidgetBase {
       }
     }
     $element['select'] = $element + [
-        '#type' => 'radios',
-        '#options' => $options,
-        '#default_value' => $default_value,
-      ];
+      '#type' => 'radios',
+      '#options' => $options,
+      '#default_value' => $default_value,
+    ];
 
     $element['other'] = [
       '#type' => 'textfield',
@@ -71,6 +71,12 @@ class SelectOtherWidget extends WidgetBase {
     return $element;
   }
 
+  /**
+   * Get list of options.
+   *
+   * @return array
+   *   Array of options with appended Other option.
+   */
   protected function prepareOptions() {
     $list = explode("\n", $this->getSetting('available_options'));
     $options = [];
@@ -99,4 +105,5 @@ class SelectOtherWidget extends WidgetBase {
 
     return $new_values;
   }
+
 }

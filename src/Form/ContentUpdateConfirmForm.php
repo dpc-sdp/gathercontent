@@ -2,12 +2,10 @@
 
 namespace Drupal\gathercontent\Form;
 
-use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Drupal\gathercontent\Entity\Operation;
 use Drupal\node\Entity\Node;
-use Drupal\user\PrivateTempStoreFactory;
 
 /**
  * Provides a node deletion confirmation form.
@@ -73,7 +71,7 @@ class ContentUpdateConfirmForm extends ContentConfirmForm {
           'gathercontent_update_process',
           array(
             $node,
-            $operation->uuid()
+            $operation->uuid(),
           ),
         );
       }

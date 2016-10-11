@@ -145,7 +145,7 @@ class ContentConfirmForm extends ConfirmFormBase {
     }
 
     $base_url = 'http://' . \Drupal::config('gathercontent.settings')
-        ->get('gathercontent_urlkey') . '.gathercontent.com/item/';
+      ->get('gathercontent_urlkey') . '.gathercontent.com/item/';
 
     $content_table = array();
     foreach ($nodes as $item) {
@@ -233,7 +233,7 @@ class ContentConfirmForm extends ConfirmFormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     if ($form_state->getValue('confirm') && !empty($this->nodeIds)) {
-      dsm($form_state->getValues());
+      // Do something.
     }
   }
 

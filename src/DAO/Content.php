@@ -91,7 +91,7 @@ class Content {
    *   ID of project we want items from.
    *
    * @return array
-   *   Array with accounts.
+   *   Array with content.
    */
   public function getContents($project_id) {
     $accounts = array();
@@ -121,18 +121,18 @@ class Content {
    * @param int $content_id
    *   ID of content, we want to fetch.
    *
-   * @return array
-   *   Array with accounts.
+   * @return null|object
+   *   Content received from GatherContent.
    */
   public function getContent($content_id) {
-    $accounts = array();
+    $content = NULL;
 
     try {
       $response = $this->client->get('/items/' . $content_id);
 
       if ($response->getStatusCode() === 200) {
         $data = json_decode($response->getBody());
-        $accounts = $data->data;
+        $content = $data->data;
       }
       else {
         drupal_set_message(t("User with provided credentials wasn't found."), 'error');
@@ -143,7 +143,7 @@ class Content {
       \Drupal::logger('gathercontent')->error($e->getMessage(), array());
     }
 
-    return $accounts;
+    return $content;
   }
 
   /**

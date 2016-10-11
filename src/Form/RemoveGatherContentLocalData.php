@@ -2,10 +2,14 @@
 
 namespace Drupal\gathercontent\Form;
 
-use Drupal;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 
+/**
+ * Class RemoveGatherContentLocalData.
+ *
+ * @package Drupal\gathercontent\Form
+ */
 class RemoveGatherContentLocalData extends FormBase {
 
   /**
@@ -57,10 +61,12 @@ class RemoveGatherContentLocalData extends FormBase {
   }
 
   /**
-   * Delete gathercontent_operation and gathercontent_operation_item entity types.
+   * Delete gathercontent_operation and gathercontent_operation_item entities.
    *
    * @param string $entity_type_id
+   *   Entity type ID of which we want to delete entities.
    * @param array $context
+   *   Array of context.
    */
   public static function deleteAllEntity($entity_type_id, &$context) {
     $entity_type_manager = \Drupal::entityTypeManager();
@@ -89,7 +95,9 @@ class RemoveGatherContentLocalData extends FormBase {
    * Clean GC IDs from node and file entity.
    *
    * @param string $entity_type_id
+   *   Entity type ID of which we want to clean entities.
    * @param array $context
+   *   Array of context.
    */
   public static function cleanUpGcData($entity_type_id, &$context) {
     if (empty($context['sandbox'])) {
@@ -113,7 +121,7 @@ class RemoveGatherContentLocalData extends FormBase {
     foreach ($entity_ids as $entity_id) {
       $context['sandbox']['num_of_precessed_items']++;
       $context['sandbox']['current_id'] = $entity_id;
-      /** @var Drupal\Core\Entity\ContentEntityInterface $entity */
+      /** @var \Drupal\Core\Entity\ContentEntityInterface $entity */
       $entity = \Drupal::entityTypeManager()->getStorage($entity_type_id)->load($entity_id);
       $entity->set('gc_id', NULL);
       if ($entity->hasField('gc_mapping_id')) {

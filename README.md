@@ -8,30 +8,20 @@ This module integrates Gather Content into Drupal.
 
 * Image
 * File
-* [Entity API][entity]
-* [Views][views]
-* [Views Bulk Operations (VBO)][vbo]
-* [Select (or other)][soo]
-* [Composer Manager][composer manager]
+* Views
 
 ### Optional dependecies
 
-* [Libraries API 2.x][libraries] and [Tablesorter][tablesorter] for sortable tables.
+* [Tablesorter][tablesorter] for sortable tables.
 
 ### Tasks
 
 1. Download and install dependent packages. You'll need [Composer][composer].
-2. Install this module and update Composer managed packages.
-3. Download the most recent release of [Tablesorter][tablesorter releases], and place it into `libraries/`. Rename it's directory to `tablesorter-mottie`.
+2. Download the most recent release of [Tablesorter][tablesorter releases], and place it into `libraries/`. Rename it's directory to `tablesorter-mottie`.
 
-## Usage
+## API
+We provide several events, which you can find in `gathercontent/src/Event/GatherContentEvents.php` file with additional documentation.
 
 [composer]: https://getcomposer.org/doc/00-intro.md#system-requirements
-[composer manager]: https://www.drupal.org/project/composer_manager
-[entity]: https://www.drupal.org/project/entity
-[libraries]: https://drupal.org/project/libraries
-[soo]: https://www.drupal.org/project/select_or_other
 [tablesorter]: https://github.com/mottie/tablesorter
 [tablesorter releases]: https://github.com/Mottie/tablesorter/releases
-[vbo]: https://www.drupal.org/project/views_bulk_operations
-[views]: https://www.drupal.org/project/views

@@ -3,9 +3,10 @@
 namespace Drupal\gathercontent\Plugin\views\field;
 
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\Component\Utility\Random;
+use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\views\ResultRow;
+use Drupal\views\ViewExecutable;
 
 /**
  * A handler to provide a field that is completely custom by the administrator.
@@ -16,7 +17,13 @@ use Drupal\views\ResultRow;
  */
 class GathercontentStatusColorField extends FieldPluginBase {
 
-  var $field_alias = 'item_status';
+  /**
+   * {@inheritdoc}
+   */
+  public function init(ViewExecutable $view, DisplayPluginBase $display, array &$options = NULL) {
+    parent::init($view, $display, $options);
+    $this->field_alias = 'item_status';
+  }
 
   /**
    * {@inheritdoc}
@@ -53,12 +60,14 @@ class GathercontentStatusColorField extends FieldPluginBase {
    * {@inheritdoc}
    */
   public function render(ResultRow $values) {
+    /** @var \Drupal\gathercontent\Entity\OperationItem $entity */
+    $entity = $values->_entity;
     return array(
       '#type' => 'html_tag',
       '#tag' => 'div',
       '#value' => ' ',
       '#attributes' => array(
-        'style' => 'width:20px; height: 20px; float: left; margin-right: 5px; background: ' . $values->_entity->getItemStatusColor(),
+        'style' => 'width:20px; height: 20px; float: left; margin-right: 5px; background: ' . $entity->getItemStatusColor(),
       ),
     );
   }

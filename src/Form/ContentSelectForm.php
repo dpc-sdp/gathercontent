@@ -79,7 +79,7 @@ class ContentSelectForm extends MultistepFormBase {
     ];
 
     $base_url = 'http://' . \Drupal::config('gathercontent.settings')
-        ->get('gathercontent_urlkey') . '.gathercontent.com/item/';
+      ->get('gathercontent_urlkey') . '.gathercontent.com/item/';
 
     $content_table = array();
     foreach ($nodes as $item) {
@@ -203,6 +203,7 @@ class ContentSelectForm extends MultistepFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    dsm($form_state->getValues());
+    // Do something.
   }
+
 }

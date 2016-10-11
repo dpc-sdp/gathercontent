@@ -116,7 +116,7 @@ class ContentImportSelectForm extends FormBase {
               'color' => $item->status->data->color,
               'label' => $item->status->data->name,
               'template' => $mapping_array[$item->template_id]['gc_template'],
-              'title' => $item->name
+              'title' => $item->name,
             ];
             $content_table[$item->id] = array(
               'status' => array(
@@ -155,15 +155,13 @@ class ContentImportSelectForm extends FormBase {
                     array(
                       0 => t("- Don't create menu item -"),
                       -1 => t("Parent being imported"),
-                    ) + \Drupal::service('menu.parent_form_selector')
-                      ->getParentSelectOptions(),
+                    ) + \Drupal::service('menu.parent_form_selector')->getParentSelectOptions(),
                   '#title' => t('Menu'),
                   '#title_display' => 'invisible',
                   '#name' => "menu[$item->id]",
                 ),
               ),
             );
-
           }
         }
 
@@ -289,7 +287,6 @@ class ContentImportSelectForm extends FormBase {
         '#empty_option' => t("- Don't change status -"),
       );
 
-
       $form['actions']['#type'] = 'actions';
       $form['actions']['submit'] = array(
         '#type' => 'submit',
@@ -337,7 +334,7 @@ class ContentImportSelectForm extends FormBase {
                 $value,
                 $form_state->getValue('status'),
                 $operation->uuid(),
-                $parent_menu_item
+                $parent_menu_item,
               ),
             );
             $stack[] = $value;
@@ -400,6 +397,11 @@ class ContentImportSelectForm extends FormBase {
     }
   }
 
+  /**
+   * Ajax callback for project dropdown.
+   *
+   * {@inheritdoc}
+   */
   public function getContentTable(array &$form, FormStateInterface $form_state) {
     $form_state->setRebuild(TRUE);
     return $form['import'];

@@ -7,7 +7,6 @@ use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityChangedTrait;
 use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\user\UserInterface;
 
 /**
  * Defines the Gathercontent operation entity.
@@ -38,21 +37,6 @@ class Operation extends ContentEntityBase implements OperationInterface {
    */
   public static function preCreate(EntityStorageInterface $storage_controller, array &$values) {
     parent::preCreate($storage_controller, $values);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getType() {
-    return $this->get('type')->value;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function setType($value) {
-    $this->set('type', $value);
-    return $this;
   }
 
   /**

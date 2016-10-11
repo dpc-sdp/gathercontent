@@ -23,43 +23,64 @@ abstract class MultistepFormBase extends FormBase {
    *
    * @var \Drupal\Core\Entity\EntityManager
    */
-  protected $entity_manager;
+  protected $entityManager;
 
   /**
    * Drupal\Core\Datetime\DateFormatter definition.
    *
    * @var \Drupal\Core\Datetime\DateFormatter
    */
-  protected $date_formatter;
+  protected $dateFormatter;
 
   /**
+   * Drupal\user\PrivateTempStoreFactory definition.
+   *
    * @var \Drupal\user\PrivateTempStoreFactory
    */
   protected $tempStoreFactory;
 
   /**
+   * Drupal\Core\Entity\Query\QueryFactory definition.
+   *
    * @var \Drupal\Core\Entity\Query\QueryFactory
    */
   protected $entityQuery;
 
   /**
+   * Drupal\user\PrivateTempStore definition.
+   *
    * @var \Drupal\user\PrivateTempStore
    */
   protected $store;
 
+  /**
+   * Constructor for class.
+   *
+   * @param EntityManagerInterface $entity_manager
+   *   EntityManagerInterface object.
+   * @param DateFormatterInterface $date_formatter
+   *   DateFormatterInterface object.
+   * @param PrivateTempStoreFactory $temp_store_factory
+   *   PrivateTempStoreFactory object.
+   * @param QueryFactory $entityQuery
+   *   QueryFactory object.
+   */
   public function __construct(
     EntityManagerInterface $entity_manager,
     DateFormatterInterface $date_formatter,
     PrivateTempStoreFactory $temp_store_factory,
     QueryFactory $entityQuery
   ) {
-    $this->entity_manager = $entity_manager;
-    $this->date_formatter = $date_formatter;
+    $this->entityManager = $entity_manager;
+    $this->dateFormatter = $date_formatter;
     $this->tempStoreFactory = $temp_store_factory;
     $this->entityQuery = $entityQuery;
     $this->store = $this->tempStoreFactory->get('gathercontent_multistep_data');
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('entity.manager'),
@@ -92,8 +113,7 @@ abstract class MultistepFormBase extends FormBase {
   }
 
   /**
-   * Helper method that removes all the keys from the store collection used for
-   * the multistep form.
+   * Helper removing all keys from the store collection used for multistep form.
    *
    * @param array $keys
    *   Array of keys to delete.

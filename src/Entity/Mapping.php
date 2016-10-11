@@ -49,7 +49,7 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
   /**
    * The GatherContent Project ID.
    *
-   * @var integer
+   * @var int
    */
   protected $gathercontent_project_id;
 
@@ -63,7 +63,7 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
   /**
    * The GatherContent Template ID.
    *
-   * @var integer
+   * @var int
    */
   protected $gathercontent_template_id;
 
@@ -110,24 +110,7 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
   protected $template;
 
   /**
-   * @param $projectID
-   * @param $templateID
-   *
-   * @return FALSE|\Drupal\gathercontent\Entity\Mapping
-   */
-  public static function exists($projectID, $templateID) {
-    $mappings = self::loadMultiple();
-    foreach ($mappings as $mapping) {
-      /** @var Mapping $mapping */
-      if ($mapping->getGathercontentTemplateId() === $templateID && $mapping->getGathercontentProjectId() === $projectID) {
-        return $mapping;
-      }
-    }
-    return FALSE;
-  }
-
-  /**
-   * @return int
+   * {@inheritdoc}
    */
   public function getGathercontentTemplateId() {
     return $this->get('gathercontent_template_id');
@@ -141,7 +124,7 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
   }
 
   /**
-   * @return int
+   * {@inheritdoc}
    */
   public function getGathercontentProjectId() {
     return $this->get('gathercontent_project_id');
@@ -155,7 +138,7 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
   }
 
   /**
-   * @return string
+   * {@inheritdoc}
    */
   public function getGathercontentProject() {
     return $this->get('gathercontent_project');
@@ -169,7 +152,7 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
   }
 
   /**
-   * @return string
+   * {@inheritdoc}
    */
   public function getGathercontentTemplate() {
     return $this->get('gathercontent_template');
@@ -183,7 +166,7 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
   }
 
   /**
-   * @return string
+   * {@inheritdoc}
    */
   public function getContentType() {
     return $this->get('content_type');
@@ -197,7 +180,7 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
   }
 
   /**
-   * @return string
+   * {@inheritdoc}
    */
   public function getContentTypeName() {
     return $this->get('content_type_name');
@@ -225,7 +208,10 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
   }
 
   /**
+   * Formatter for content type property.
+   *
    * @return string
+   *   If not empty return human name for content type, else return None string.
    */
   public function getFormattedContentType() {
     $content_type = $this->get('content_type_name');
@@ -238,7 +224,10 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
   }
 
   /**
+   * Formatter for updated drupal property.
+   *
    * @return string
+   *   If not empty return formatted date, else return string Never.
    */
   public function getFormatterUpdatedDrupal() {
     $updated_drupal = $this->get('updated_drupal');
@@ -252,7 +241,7 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
   }
 
   /**
-   * @return mixed
+   * {@inheritdoc}
    */
   public function getTemplate() {
     return $this->get('template');
@@ -267,6 +256,7 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
 
   /**
    * @return string
+   * {@inheritdoc}
    */
   public function getData() {
     return $this->get('data');
@@ -280,9 +270,13 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
   }
 
   /**
+   * Validate if object is configured with mapping.
+   *
    * @return bool
+   *   Return TRUE if object has mapping, otherwise FALSE.
    */
   public function hasMapping() {
     return !empty($this->get('data'));
   }
+
 }

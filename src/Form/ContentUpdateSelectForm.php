@@ -25,4 +25,5 @@ class ContentUpdateSelectForm extends ContentSelectForm {
     $this->store->set('nodes', array_filter($form_state->getValue('nodes')));
     $form_state->setRedirect('gathercontent.update_confirm_form');
   }
+
 }

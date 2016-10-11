@@ -129,7 +129,7 @@ class MappingImportForm extends EntityForm {
   }
 
   /**
-   * @inheritdoc
+   * {@inheritdoc}
    */
   protected function actions(array $form, FormStateInterface $form_state) {
     $actions = parent::actions($form, $form_state);

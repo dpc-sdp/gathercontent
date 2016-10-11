@@ -4,7 +4,11 @@ namespace Drupal\gathercontent\DAO;
 
 use GuzzleHttp\Client;
 
-
+/**
+ * Class Project.
+ *
+ * @package GatherContent
+ */
 class Project {
   private $client;
 
@@ -172,7 +176,6 @@ class Project {
    *
    * @param int $project_id
    *   Project ID.
-   *
    * @param int $status_id
    *   Status ID.
    *
@@ -199,4 +202,5 @@ class Project {
         ->alert('Object Project created as local, but trying to reach remote data.', []);
     }
   }
+
 }

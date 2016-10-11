@@ -1,3 +1,6 @@
+/**
+ * @file
+ */
 
 (function ($, Drupal) {
 
