@@ -105,7 +105,7 @@ function _gc_fetcher($gc_id, $uuid, $status = NULL, NodeInterface $entity = NULL
     ->execute();
 
   if (!empty($mapping_id)) {
-    $mapping = Mapping::load($mapping_id);
+    $mapping = Mapping::load(reset($mapping_id));
     // If mapping exists, start mapping remote fields to local ones.
     $mapping_data = unserialize($mapping->getData());
     if (empty($mapping_data)) {
