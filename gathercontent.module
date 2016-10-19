@@ -63,17 +63,17 @@ function gathercontent_entity_base_field_info(EntityTypeInterface $entity_type) 
  *   ID of GatherContent piece of content.
  * @param string $uuid
  *   UUID of \Drupal\gathercontent\Entity\Operation.
- * @param null $status
- *   ID of status from GatherContent.
  * @param string $node_update_method
  *   Name of the node update method.
+ * @param int|null $status
+ *   ID of status from GatherContent.
  * @param string|null $parent_menu_item
  *   Parent menu item ID if we want to create menu item.
  *
  * @return bool
  *   Return nid if operation was successful.
  */
-function _gc_fetcher($gc_id, $uuid, $status, $node_update_method, $parent_menu_item = NULL) {
+function _gc_fetcher($gc_id, $uuid, $node_update_method, $status = NULL, $parent_menu_item = NULL) {
   $user = \Drupal::currentUser();
 
   $tsid = NULL;
@@ -116,7 +116,7 @@ function _gc_fetcher($gc_id, $uuid, $status, $node_update_method, $parent_menu_i
     $mapping_data_copy = $mapping_data;
     $first = array_shift($mapping_data_copy);
     $content_type = $mapping->getContentType();
-    $langcode = isset($first['language']) ? $first['language'] : \Drupal\Core\Language\Language::LANGCODE_NOT_SPECIFIED;
+    $langcode = isset($first['language']) ? $first['language'] : Language::LANGCODE_NOT_SPECIFIED;
 
     $entity = gc_get_destination_node($gc_id, $node_update_method, $content_type, $langcode);
 
@@ -167,18 +167,21 @@ function _gc_fetcher($gc_id, $uuid, $status, $node_update_method, $parent_menu_i
         $entity->save();
 
         // Create menu link items.
-        if ($is_translatable) {
-          $languages = $entity->getTranslationLanguages();
-          $original_link_id = NULL;
-          foreach ($languages as $langcode => $language) {
-            $localized_entity = $entity->hasTranslation($langcode) ? $entity->getTranslation($langcode) : NULL;
-            if (!is_null($localized_entity)) {
-              gc_create_menu_link($entity->id(), $localized_entity->getTitle(), $parent_menu_item, $langcode, $original_link_id);
+        $menu_link_defaults = menu_ui_get_menu_link_defaults($entity);
+        if (!(bool) $menu_link_defaults['id']) {
+          if ($is_translatable) {
+            $languages = $entity->getTranslationLanguages();
+            $original_link_id = NULL;
+            foreach ($languages as $langcode => $language) {
+              $localized_entity = $entity->hasTranslation($langcode) ? $entity->getTranslation($langcode) : NULL;
+              if (!is_null($localized_entity)) {
+                gc_create_menu_link($entity->id(), $localized_entity->getTitle(), $parent_menu_item, $langcode, $original_link_id);
+              }
             }
           }
-        }
-        else {
-          gc_create_menu_link($entity->id(), $entity->getTitle(), $parent_menu_item);
+          else {
+            gc_create_menu_link($entity->id(), $entity->getTitle(), $parent_menu_item);
+          }
         }
 
         \Drupal::service('event_dispatcher')
@@ -210,6 +213,8 @@ function _gc_fetcher($gc_id, $uuid, $status, $node_update_method, $parent_menu_i
 }
 
 /**
+ * Get Node object based on type of update.
+ *
  * @param int $gc_id
  *   ID of item in GatherContent.
  * @param string $node_update_method
@@ -220,11 +225,12 @@ function _gc_fetcher($gc_id, $uuid, $status, $node_update_method, $parent_menu_i
  *   Language of translation if applicable.
  *
  * @return \Drupal\node\NodeInterface
+ *   Return loaded node.
  */
 function gc_get_destination_node($gc_id, $node_update_method, $node_type_id, $langcode) {
   switch ($node_update_method) {
     case 'update_if_not_changed';
-      $result =  \Drupal::entityQuery('node')
+      $result = \Drupal::entityQuery('node')
         ->condition('gc_id', $gc_id)
         ->sort('created', 'DESC')
         ->range(0, 1)
@@ -248,7 +254,7 @@ function gc_get_destination_node($gc_id, $node_update_method, $node_type_id, $la
       break;
 
     case 'always_update';
-      $result =  \Drupal::entityQuery('node')
+      $result = \Drupal::entityQuery('node')
         ->condition('gc_id', $gc_id)
         ->sort('created', 'DESC')
         ->range(0, 1)
@@ -390,6 +396,7 @@ function gc_gc_process_content_pane(NodeInterface &$entity, $local_field_name, $
  *   ID of menu link item in default language.
  */
 function gc_create_menu_link($nid, $title, $plid, $lang = NULL, &$original_link_id = NULL) {
+  $weight = 1;
   if (!empty($plid)) {
     if (is_null($lang)) {
       // Single language node.
@@ -404,7 +411,7 @@ function gc_create_menu_link($nid, $title, $plid, $lang = NULL, &$original_link_
         'menu_name' => $menu_name,
         'plid' => $mlid,
       );
-      MenuLinkContent::create($link)->save();
+      MenuLinkContent::create($link)->set('weight', $weight)->save();
     }
     elseif (\Drupal::moduleHandler()->moduleExists('content_translation')
       && \Drupal::service('content_translation.manager')
@@ -425,6 +432,7 @@ function gc_create_menu_link($nid, $title, $plid, $lang = NULL, &$original_link_
           'langcode' => $lang,
         );
         $menu_link = MenuLinkContent::create($link);
+        $menu_link->set('weight', $weight);
         $menu_link->save();
 
         $original_link_id = $menu_link->id();
@@ -665,7 +673,7 @@ function gc_gc_process_files_field(NodeInterface &$node, $local_field_name, $gc_
  *   Context of operation.
  */
 function gathercontent_import_process($gc_id, $status_id, $operation_uuid, $node_update_method, $parent_menu_item = NULL, &$context) {
-  if (($nid = _gc_fetcher($gc_id, $operation_uuid, $status_id, $node_update_method, $parent_menu_item)) !== FALSE) {
+  if (($nid = _gc_fetcher($gc_id, $operation_uuid, $node_update_method, $status_id, $parent_menu_item)) !== FALSE) {
     if ($status_id != 0) {
       // Change status.
       $content_obj = new Content();
@@ -748,7 +756,7 @@ function gathercontent_import_finished($success, $results, $operations) {
  *   Context of operation.
  */
 function gathercontent_update_process($gc_id, $operation_uuid, $node_update_method, array &$context) {
-  _gc_fetcher($gc_id, $operation_uuid, NULL, $node_update_method);
+  _gc_fetcher($gc_id, $operation_uuid, $node_update_method);
   $context['results']['uuid'] = $operation_uuid;
 }
 
@@ -826,13 +834,13 @@ function gathercontent_upload_process(NodeInterface $entity, $uuid, &$context) {
   // 2. Compare local and remote template
   // 3. If templates are same, load node from remote.
   // 4. Set values based on mapping.
-  $mapping = Mapping::load($entity->get('gc_mapping_id')->value);
+  $mapping = Mapping::load($entity->get('gc_mapping_id')->getValue());
 
   $tmp_obj = new Template();
   $remote_template = $tmp_obj->getTemplate($mapping->getGathercontentTemplateId());
 
   $cont_obj = new Content();
-  $remote_node = $cont_obj->getContent($entity->get('gc_id')->value);
+  $remote_node = $cont_obj->getContent($entity->get('gc_id')->getValue());
   $config = $remote_node->config;
   $mapping_data = unserialize($mapping->getData());
 
@@ -988,7 +996,7 @@ function gathercontent_upload_process(NodeInterface $entity, $uuid, &$context) {
         ->dispatch(GatherContentEvents::PRE_NODE_UPLOAD, new PreNodeUploadEvent($entity, $config));
       /** @var \Drupal\gathercontent\Event\PreNodeUploadEvent $event */
       $config = $event->getGathercontentValues();
-      if ($cont_obj->postContent($entity->get('gc_id')->value, $config)) {
+      if ($cont_obj->postContent($entity->get('gc_id')->getValue(), $config)) {
         $operation_item->status = "Success";
         $operation_item->save();
         \Drupal::service('event_dispatcher')
