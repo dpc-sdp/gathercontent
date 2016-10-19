@@ -476,10 +476,9 @@ function _gathercontent_fetcher($gathercontent_id, $uuid, $status = NULL, $entit
 
     $mapping_data_copy = $mapping_data;
     $first = array_shift($mapping_data_copy);
-    $content_type = 'article';
     $langcode = isset($first['language']) ? $first['language'] : LANGUAGE_NONE;
 
-    $node = gathercontent_get_destination_node($gathercontent_id, $node_update_method ,$content_type);
+    $node = gathercontent_get_destination_node($gathercontent_id, $node_update_method ,$mapping->content_type);
 
     $node->gathercontent_mapping_id->set($mapping->id);
     $node->gathercontent_id->set($content->id);
