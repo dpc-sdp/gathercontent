@@ -170,27 +170,25 @@ function theme_gathercontent_tableselect(array $variables) {
     }
   }
 
-  $rows = array();
-  $header = $element['#header'];
-  if (!empty($element['#options'])) {
-    // Generate a table row for each selectable item in #options.
-    foreach (element_children($element) as $key) {
-      $row = array();
+  $table = array(
+    'header' => $element['#header'],
+    'rows' => [],
+    'empty' => $element['#empty'],
+    'attributes' => $element['#attributes'],
+  );
 
-      $row['data'] = array();
-      if (isset($element['#options'][$key]['#attributes'])) {
-        $row += $element['#options'][$key]['#attributes'];
-      }
-      // Render the checkbox / radio element.
-      $row['data'][] = drupal_render($element[$key]);
+  // Generate a table row for each selectable item in #options.
+  foreach (element_children($element) as $key) {
+    $row = array();
 
-      // As theme_table only maps header and row columns by order, create the
-      // correct order by iterating over the header fields.
-      foreach ($element['#header'] as $fieldname => $title) {
-        $row['data'][] = $element['#options'][$key][$fieldname];
+    foreach (array('selected', 'status', 'title', 'updated', 'template', 'menu') as $column) {
+      $row[$column] = array('data' => drupal_render($element[$key][$column]));
+      if (isset($element[$key][$column]['#attributes'])) {
+        $row[$column] += $element[$key][$column]['#attributes'];
       }
-      $rows[] = $row;
     }
+
+    $table['rows'][$key] = $row;
   }
 
   // Add an empty header or a "Select all" checkbox to provide room for the
@@ -198,7 +196,7 @@ function theme_gathercontent_tableselect(array $variables) {
   if ($element['#js_select']) {
     // Add a "Select all" checkbox.
     drupal_add_js($gathercontent_module_path . '/js/gathercontent-tableselect.js');
-    array_unshift($header, array(
+    array_unshift($element['#header'], array(
       'class' => array('select-all'),
       'data-sorter' => 'false',
     ));
@@ -206,7 +204,7 @@ function theme_gathercontent_tableselect(array $variables) {
   else {
     // Add an empty header when radio buttons are displayed or a "Select all"
     // checkbox is not desired.
-    array_unshift($header, '');
+    array_unshift($element['#header'], '');
   }
 
   if (!empty($element['#filterwrapper']) && is_array($element['#filterwrapper'])) {
@@ -240,12 +238,7 @@ function theme_gathercontent_tableselect(array $variables) {
     $output .= drupal_render($filterdescription);
   }
 
-  $output .= theme('table', array(
-    'header' => $header,
-    'rows' => $rows,
-    'empty' => $element['#empty'],
-    'attributes' => $element['#attributes'],
-  ));
+  $output .= theme('table', $table);
 
   return $output;
 }

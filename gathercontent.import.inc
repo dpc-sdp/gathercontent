@@ -254,7 +254,6 @@ function gathercontent_import_form_content_select($form, &$form_state) {
     $content_obj = new Content();
     $content = $content_obj->getContents($project_id);
 
-    $content_table = array();
     $query = new EntityFieldQuery();
     $result = $query->entityCondition('entity_type', 'gathercontent_mapping')
       ->propertyCondition('gathercontent_project_id', $project_id)
@@ -269,14 +268,41 @@ function gathercontent_import_form_content_select($form, &$form_state) {
       $mapping_ids = array_keys($result['gathercontent_mapping']);
       $mappings = entity_load('gathercontent_mapping', $mapping_ids);
       $mapping_array = array();
+      $content_types = [];
       foreach ($mappings as $mapping) {
         if (!empty($mapping->data)) {
+          if (!array_key_exists($mapping->gathercontent_template_id, $content_types)) {
+            $content_types[$mapping->gathercontent_template_id] = $mapping->content_type;
+          }
           $mapping_array[$mapping->gathercontent_template_id] = array(
             'gathercontent_template' => $mapping->gathercontent_template,
             'ct' => $mapping->content_type,
           );
         }
       }
+
+      $form['import']['content'] = array(
+        '#tree' => TRUE,
+        '#theme' => 'gathercontent_tableselect',
+        '#js_select' => TRUE,
+        '#header' => array(
+          'selected' => array(
+            'class' => array('select-all'),
+            'data' => '',
+          ),
+          'status' => t('Status'),
+          'title' => t('Item Name'),
+          'updated' => t('Last updated in GatherContent'),
+          'template' => t('GatherContent Template Name'),
+          'menu' => t('Menu'),
+        ),
+        '#empty' => t('No content available.'),
+        '#filterwrapper' => array(
+          'filter_wrapper' => array('gathercontent-table--filter-wrapper', 'clearfix'),
+          'counter_wrapper' => array('gathercontent-table--counter', 'clearfix'),
+        ),
+        '#filterdescription' => t('You can only see items with mapped templates in the table.'),
+      );
 
       $tmp_obj = new Template();
       $templates = $tmp_obj->getTemplates($project_id);
@@ -287,61 +313,52 @@ function gathercontent_import_form_content_select($form, &$form_state) {
           && $item->template_id != 'null'
           && isset($mapping_array[$item->template_id])
         ) {
-          $content_table[$item->id] = array(
+          $form['import']['content'][$item->id] = array(
+            '#tree' => TRUE,
+            'selected' => array(
+              '#type' => 'checkbox',
+            ),
             'status' => array(
-              'data' => '<div class="gathercontent-item--status--color" style="background: ' . $item->status->data->color . ';"></div>' . $item->status->data->name,
-              'class' => array('gathercontent-item', 'status-item'),
+              '#markup' => '<div class="gathercontent-item--status--color" style="background: ' . $item->status->data->color . ';"></div>' . $item->status->data->name,
+              '#attributes' => array(
+                'class' => array('gathercontent-item', 'status-item'),
+              ),
             ),
             'title' => array(
-              'data' => $item->name,
-              'class' => array('gathercontent-item', 'gathercontent-item--name'),
+              '#markup' => $item->name,
+              '#attributes' => array(
+                'class' => array('gathercontent-item', 'gathercontent-item--name'),
+              ),
             ),
             'updated' => array(
-              'data' => date('F d, Y - H:i', strtotime($item->updated_at->date)),
-              'class' => array('gathercontent-item', 'gathercontent-item-date'),
-              'data-date' => date('Y-m-d.H:i:s', strtotime($item->updated_at->date)),
+              '#markup' => date('F d, Y - H:i', strtotime($item->updated_at->date)),
+              '#attributes' => [
+                'class' => array('gathercontent-item', 'gathercontent-item-date'),
+                'data-date' => date('Y-m-d.H:i:s', strtotime($item->updated_at->date)),
+              ],
             ),
             'template' => array(
-              'data' => $mapping_array[$item->template_id]['gathercontent_template'],
-              'class' => array('template-name-item'),
+              '#markup' => $mapping_array[$item->template_id]['gathercontent_template'],
+              '#attributes' => array(
+                'class' => array('template-name-item'),
+              ),
             ),
             'menu' => array(
-              'data' => array(
-                '#type' => 'select',
-                '#options' =>
-                  array(
-                    0 => t("- Don't create menu item -"),
-                    -1 => t("Parent being imported"),
-                  ) + menu_parent_options(menu_get_menus(), $mapping_array[$item->template_id]['ct']),
-                '#title' => t('Menu'),
-                '#title_display' => 'invisible',
-                '#name' => "menu[$item->id]",
-              ),
+              '#type' => 'select',
+              '#options' =>
+                array(
+                  -1 => t("Parent being imported"),
+                ) + menu_parent_options(menu_get_menus(), $mapping_array[$item->template_id]['ct']),
+              '#empty_option' => t("- Don't create menu item -"),
+              '#empty_value' => 0,
+              '#default_value' => variable_get('menu_parent_' . $content_types[$item->template_id], 'main-menu:0'),
+              '#title' => t('Menu'),
+              '#title_display' => 'invisible',
             ),
           );
         }
       }
 
-      $header = array(
-        'status' => t('Status'),
-        'title' => t('Item Name'),
-        'updated' => t('Last updated in GatherContent'),
-        'template' => t('GatherContent Template Name'),
-        'menu' => t('Menu'),
-      );
-
-      $form['import']['content'] = array(
-        '#type' => 'gathercontent_tableselect',
-        '#header' => $header,
-        '#options' => $content_table,
-        '#empty' => t('No content available.'),
-        '#filterwrapper' => array(
-          'filter_wrapper' => array('gathercontent-table--filter-wrapper', 'clearfix'),
-          'counter_wrapper' => array('gathercontent-table--counter', 'clearfix'),
-        ),
-        '#filterdescription' => t('You can only see items with mapped templates in the table.'),
-        '#default_value' => isset($form_state['object']->nodes) ? $form_state['object']->nodes : NULL,
-      );
     }
   }
 
@@ -368,8 +385,15 @@ function gathercontent_import_form_content_select_fetch_content($form, &$form_st
 function gathercontent_import_form_content_select_validate($form, &$form_state) {
   if ($form_state['triggering_element']['#type'] === 'submit') {
     $stack = array();
-    $import_content = array_filter($form_state['values']['content']);
-    $menu = array_intersect_key(array_filter($form_state['values']['menu']), array_filter($form_state['values']['content']));
+    $content = array_filter($form_state['values']['content']);
+    $import_content = [];
+    $menu = [];
+    foreach ($content as $item_id => $item) {
+      if ($item['selected'] === 1) {
+        $import_content[$item_id] = $item_id;
+        $menu[$item_id] = $item['menu'];
+      }
+    }
     if (!empty($import_content) && !empty($menu)) {
 
       foreach ($import_content as $k => $value) {
@@ -423,8 +447,17 @@ function gathercontent_import_form_content_select_validate($form, &$form_state) 
  */
 function gathercontent_import_form_content_select_submit($form, &$form_state) {
   $form_state['object']->project_id = $form_state['values']['project'];
-  $form_state['object']->nodes = array_filter($form_state['values']['content']);
-  $form_state['object']->menu = array_intersect_key(array_filter($form_state['values']['menu']), array_filter($form_state['values']['content']));
+  $content = array_filter($form_state['values']['content']);
+  $import_content = [];
+  $menu = [];
+  foreach ($content as $item_id => $item) {
+    if ($item['selected'] === 1) {
+      $import_content[$item_id] = $item_id;
+      $menu[$item_id] = $item['menu'];
+    }
+  }
+  $form_state['object']->nodes = $import_content;
+  $form_state['object']->menu = $menu;
 }
 
 /**
@@ -540,7 +573,13 @@ function gathercontent_import_form_confirm_submit($form, &$form_state) {
       $parent_menu_item = isset($form_state['object']->menu[$value]) ? $form_state['object']->menu[$value] : NULL;
       $operations[] = array(
         'gathercontent_import_process',
-        array($value, $form_state['object']->status, $uuid, $parent_menu_item, $form_state['values']['node_update_method']),
+        array(
+          $value,
+          $form_state['object']->status,
+          $uuid,
+          $parent_menu_item,
+          $form_state['values']['node_update_method'],
+        ),
       );
       $stack[] = $value;
       unset($import_content[$k]);

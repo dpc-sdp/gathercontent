@@ -523,7 +523,7 @@ function _gathercontent_fetcher($gathercontent_id, $uuid, $status = NULL, $entit
           // We need to create new translation if is translatable.
           if ($is_translatable && (!isset($node->language) || empty($node->language))) {
             $node->language->set($language);
-            $node->save(TRUE);
+            $node->save();
           }
           elseif ($is_translatable && (isset($node->language) || !empty($node->language))) {
             $handler = entity_translation_get_handler('node', $entity);
@@ -542,34 +542,39 @@ function _gathercontent_fetcher($gathercontent_id, $uuid, $status = NULL, $entit
         }
 
         drupal_alter('gathercontent_pre_node_save', $entity, $content, $files);
-        $node->save(TRUE);
+        $node->save();
 
         // Create menu link item.
-        if ($is_translatable) {
-          if (module_exists('locale')) {
-            $languages = locale_language_list();
-            $tsid = NULL;
-            foreach ($languages as $langcode => $language) {
-              if (module_exists('title') && title_field_replacement_enabled('node', $node->get('type')
-                  ->value(), 'title')
-              ) {
-                if(language_default('language') === $langcode) {
-                  gathercontent_create_menu_link($entity->nid, $node->title->value(), $parent_menu_item, $langcode, $tsid);
-                } else {
-                  $title_field = title_field_replacement_info('node', 'title')['field']['field_name'];
-                  gathercontent_create_menu_link($entity->nid, $node->language($langcode)->{$title_field}->value(), $parent_menu_item, $langcode, $tsid);
+        if (module_exists('menu')) {
+          menu_node_prepare($node->raw());
+          if (!(bool) $node->raw()->menu['mlid']) {
+            if ($is_translatable) {
+              if (module_exists('locale')) {
+                $languages = locale_language_list();
+                $tsid = NULL;
+                foreach ($languages as $langcode => $language) {
+                  if (module_exists('title') && title_field_replacement_enabled('node', $node->get('type')
+                      ->value(), 'title')
+                  ) {
+                    if (language_default('language') === $langcode) {
+                      gathercontent_create_menu_link($node->nid->value(), $node->title->value(), $parent_menu_item, $langcode, $tsid);
+                    }
+                    else {
+                      $title_field = title_field_replacement_info('node', 'title')['field']['field_name'];
+                      gathercontent_create_menu_link($node->nid->value(), $node->language($langcode)->{$title_field}->value(), $parent_menu_item, $langcode, $tsid);
+                    }
+                  }
+                  else {
+                    gathercontent_create_menu_link($node->nid->value(), $node->language($langcode)->title->value(), $parent_menu_item, $langcode, $tsid);
+                  }
                 }
               }
-              else {
-                gathercontent_create_menu_link($entity->nid, $node->language($langcode)->title->value(), $parent_menu_item, $langcode, $tsid);
-              }
+            }
+            else {
+              gathercontent_create_menu_link($node->nid->value(), $node->title->value(), $parent_menu_item);
             }
           }
         }
-        else {
-          gathercontent_create_menu_link($entity->nid, $entity->title, $parent_menu_item);
-        }
-
         // Save metatags.
         if (module_exists('metatag') && metatag_entity_supports_metatags('node', $mapping->content_type)) {
           module_load_include('module', 'metatag');
@@ -579,9 +584,9 @@ function _gathercontent_fetcher($gathercontent_id, $uuid, $status = NULL, $entit
         module_invoke_all('gathercontent_post_node_save', $entity, $content, $files);
 
         $operation_item->status = "Success";
-        $operation_item->nid = $entity->nid;
+        $operation_item->nid = $node->nid->value();
         entity_save('gathercontent_operation_item', $operation_item);
-        return $entity->nid;
+        return $node->nid->value();
       }
       catch (\Exception $e) {
         watchdog('gathercontent_import', print_r($e, TRUE), array(), WATCHDOG_ERROR);
@@ -793,6 +798,7 @@ function gathercontent_gathercontent_process_content_pane(EntityMetadataWrapper 
  * @param null $tsid
  */
 function gathercontent_create_menu_link($nid, $title, $plid, $lang = NULL, &$tsid = NULL) {
+  $weight = 1;
   if (!empty($plid)) {
     if (is_null($lang) || $lang === LANGUAGE_NONE) {
       // Single language node.
@@ -805,6 +811,7 @@ function gathercontent_create_menu_link($nid, $title, $plid, $lang = NULL, &$tsi
         'link_title' => $title,
         'menu_name' => $menu_name,
         'plid' => $mlid,
+        'weight' => $weight,
       );
       menu_link_save($link);
     }
@@ -821,6 +828,7 @@ function gathercontent_create_menu_link($nid, $title, $plid, $lang = NULL, &$tsi
           'link_title' => $title,
           'menu_name' => $menu_name,
           'plid' => $mlid,
+          'weight' => $weight,
           'language' => $lang,
         );
         menu_link_save($link);
