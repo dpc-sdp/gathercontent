@@ -15,6 +15,14 @@ gathercontent.settings:
       type: string
       label: 'GatherContent URL key'
 
+gathercontent.import:
+  type: mapping
+  label: 'Import configuration'
+  mapping:
+    node_update_method:
+      type: string
+      label: 'Content update method'
+
 field.widget.settings.select_other_widget:
   type: mapping
   label: 'Select or other widget display format settings'

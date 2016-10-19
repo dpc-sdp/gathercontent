@@ -11,23 +11,30 @@ gathercontent.config_form:
   parent: gathercontent.admin_gathercontent
   weight: 1
 
+gathercontent.import_config_form:
+  title: 'Import configuration'
+  route_name: gathercontent.import_config_form
+  description: 'Global configuration for the import process'
+  parent: gathercontent.admin_gathercontent
+  weight: 2
+
 entity.gathercontent_mapping.collection:
   title: 'Manage Mappings'
   route_name: entity.gathercontent_mapping.collection
   parent: gathercontent.admin_gathercontent
-  weight: 2
+  weight: 3
 
 gathercontent.import_select_form:
   title: 'Import content'
   route_name: gathercontent.import_select_form
   parent: gathercontent.admin_gathercontent
-  weight: 3
+  weight: 4
 
 gathercontent.remove_local_data_form:
   title: 'Remove local data'
   route_name: gathercontent.remove_local_data_form
   parent: gathercontent.admin_gathercontent
-  weight: 4
+  weight: 5
 
 gathercontent.update_select_form:
   title: 'Update content from GatherContent'

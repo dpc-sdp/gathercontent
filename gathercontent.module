@@ -23,6 +23,7 @@ use Drupal\gathercontent\Event\PostUploadEvent;
 use Drupal\gathercontent\Event\PreNodeSaveEvent;
 use Drupal\gathercontent\Event\PreNodeUploadEvent;
 use Drupal\menu_link_content\Entity\MenuLinkContent;
+use Drupal\node\Entity\Node;
 use Drupal\node\NodeInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
@@ -62,17 +63,17 @@ function gathercontent_entity_base_field_info(EntityTypeInterface $entity_type) 
  *   ID of GatherContent piece of content.
  * @param string $uuid
  *   UUID of \Drupal\gathercontent\Entity\Operation.
- * @param int|null $status
+ * @param null $status
  *   ID of status from GatherContent.
- * @param \Drupal\node\NodeInterface|null $entity
- *   Object of entity, if we are updating exiting content.
+ * @param string $node_update_method
+ *   Name of the node update method.
  * @param string|null $parent_menu_item
  *   Parent menu item ID if we want to create menu item.
  *
  * @return bool
  *   Return nid if operation was successful.
  */
-function _gc_fetcher($gc_id, $uuid, $status = NULL, NodeInterface $entity = NULL, $parent_menu_item = NULL) {
+function _gc_fetcher($gc_id, $uuid, $status, $node_update_method, $parent_menu_item = NULL) {
   $user = \Drupal::currentUser();
 
   $tsid = NULL;
@@ -114,16 +115,14 @@ function _gc_fetcher($gc_id, $uuid, $status = NULL, NodeInterface $entity = NULL
 
     $mapping_data_copy = $mapping_data;
     $first = array_shift($mapping_data_copy);
+    $content_type = $mapping->getContentType();
+    $langcode = isset($first['language']) ? $first['language'] : \Drupal\Core\Language\Language::LANGCODE_NOT_SPECIFIED;
 
-    if (is_null($entity)) {
-      $entity = \Drupal::entityTypeManager()->getStorage('node')->create(array(
-        'type' => $mapping->getContentType(),
-        'gc_mapping_id' => $mapping->id(),
-        'gc_id' => $content->id,
-        'uid' => $user->id(),
-        'langcode' => isset($first['language']) ? $first['language'] : Language::LANGCODE_NOT_SPECIFIED,
-      ));
-    }
+    $entity = gc_get_destination_node($gc_id, $node_update_method, $content_type, $langcode);
+
+    $entity->set('gc_id', $gc_id);
+    $entity->set('gc_mapping_id', $mapping->id());
+    $entity->setOwnerId($user->id());
 
     if ($entity !== FALSE) {
       /** @var \Drupal\node\NodeInterface $entity */
@@ -211,6 +210,65 @@ function _gc_fetcher($gc_id, $uuid, $status = NULL, NodeInterface $entity = NULL
 }
 
 /**
+ * @param int $gc_id
+ *   ID of item in GatherContent.
+ * @param string $node_update_method
+ *   Name of the node update method.
+ * @param int $node_type_id
+ *   ID of the node type.
+ * @param string $langcode
+ *   Language of translation if applicable.
+ *
+ * @return \Drupal\node\NodeInterface
+ */
+function gc_get_destination_node($gc_id, $node_update_method, $node_type_id, $langcode) {
+  switch ($node_update_method) {
+    case 'update_if_not_changed';
+      $result =  \Drupal::entityQuery('node')
+        ->condition('gc_id', $gc_id)
+        ->sort('created', 'DESC')
+        ->range(0, 1)
+        ->execute();
+
+      if ($result) {
+        $node = Node::load(reset($result));
+        $query_result = \Drupal::entityQuery('gathercontent_operation_item')
+          ->condition('gc_id', $gc_id)
+          ->sort('changed', 'DESC')
+          ->range(0, 1)
+          ->execute();
+
+        $operation = OperationItem::load(reset($query_result));
+
+        if ($node->getChangedTime() === $operation->getChangedTime()) {
+          return $node;
+        }
+      }
+
+      break;
+
+    case 'always_update';
+      $result =  \Drupal::entityQuery('node')
+        ->condition('gc_id', $gc_id)
+        ->sort('created', 'DESC')
+        ->range(0, 1)
+        ->execute();
+
+      if ($result) {
+        return Node::load(reset($result));
+      }
+
+      break;
+
+  }
+
+  return Node::create([
+    'type' => $node_type_id,
+    'langcode' => $langcode,
+  ]);
+}
+
+/**
  * Processing function for metatag panes.
  *
  * @param \Drupal\node\NodeInterface $entity
@@ -248,7 +306,7 @@ function gc_gc_process_metatag_pane(NodeInterface &$entity, $local_field_name, $
   }
   else {
     throw new Exception("Metatag module not enabled or entity doesn't support 
-    metatags while trying to map values woth metatag content.");
+    metatags while trying to map values with metatag content.");
   }
 }
 
@@ -593,26 +651,28 @@ function gc_gc_process_files_field(NodeInterface &$node, $local_field_name, $gc_
  *
  * We are doing real import thing here.
  *
- * @param int $content_id
+ * @param int $gc_id
  *   ID of content we want to import.
  * @param int $status_id
  *   ID of status, if 0 then we don't want to change status.
- * @param string $uuid
+ * @param string $operation_uuid
  *   UUID of operation.
+ * @param string $node_update_method
+ *   Name of the node update method.
  * @param int|null $parent_menu_item
  *   ID of mlid.
  * @param array $context
  *   Context of operation.
  */
-function gathercontent_import_process($content_id, $status_id, $uuid, $parent_menu_item = NULL, &$context) {
-  if (($nid = _gc_fetcher($content_id, $uuid, $status_id, NULL, $parent_menu_item)) !== FALSE) {
+function gathercontent_import_process($gc_id, $status_id, $operation_uuid, $node_update_method, $parent_menu_item = NULL, &$context) {
+  if (($nid = _gc_fetcher($gc_id, $operation_uuid, $status_id, $node_update_method, $parent_menu_item)) !== FALSE) {
     if ($status_id != 0) {
       // Change status.
       $content_obj = new Content();
-      $content_obj->updateStatus($content_id, $status_id);
+      $content_obj->updateStatus($gc_id, $status_id);
     }
   };
-  $context['results']['uuid'] = $uuid;
+  $context['results']['uuid'] = $operation_uuid;
 }
 
 /**
@@ -678,16 +738,18 @@ function gathercontent_import_finished($success, $results, $operations) {
  *
  * We are doing real update thing here.
  *
- * @param object $node
- *   Object of content we want to update.
- * @param string $uuid
- *   UUID of \Drupal\gathercontent\Entity\Operation entity.
+ * @param int $gc_id
+ *   ID of content we want to import.
+ * @param string $operation_uuid
+ *   UUID of operation.
+ * @param string $node_update_method
+ *   Name of the node update method.
  * @param array $context
  *   Context of operation.
  */
-function gathercontent_update_process($node, $uuid, &$context) {
-  _gc_fetcher($node->gc_id->value, $uuid, NULL, $node);
-  $context['results']['uuid'] = $uuid;
+function gathercontent_update_process($gc_id, $operation_uuid, $node_update_method, array &$context) {
+  _gc_fetcher($gc_id, $operation_uuid, NULL, $node_update_method);
+  $context['results']['uuid'] = $operation_uuid;
 }
 
 /**

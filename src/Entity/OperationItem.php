@@ -117,6 +117,28 @@ class OperationItem extends ContentEntityBase implements OperationItemInterface 
       ->setLabel(t('Operation Item NID'))
       ->setDescription(t('Operation Item NID'));
 
+    $fields['created'] = BaseFieldDefinition::create('created')
+      ->setLabel(t('Authored on'))
+      ->setDescription(t('The time that the operation item was created.'))
+      ->setRevisionable(TRUE)
+      ->setTranslatable(TRUE)
+      ->setDisplayOptions('view', array(
+        'label' => 'hidden',
+        'type' => 'timestamp',
+        'weight' => 0,
+      ))
+      ->setDisplayOptions('form', array(
+        'type' => 'datetime_timestamp',
+        'weight' => 10,
+      ))
+      ->setDisplayConfigurable('form', TRUE);
+
+    $fields['changed'] = BaseFieldDefinition::create('changed')
+      ->setLabel(t('Changed'))
+      ->setDescription(t('The time that the operation item was last edited.'))
+      ->setRevisionable(TRUE)
+      ->setTranslatable(TRUE);
+
     return $fields;
   }
 

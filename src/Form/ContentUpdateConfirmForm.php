@@ -51,7 +51,23 @@ class ContentUpdateConfirmForm extends ContentConfirmForm {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    return parent::buildForm($form, $form_state);
+    $form = parent::buildForm($form, $form_state);
+
+    $import_config = $this->configFactory()->get('gathercontent.import');
+
+    $form['node_update_method'] = [
+      '#type' => 'radios',
+      '#required' => TRUE,
+      '#title' => $this->t('Content update method'),
+      '#default_value' => $import_config->get('node_update_method'),
+      '#options' => [
+        'always_create' => $this->t('Always create new Content'),
+        'update_if_not_changed' => $this->t('Create new Content if it has changed since the last import'),
+        'always_update' => $this->t('Always update existing Content'),
+      ],
+    ];
+
+    return $form;
   }
 
   /**
@@ -67,11 +83,13 @@ class ContentUpdateConfirmForm extends ContentConfirmForm {
       $nodes = Node::loadMultiple($this->nodeIds);
       $operations = [];
       foreach ($nodes as $node) {
+        $gc_id = $node->gc_id->value;
         $operations[] = array(
           'gathercontent_update_process',
           array(
-            $node,
+            $gc_id,
             $operation->uuid(),
+            $form_state->getValue('node_update_method'),
           ),
         );
       }

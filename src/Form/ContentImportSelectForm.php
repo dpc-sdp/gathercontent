@@ -287,6 +287,19 @@ class ContentImportSelectForm extends FormBase {
         '#empty_option' => t("- Don't change status -"),
       );
 
+      $import_config = $this->configFactory()->get('gathercontent.import');
+      $form['node_update_method'] = [
+        '#type' => 'radios',
+        '#required' => TRUE,
+        '#title' => $this->t('Content update method'),
+        '#default_value' => $import_config->get('node_update_method'),
+        '#options' => [
+          'always_create' => $this->t('Always create new Content'),
+          'update_if_not_changed' => $this->t('Create new Content if it has changed since the last import'),
+          'always_update' => $this->t('Always update existing Content'),
+        ],
+      ];
+
       $form['actions']['#type'] = 'actions';
       $form['actions']['submit'] = array(
         '#type' => 'submit',
@@ -334,6 +347,7 @@ class ContentImportSelectForm extends FormBase {
                 $value,
                 $form_state->getValue('status'),
                 $operation->uuid(),
+                $form_state->getValue('node_update_method'),
                 $parent_menu_item,
               ),
             );

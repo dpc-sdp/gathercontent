@@ -4,11 +4,17 @@ gathercontent.config_form:
   base_route: gathercontent.config_form
   weight: 0
 
+gathercontent.import_config_form:
+  route_name: gathercontent.import_config_form
+  title: 'Import configuration'
+  base_route: gathercontent.config_form
+  weight: 1
+
 gathercontent.mapping_controller_testConnectionPage:
   route_name: gathercontent.mapping_controller_testConnectionPage
   title: 'Test connection'
   base_route: gathercontent.config_form
-  weight: 1
+  weight: 2
 
 gathercontent.update_select_form:
   title: 'Update content from GatherContent'

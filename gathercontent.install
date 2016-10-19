@@ -4,6 +4,7 @@
  * @file
  * Install and uninstall script for GatherContent module.
  */
+use Drupal\Core\Field\BaseFieldDefinition;
 
 /**
  * Implements hook_install().
@@ -53,4 +54,15 @@ function gathercontent_requirements($phase) {
   }
 
   return $requirements;
+}
+
+/**
+ * Implements hook_update().
+ */
+function gathercontent_update_8301() {
+  $entity_manager = \Drupal::entityManager();
+  $definition = $entity_manager->getFieldStorageDefinitions('gathercontent_operation_item')['created'];
+  $entity_manager->onFieldStorageDefinitionCreate($definition);
+  $definition = $entity_manager->getFieldStorageDefinitions('gathercontent_operation_item')['changed'];
+  $entity_manager->onFieldStorageDefinitionCreate($definition);
 }
