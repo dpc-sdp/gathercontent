@@ -90,6 +90,7 @@ function gathercontent_uninstall() {
   variable_del('gathercontent_username');
   variable_del('gathercontent_api_key');
   variable_del('gathercontent_account');
+  variable_del('gathercontent_node_update_method');
 
   db_drop_field('node', 'gathercontent_mapping_id');
   db_drop_field('node', 'gathercontent_id');
@@ -198,6 +199,18 @@ function gathercontent_schema() {
         'not null' => TRUE,
         'default' => '',
       ),
+      'created' => array(
+        'description' => 'The Unix timestamp when the GatherContent operation item was created.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'changed' => array(
+        'description' => 'The Unix timestamp when the GatherContent operation item was most recently saved.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
       'item_status' => array(
         'type' => 'varchar',
         'length' => 255,
@@ -240,6 +253,9 @@ function gathercontent_schema() {
       ),
     ),
     'primary key' => array('id'),
+    'indexes' => array(
+      'gc_id_created' => array('gathercontent_id', 'created'),
+    ),
   );
 
   return $schema;
@@ -397,6 +413,28 @@ function gathercontent_update_7308() {
 function gathercontent_update_7309() {
   ctools_include('object-cache');
   ctools_object_cache_clear('view', 'mapping');
+}
+
+/**
+ * Add created and changed field for OperationItem.
+ */
+function gathercontent_update_7310() {
+  $created = array(
+    'description' => 'The Unix timestamp when the GatherContent operation item was created.',
+    'type' => 'int',
+    'not null' => TRUE,
+    'default' => 0,
+  );
+  $changed = array(
+    'description' => 'The Unix timestamp when the GatherContent operation item was most recently saved.',
+    'type' => 'int',
+    'not null' => TRUE,
+    'default' => 0,
+  );
+
+  db_add_field('gathercontent_operation_item', 'created', $created);
+  db_add_field('gathercontent_operation_item', 'changed', $changed);
+  db_add_index('gathercontent_operation_item', 'gc_id_created', array('gathercontent_id', 'created'));
 }
 
 /**

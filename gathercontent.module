@@ -101,6 +101,15 @@ function gathercontent_menu() {
     ),
     'file' => 'gathercontent.import.inc',
   );
+
+  $items['admin/config/gathercontent/import-config'] = array(
+    'title' => 'Import Configuration',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('gathercontent_import_config_form'),
+    'access arguments' => array('administer gathercontent'),
+    'file' => 'gathercontent.import.inc',
+  );
+
   return $items;
 }
 
@@ -165,7 +174,7 @@ function gathercontent_entity_info() {
       'id' => 'id',
     ),
     'module' => 'gathercontent',
-    'entity class' => 'Entity',
+    'entity class' => 'GatherContentOperationItem',
     'controller class' => 'EntityAPIController',
     'views controller class' => 'EntityDefaultViewsController',
     'fieldable' => FALSE,
@@ -242,11 +251,15 @@ function gathercontent_entity_property_info() {
     'label' => t("GC Mapping ID"),
     'type' => 'integer',
     'description' => t("The ID of created GatherContent mapping"),
+    'getter callback' => 'entity_property_verbatim_get',
+    'setter callback' => 'entity_property_verbatim_set',
   );
   $info['node']['properties']['gathercontent_id'] = array(
     'label' => t("GC ID"),
     'type' => 'integer',
     'description' => t("The ID of content in GatherContent"),
+    'getter callback' => 'entity_property_verbatim_get',
+    'setter callback' => 'entity_property_verbatim_set',
   );
   $info['node']['properties']['gathercontent_import_status'] = array(
     'label' => t("GC Import status"),
@@ -406,11 +419,13 @@ function gathercontent_upload(&$entity, array &$context) {
  *   Object of entity, if we are updating exiting content.
  * @param null $parent_menu_item
  *   Parent menu item ID if we want to create menu item.
+ * @param string $node_update_method
+ *   Name of the node update method.
  *
  * @return int|FALSE
  *   Return nid if operation was successful.
  */
-function _gathercontent_fetcher($gathercontent_id, $uuid, $status = NULL, $entity = NULL, $parent_menu_item = NULL) {
+function _gathercontent_fetcher($gathercontent_id, $uuid, $status = NULL, $entity = NULL, $parent_menu_item = NULL, $node_update_method) {
   global $user;
 
   $content_obj = new Content();
@@ -461,19 +476,19 @@ function _gathercontent_fetcher($gathercontent_id, $uuid, $status = NULL, $entit
 
     $mapping_data_copy = $mapping_data;
     $first = array_shift($mapping_data_copy);
+    $content_type = 'article';
+    $langcode = isset($first['language']) ? $first['language'] : LANGUAGE_NONE;
 
-    if (is_null($entity)) {
-      $entity = entity_create('node', array(
-        'type' => $mapping->content_type,
-        'gathercontent_mapping_id' => $mapping->id,
-        'gathercontent_id' => $content->id,
-        'uid' => $user->uid,
-        'language' => isset($first['language']) ? $first['language'] : LANGUAGE_NONE,
-      ));
+    $node = gathercontent_get_destination_node($gathercontent_id, $node_update_method ,$content_type);
+
+    $node->gathercontent_mapping_id->set($mapping->id);
+    $node->gathercontent_id->set($content->id);
+    if ($node->is_new->value()) {
+      $node->author->set($user->uid);
     }
+    $node->language->set($langcode);
 
-    if ($entity !== FALSE) {
-      $node = entity_metadata_wrapper('node', $entity);
+    if ($node !== FALSE) {
       $metatags = array();
       $_title_is_mapped = FALSE;
       try {
@@ -586,6 +601,64 @@ function _gathercontent_fetcher($gathercontent_id, $uuid, $status = NULL, $entit
     entity_save('gathercontent_operation_item', $operation_item);
     return FALSE;
   }
+}
+
+/**
+ * @param int $gathercontent_id
+ *   ID of item in GatherContent.
+ * @param string $node_update_method
+ *   Name of the node update method.
+ * @param int $node_type_id
+ *   ID of the node type.
+ *
+ * @return EntityDrupalWrapper
+ */
+function gathercontent_get_destination_node($gathercontent_id, $node_update_method, $node_type_id) {
+  switch ($node_update_method) {
+    case 'update_if_not_changed';
+      $query =  new EntityFieldQuery();
+      $query->entityCondition('entity_type', 'node')
+        ->propertyCondition('gathercontent_id', $gathercontent_id)
+        ->propertyOrderBy('created', 'DESC')
+        ->range(0, 1);
+      $result = $query->execute();
+
+      if (!empty($result['node'])) {
+        $node = node_load(reset($result['node'])->nid);
+
+        $operation_query =  new EntityFieldQuery();
+        $operation_query->entityCondition('entity_type', 'gathercontent_operation_item')
+          ->propertyCondition('gathercontent_id', $gathercontent_id)
+          ->propertyOrderBy('created', 'DESC')
+          ->range(0, 1);
+        $o_result = $operation_query->execute();
+
+        $operation_item = entity_load('gathercontent_operation_item', reset($o_result['gathercontent_operation_item']));
+        $operation_item = reset($operation_item);
+
+        if ($node->changed === $operation_item->changed) {
+          return entity_metadata_wrapper('node', $node);
+        }
+      }
+
+      break;
+
+    case 'always_update';
+      $query =  new EntityFieldQuery();
+      $query->entityCondition('entity_type', 'node')
+        ->propertyCondition('gathercontent_id', $gathercontent_id)
+        ->propertyOrderBy('created', 'DESC')
+        ->range(0, 1);
+      $result = $query->execute();
+
+      if (!empty($result['node'])) {
+        return entity_metadata_wrapper('node', reset($result['node'])->nid);
+      }
+
+      break;
+  }
+
+  return entity_metadata_wrapper('node', entity_create('node', ['type' => $node_type_id]));
 }
 
 /**
@@ -1031,7 +1104,7 @@ function gathercontent_views_pre_render(&$view) {
  */
 function gathercontent_views_bulk_operations_form_alter(&$form, &$form_state, $vbo) {
   if ($form_state['step'] === 'views_bulk_operations_confirm_form') {
-    switch ($form_state['values']['operation']) {
+    switch ($form_state['operation']->operationId) {
       case 'action::gathercontent_update':
         $array = array(implode('+', array_filter($form_state['values']['views_bulk_operations'])));
         $view = views_get_view('update');
@@ -1043,7 +1116,17 @@ function gathercontent_views_bulk_operations_form_alter(&$form, &$form_state, $v
         $form['#vbo_confirm_form_title'] = format_plural(count(array_filter($form_state['values']['views_bulk_operations'])),
           'Confirm update selection (@count item)',
           'Confirm update selection (@count items)');
-
+        $form['node_update_method'] = [
+          '#type' => 'radios',
+          '#required' => TRUE,
+          '#title' => t('Content update method'),
+          '#default_value' => variable_get('gathercontent_node_update_method', 'always_update'),
+          '#options' => [
+            'always_create' => t('Always create new Content'),
+            'update_if_not_changed' => t('Create new Content if it has changed since the last import'),
+            'always_update' => t('Always update existing Content'),
+          ],
+        ];
         $form['actions']['submit']['#submit'] = array('gathercontent_views_vbo_update');
         break;
 
@@ -1089,7 +1172,7 @@ function gathercontent_views_vbo_update($form, &$form_state) {
   foreach ($nodes as $node) {
     $operations[] = array(
       'gathercontent_update_process',
-      array($node, $uuid),
+      array($node, $uuid, $form_state['values']['node_update_method']),
     );
   }
 
@@ -1112,9 +1195,15 @@ function gathercontent_views_vbo_update($form, &$form_state) {
  *
  * @param object $node
  *   Object of content we want to update.
+ * @param string $uuid
+ *   UUID of operation.
+ * @param string $node_update_method
+ *   Name of the node update method.
+ * @param array $context
+ *   Context of operation.
  */
-function gathercontent_update_process($node, $uuid, &$context) {
-  _gathercontent_fetcher($node->gathercontent_id, $uuid, NULL, $node);
+function gathercontent_update_process($node, $uuid, $node_update_method, &$context) {
+  _gathercontent_fetcher($node->gathercontent_id, $uuid, NULL, $node, NULL,  $node_update_method);
   $context['results']['uuid'] = $uuid;
 }
 

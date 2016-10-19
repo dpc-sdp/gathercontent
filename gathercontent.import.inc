@@ -13,6 +13,28 @@ use GatherContent\Project;
 use GatherContent\Template;
 
 /**
+ * Node update method form.
+ *
+ * @inheritdoc
+ */
+function gathercontent_import_config_form($form, &$form_state) {
+
+  $form['gathercontent_node_update_method'] = [
+    '#type' => 'radios',
+    '#required' => TRUE,
+    '#title' => t('Content update method'),
+    '#default_value' => variable_get('gathercontent_node_update_method', 'always_update'),
+    '#options' => [
+      'always_create' => t('Always create new Content'),
+      'update_if_not_changed' => t('Create new Content if it has changed since the last import'),
+      'always_update' => t('Always update existing Content'),
+    ],
+  ];
+
+  return system_settings_form($form);
+}
+
+/**
  * Multistep form function.
  *
  * @inheritdoc
@@ -470,6 +492,19 @@ function gathercontent_import_form_confirm($form, &$form_state) {
     $options[$status->id] = $status->name;
   }
 
+
+  $form['node_update_method'] = [
+    '#type' => 'radios',
+    '#required' => TRUE,
+    '#title' => t('Content update method'),
+    '#default_value' => variable_get('gathercontent_node_update_method', 'always_update'),
+    '#options' => [
+      'always_create' => t('Always create new Content'),
+      'update_if_not_changed' => t('Create new Content if it has changed since the last import'),
+      'always_update' => t('Always update existing Content'),
+    ],
+  ];
+
   $form['status'] = array(
     '#type' => 'select',
     '#options' => $options,
@@ -505,7 +540,7 @@ function gathercontent_import_form_confirm_submit($form, &$form_state) {
       $parent_menu_item = isset($form_state['object']->menu[$value]) ? $form_state['object']->menu[$value] : NULL;
       $operations[] = array(
         'gathercontent_import_process',
-        array($value, $form_state['object']->status, $uuid, $parent_menu_item),
+        array($value, $form_state['object']->status, $uuid, $parent_menu_item, $form_state['values']['node_update_method']),
       );
       $stack[] = $value;
       unset($import_content[$k]);
@@ -537,6 +572,7 @@ function gathercontent_import_form_confirm_submit($form, &$form_state) {
             $form_state['object']->status,
             $uuid,
             $parent_menu_item,
+            $form_state['values']['node_update_method'],
           ),
         );
         $stack[] = $current;
@@ -584,12 +620,13 @@ function gathercontent_import_wizard_finish($form, &$form_state) {
  * @param string $uuid
  *   UUID of operation.
  * @param int|null $parent_menu_item
- *   ID of mlid.
+ * @param string $node_update_method
+ *   Name of the node update method.
  * @param array $context
  *   Context of operation.
  */
-function gathercontent_import_process($content_id, $status_id, $uuid, $parent_menu_item = NULL, &$context) {
-  if (($nid = _gathercontent_fetcher($content_id, $uuid, $status_id, NULL, $parent_menu_item)) !== FALSE) {
+function gathercontent_import_process($content_id, $status_id, $uuid, $parent_menu_item = NULL, $node_update_method, &$context) {
+  if (($nid = _gathercontent_fetcher($content_id, $uuid, $status_id, NULL, $parent_menu_item, $node_update_method)) !== FALSE) {
     if ($status_id != 0) {
       // Change status.
       $content_obj = new Content();
