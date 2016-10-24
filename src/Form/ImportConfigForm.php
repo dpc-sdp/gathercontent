@@ -34,6 +34,16 @@ class ImportConfigForm extends ConfigFormBase {
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->config('gathercontent.import');
 
+    $form['node_default_status'] = [
+      '#type' => 'radios',
+      '#required' => TRUE,
+      '#title' => $this->t('Node default status'),
+      '#default_value' => $config->get('node_default_status'),
+      '#options' => [
+        0 => $this->t('Unpublished'),
+        1 => $this->t('Published'),
+      ],
+    ];
     $form['node_update_method'] = [
       '#type' => 'radios',
       '#required' => TRUE,
@@ -53,8 +63,8 @@ class ImportConfigForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $this
-      ->config('gathercontent.import')
+    $this->config('gathercontent.import')
+      ->set('node_default_status', $form_state->getValue('node_default_status'))
       ->set('node_update_method', $form_state->getValue('node_update_method'))
       ->save();
 

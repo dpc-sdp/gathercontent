@@ -19,6 +19,9 @@ gathercontent.import:
   type: mapping
   label: 'Import configuration'
   mapping:
+    node_default_status:
+      type: integer
+      label: 'Default node status'
     node_update_method:
       type: string
       label: 'Content update method'

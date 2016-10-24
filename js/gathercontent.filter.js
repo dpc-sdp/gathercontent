@@ -24,9 +24,9 @@
     },
 
     updateCount: function () {
-      var checkedCount = $('.tablesorter-enabled tbody input:checkbox:checked').length;
-      var visibleCount = $('.tablesorter-enabled tbody input:checkbox:visible').length;
-      var totalCount = $('.tablesorter-enabled tbody input:checkbox').length;
+      var checkedCount = $('.tablesorter-enabled tbody input.gathercontent-select-import-items:checkbox:checked').length;
+      var visibleCount = $('.tablesorter-enabled tbody input.gathercontent-select-import-items:checkbox:visible').length;
+      var totalCount = $('.tablesorter-enabled tbody input.gathercontent-select-import-items:checkbox').length;
 
       $('.select-counter').html(Drupal.formatPlural(
         visibleCount,
@@ -197,7 +197,7 @@
       }
     });
 
-    checkboxes = $('td input:checkbox:enabled', table).click(function (e) {
+    checkboxes = $('td input.gathercontent-select-import-items:checkbox:enabled', table).click(function (e) {
       $(this).closest('tr').toggleClass('selected', this.checked);
 
       if (e.shiftKey && lastChecked && lastChecked !== e.target) {

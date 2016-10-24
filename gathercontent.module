@@ -63,6 +63,8 @@ function gathercontent_entity_base_field_info(EntityTypeInterface $entity_type) 
  *   ID of GatherContent piece of content.
  * @param string $uuid
  *   UUID of \Drupal\gathercontent\Entity\Operation.
+ * @param bool $drupal_status
+ *   Drupal status - published/unpublished.
  * @param string $node_update_method
  *   Name of the node update method.
  * @param int|null $status
@@ -73,7 +75,7 @@ function gathercontent_entity_base_field_info(EntityTypeInterface $entity_type) 
  * @return bool
  *   Return nid if operation was successful.
  */
-function _gc_fetcher($gc_id, $uuid, $node_update_method, $status = NULL, $parent_menu_item = NULL) {
+function _gc_fetcher($gc_id, $uuid, $drupal_status, $node_update_method, $status = NULL, $parent_menu_item = NULL) {
   $user = \Drupal::currentUser();
 
   $tsid = NULL;
@@ -124,6 +126,10 @@ function _gc_fetcher($gc_id, $uuid, $node_update_method, $status = NULL, $parent
     $entity->set('gc_mapping_id', $mapping->id());
     $entity->setOwnerId($user->id());
 
+    if ($entity->isNew()) {
+      $entity->setPublished($drupal_status);
+    }
+
     if ($entity !== FALSE) {
       /** @var \Drupal\node\NodeInterface $entity */
       try {
@@ -140,6 +146,9 @@ function _gc_fetcher($gc_id, $uuid, $node_update_method, $status = NULL, $parent
             $language = $mapping_data[$pane->name]['language'];
             if (!$entity->hasTranslation($language)) {
               $entity->addTranslation($language);
+              if ($entity->isNew()) {
+                $entity->getTranslation($language)->setPublished($drupal_status);
+              }
             }
           }
           else {
@@ -293,9 +302,7 @@ function gc_get_destination_node($gc_id, $node_update_method, $node_type_id, $la
  * @throws \Exception
  */
 function gc_gc_process_metatag_pane(NodeInterface &$entity, $local_field_name, $field, $content_type, $is_translatable, $language) {
-  if (\Drupal::moduleHandler()
-    ->moduleExists('metatag') && check_metatag($content_type)
-  ) {
+  if (\Drupal::moduleHandler()->moduleExists('metatag') && check_metatag($content_type)) {
     $metatag_fields = get_metatag_fields($content_type);
     foreach ($metatag_fields as $metatag_field) {
       if ($is_translatable) {
@@ -618,8 +625,7 @@ function gc_gc_process_files_field(NodeInterface &$node, $local_field_name, $gc_
         ->condition('filename', $file->filename)
         ->execute();
       if (empty($drupal_files)) {
-        if (!($node->language()
-          ->getId() !== $language && $translatable_file === '0')
+        if (!($node->language()->getId() !== $language && $translatable_file === '0')
         ) {
           $file_dir = $node->getFieldDefinition($local_field_name)
             ->getSetting('file_directory');
@@ -665,6 +671,8 @@ function gc_gc_process_files_field(NodeInterface &$node, $local_field_name, $gc_
  *   ID of status, if 0 then we don't want to change status.
  * @param string $operation_uuid
  *   UUID of operation.
+ * @param bool $drupalStatus
+ *   Status on node in Drupal - published/unpublished.
  * @param string $node_update_method
  *   Name of the node update method.
  * @param int|null $parent_menu_item
@@ -672,8 +680,8 @@ function gc_gc_process_files_field(NodeInterface &$node, $local_field_name, $gc_
  * @param array $context
  *   Context of operation.
  */
-function gathercontent_import_process($gc_id, $status_id, $operation_uuid, $node_update_method, $parent_menu_item = NULL, &$context) {
-  if (($nid = _gc_fetcher($gc_id, $operation_uuid, $node_update_method, $status_id, $parent_menu_item)) !== FALSE) {
+function gathercontent_import_process($gc_id, $status_id, $operation_uuid, $drupalStatus, $node_update_method, $parent_menu_item = NULL, &$context) {
+  if (($nid = _gc_fetcher($gc_id, $operation_uuid, $drupalStatus, $node_update_method, $status_id, $parent_menu_item)) !== FALSE) {
     if ($status_id != 0) {
       // Change status.
       $content_obj = new Content();
@@ -756,7 +764,7 @@ function gathercontent_import_finished($success, $results, $operations) {
  *   Context of operation.
  */
 function gathercontent_update_process($gc_id, $operation_uuid, $node_update_method, array &$context) {
-  _gc_fetcher($gc_id, $operation_uuid, $node_update_method);
+  _gc_fetcher($gc_id, $operation_uuid, 0, $node_update_method);
   $context['results']['uuid'] = $operation_uuid;
 }
 
