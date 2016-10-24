@@ -64,6 +64,13 @@ function gathercontent_menu() {
     'file' => 'gathercontent.authentication.inc',
     'type' => MENU_LOCAL_TASK,
   );
+  $items['admin/config/gathercontent/import-config'] = array(
+    'title' => 'Import configuration',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('gathercontent_import_config_form'),
+    'access arguments' => array('administer gathercontent'),
+    'file' => 'gathercontent.config.inc',
+  );
   $items['admin/config/gathercontent/mapping/create'] = array(
     'title' => 'Add GatherContent Template',
     'page callback' => 'drupal_get_form',
@@ -107,7 +114,7 @@ function gathercontent_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('gathercontent_import_config_form'),
     'access arguments' => array('administer gathercontent'),
-    'file' => 'gathercontent.import.inc',
+    'file' => 'gathercontent.config.inc',
   );
 
   return $items;
@@ -115,6 +122,8 @@ function gathercontent_menu() {
 
 /**
  * Implements hook_menu_local_tasks_alter().
+ *
+ * {@inheritdoc}
  */
 function gathercontent_menu_local_tasks_alter(&$data, $router_item, $root_path) {
   if ($root_path === 'admin/config/gathercontent/mapping') {
@@ -409,15 +418,16 @@ function gathercontent_upload(&$entity, array &$context) {
 /**
  * Helper function for fetching data from GatherContent.
  *
- * @param $gathercontent_id
+ * @param int $gathercontent_id
  *   ID of GatherContent piece of content.
- * @param int $uuid
- *   UUID of Operation entity.
+ * @param string $uuid
+ *   UUID of \Drupal\gathercontent\Entity\Operation.
+ * @param bool $drupal_status
+ *   Drupal status - published/unpublished.
  * @param null $status
- *   ID of status in GatherContent.
- * @param null $entity
+ * @param null|object $entity
  *   Object of entity, if we are updating exiting content.
- * @param null $parent_menu_item
+ * @param string|null $parent_menu_item
  *   Parent menu item ID if we want to create menu item.
  * @param string $node_update_method
  *   Name of the node update method.
@@ -425,7 +435,8 @@ function gathercontent_upload(&$entity, array &$context) {
  * @return int|FALSE
  *   Return nid if operation was successful.
  */
-function _gathercontent_fetcher($gathercontent_id, $uuid, $status = NULL, $entity = NULL, $parent_menu_item = NULL, $node_update_method) {
+function _gathercontent_fetcher($gathercontent_id, $uuid, $drupal_status, $status = NULL, $entity = NULL, $parent_menu_item = NULL, $node_update_method) {
+
   global $user;
 
   $content_obj = new Content();
@@ -484,6 +495,7 @@ function _gathercontent_fetcher($gathercontent_id, $uuid, $status = NULL, $entit
     $node->gathercontent_id->set($content->id);
     if ($node->is_new->value()) {
       $node->author->set($user->uid);
+      $node->status->set($drupal_status);
     }
     $node->language->set($langcode);
 
@@ -615,7 +627,7 @@ function _gathercontent_fetcher($gathercontent_id, $uuid, $status = NULL, $entit
  * @param int $node_type_id
  *   ID of the node type.
  *
- * @return EntityDrupalWrapper
+ * @return EntityMetadataWrapper
  */
 function gathercontent_get_destination_node($gathercontent_id, $node_update_method, $node_type_id) {
   switch ($node_update_method) {
@@ -1210,7 +1222,7 @@ function gathercontent_views_vbo_update($form, &$form_state) {
  *   Context of operation.
  */
 function gathercontent_update_process($node, $uuid, $node_update_method, &$context) {
-  _gathercontent_fetcher($node->gathercontent_id, $uuid, NULL, $node, NULL,  $node_update_method);
+  _gathercontent_fetcher($node->gathercontent_id, $uuid, 0, NULL, $node, NULL,  $node_update_method);
   $context['results']['uuid'] = $uuid;
 }
 

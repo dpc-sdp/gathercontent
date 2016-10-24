@@ -181,7 +181,7 @@ function theme_gathercontent_tableselect(array $variables) {
   foreach (element_children($element) as $key) {
     $row = array();
 
-    foreach (array('selected', 'status', 'title', 'updated', 'template', 'menu') as $column) {
+    foreach ($element['#header'] as $column => $column_title) {
       $row[$column] = array('data' => drupal_render($element[$key][$column]));
       if (isset($element[$key][$column]['#attributes'])) {
         $row[$column] += $element[$key][$column]['#attributes'];

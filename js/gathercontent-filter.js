@@ -25,9 +25,9 @@
       }
     },
     updateCount: function () {
-      var checkedCount = $('#edit-import tbody input:checkbox:checked').length;
-      var visibleCount = $('#edit-import tbody input:checkbox:visible').length;
-      var totalCount = $('#edit-import tbody input:checkbox').length;
+      var checkedCount = $('#edit-import tbody input.gathercontent-select-import-items:checkbox:checked').length;
+      var visibleCount = $('#edit-import tbody input.gathercontent-select-import-items:checkbox:visible').length;
+      var totalCount = $('#edit-import tbody input.gathercontent-select-import-items:checkbox').length;
 
       $('.select-counter').html(Drupal.formatPlural(
         visibleCount,

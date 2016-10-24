@@ -13,28 +13,6 @@ use GatherContent\Project;
 use GatherContent\Template;
 
 /**
- * Node update method form.
- *
- * @inheritdoc
- */
-function gathercontent_import_config_form($form, &$form_state) {
-
-  $form['gathercontent_node_update_method'] = [
-    '#type' => 'radios',
-    '#required' => TRUE,
-    '#title' => t('Content update method'),
-    '#default_value' => variable_get('gathercontent_node_update_method', 'always_update'),
-    '#options' => [
-      'always_create' => t('Always create new Content'),
-      'update_if_not_changed' => t('Create new Content if it has changed since the last import'),
-      'always_update' => t('Always update existing Content'),
-    ],
-  ];
-
-  return system_settings_form($form);
-}
-
-/**
  * Multistep form function.
  *
  * @inheritdoc
@@ -245,10 +223,6 @@ function gathercontent_import_form_content_select($form, &$form_state) {
     ),
   );
 
-  $form['menu'] = array(
-    '#type' => 'value',
-  );
-
   if (isset($form_state['values']['project']) || isset($form_state['object']->project_id)) {
     $project_id = isset($form_state['values']['project']) ? $form_state['values']['project'] : $form_state['object']->project_id;
     $content_obj = new Content();
@@ -257,11 +231,6 @@ function gathercontent_import_form_content_select($form, &$form_state) {
     $query = new EntityFieldQuery();
     $result = $query->entityCondition('entity_type', 'gathercontent_mapping')
       ->propertyCondition('gathercontent_project_id', $project_id)
-      ->execute();
-
-    $query = new EntityFieldQuery();
-    $nodes = $query->entityCondition('entity_type', 'node')
-      ->propertyCondition('gathercontent_mapping_id', NULL, 'IS NOT')
       ->execute();
 
     if (isset($result['gathercontent_mapping'])) {
@@ -294,6 +263,7 @@ function gathercontent_import_form_content_select($form, &$form_state) {
           'title' => t('Item Name'),
           'updated' => t('Last updated in GatherContent'),
           'template' => t('GatherContent Template Name'),
+          'drupal_status' => t('Import published'),
           'menu' => t('Menu'),
         ),
         '#empty' => t('No content available.'),
@@ -304,8 +274,6 @@ function gathercontent_import_form_content_select($form, &$form_state) {
         '#filterdescription' => t('You can only see items with mapped templates in the table.'),
       );
 
-      $tmp_obj = new Template();
-      $templates = $tmp_obj->getTemplates($project_id);
       foreach ($content as $item) {
         // If template is not empty, we have mapped template and item
         // isn't synced yet.
@@ -317,6 +285,9 @@ function gathercontent_import_form_content_select($form, &$form_state) {
             '#tree' => TRUE,
             'selected' => array(
               '#type' => 'checkbox',
+              '#attributes' => array(
+                'class' => array('gathercontent-select-import-items'),
+              ),
             ),
             'status' => array(
               '#markup' => '<div class="gathercontent-item--status--color" style="background: ' . $item->status->data->color . ';"></div>' . $item->status->data->name,
@@ -332,16 +303,22 @@ function gathercontent_import_form_content_select($form, &$form_state) {
             ),
             'updated' => array(
               '#markup' => date('F d, Y - H:i', strtotime($item->updated_at->date)),
-              '#attributes' => [
+              '#attributes' => array(
                 'class' => array('gathercontent-item', 'gathercontent-item-date'),
                 'data-date' => date('Y-m-d.H:i:s', strtotime($item->updated_at->date)),
-              ],
+              ),
             ),
             'template' => array(
               '#markup' => $mapping_array[$item->template_id]['gathercontent_template'],
               '#attributes' => array(
                 'class' => array('template-name-item'),
               ),
+            ),
+            'drupal_status' => array(
+              '#type' => 'checkbox',
+              '#title' => t('Publish'),
+              '#title_display' => 'invisible',
+              '#checked' => isset($form_state['object']->drupal_status) ? $form_state['object']->drupal_status : variable_get('node_default_status', 1),
             ),
             'menu' => array(
               '#type' => 'select',
@@ -358,7 +335,6 @@ function gathercontent_import_form_content_select($form, &$form_state) {
           );
         }
       }
-
     }
   }
 
@@ -447,17 +423,21 @@ function gathercontent_import_form_content_select_validate($form, &$form_state) 
  */
 function gathercontent_import_form_content_select_submit($form, &$form_state) {
   $form_state['object']->project_id = $form_state['values']['project'];
+
   $content = array_filter($form_state['values']['content']);
-  $import_content = [];
-  $menu = [];
+  $import_content = array();
+  $menu = array();
+  $drupal_status = array();
   foreach ($content as $item_id => $item) {
     if ($item['selected'] === 1) {
       $import_content[$item_id] = $item_id;
       $menu[$item_id] = $item['menu'];
+      $drupal_status[$item_id] = $item['drupal_status'];
     }
   }
   $form_state['object']->nodes = $import_content;
   $form_state['object']->menu = $menu;
+  $form_state['object']->drupal_status = $drupal_status;
 }
 
 /**
@@ -571,12 +551,14 @@ function gathercontent_import_form_confirm_submit($form, &$form_state) {
   foreach ($import_content as $k => $value) {
     if ((isset($form_state['object']->menu[$value]) && $form_state['object']->menu[$value] != -1) || !isset($form_state['object']->menu[$value])) {
       $parent_menu_item = isset($form_state['object']->menu[$value]) ? $form_state['object']->menu[$value] : NULL;
+      $drupalStatus = isset($form_state['object']->drupal_status[$value]) ? $form_state['object']->drupal_status[$value] : 0;
       $operations[] = array(
         'gathercontent_import_process',
         array(
           $value,
           $form_state['object']->status,
           $uuid,
+          $drupalStatus,
           $parent_menu_item,
           $form_state['values']['node_update_method'],
         ),
@@ -604,12 +586,14 @@ function gathercontent_import_form_confirm_submit($form, &$form_state) {
       $current = reset($import_content);
       if (in_array($content[$current]->parent_id, $stack)) {
         $parent_menu_item = 'node:' . $content[$current]->parent_id;
+        $drupalStatus = isset($form_state['object']->drupal_status[$current]) ? $form_state['object']->drupal_status[$current] : 0;
         $operations[] = array(
           'gathercontent_import_process',
           array(
             $current,
             $form_state['object']->status,
             $uuid,
+            $drupalStatus,
             $parent_menu_item,
             $form_state['values']['node_update_method'],
           ),
@@ -658,14 +642,17 @@ function gathercontent_import_wizard_finish($form, &$form_state) {
  *   ID of status, if 0 then we don't want to change status.
  * @param string $uuid
  *   UUID of operation.
+ * @param bool $drupal_status
+ *   Status on node in Drupal - published/unpublished.
  * @param int|null $parent_menu_item
  * @param string $node_update_method
  *   Name of the node update method.
  * @param array $context
  *   Context of operation.
  */
-function gathercontent_import_process($content_id, $status_id, $uuid, $parent_menu_item = NULL, $node_update_method, &$context) {
-  if (($nid = _gathercontent_fetcher($content_id, $uuid, $status_id, NULL, $parent_menu_item, $node_update_method)) !== FALSE) {
+
+function gathercontent_import_process($content_id, $status_id, $uuid, $drupal_status, $parent_menu_item = NULL, $node_update_method, &$context) {
+  if (($nid = _gathercontent_fetcher($content_id, $uuid, $drupal_status, $status_id, NULL, $parent_menu_item, $node_update_method)) !== FALSE) {
     if ($status_id != 0) {
       // Change status.
       $content_obj = new Content();

@@ -63,8 +63,16 @@ function gathercontent_drush_command() {
     'required-arguments' => FALSE,
     'arguments' => [
       'mapping_id' => dt('The drupal side content mapping ID. Use: gathercontent-list-mappings'),
+      'node_update_method' => dt("Three choices: always_create, update_if_not_changed, always_update (this is the default)"),
+      'parent_menu_item' => dt("Parent menu item. E.g.: Create under 'My account' menu, use: 'account:user.page'"),
       'status_id' => dt('Change the document status on GC side. Use: gathercontent-list-status'),
-      'parent_menu_item' => dt("Parent menu item. E.g.: Create under 'Main menu' menu, use: 'main-menu:0'"),
+    ],
+    'options' => [
+      'publish' => array(
+        'description' => dt('Use --publish or --no-publish.'),
+        'required' => FALSE,
+        'hidden' => FALSE,
+      ),
     ],
     'engines' => [
       'outputformat' => [
@@ -140,6 +148,11 @@ function drush_gathercontent_list_status($project_id = NULL) {
  * Implements drush_COMMAND_validate().
  */
 function drush_gathercontent_import_validate($mapping_id = NULL) {
+  $publish = drush_get_option('publish');
+  if ($publish !== NULL && !is_bool($publish)) {
+    drush_set_error('gathercontent_invalid_option', dt("The --publish option doesn't accept value."));
+  }
+
   if ($mapping_id !== NULL) {
     $mapping = entity_load('gathercontent_mapping', [$mapping_id]);
     if (!$mapping) {
@@ -151,7 +164,7 @@ function drush_gathercontent_import_validate($mapping_id = NULL) {
 /**
  * Implements drush_COMMAND().
  */
-function drush_gathercontent_import($mapping_id = NULL, $status_id = '', $parent_menu_item = NULL) {
+function drush_gathercontent_import($mapping_id = NULL, $node_update_method = 'always_update', $status_id = '', $parent_menu_item = NULL) {
   if ($mapping_id === NULL) {
     /** @var stdClass $gc_mappings */
     $gc_mappings = entity_load('gathercontent_mapping');
@@ -181,6 +194,9 @@ function drush_gathercontent_import($mapping_id = NULL, $status_id = '', $parent
   $content_obj = new Content();
   $content = $content_obj->getContents($project_id);
 
+  $publish = drush_get_option('publish', variable_get('node_default_status'));
+  $publish = $publish ? '1' : '0';
+
   $operations = [];
 
   foreach ($content as $item) {
@@ -191,7 +207,9 @@ function drush_gathercontent_import($mapping_id = NULL, $status_id = '', $parent
           $item->id,
           $status_id,
           $operation->uuid,
+          $publish,
           $parent_menu_item,
+          $node_update_method,
         ],
       ];
     }
