@@ -2,7 +2,7 @@
 
 /**
  * @file
- *   Drush command to cli config import.
+ * Drush command to cli config import.
  */
 
 use Drupal\gathercontent\DAO\Content;

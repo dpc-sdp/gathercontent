@@ -173,7 +173,7 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
   }
 
   /**
-   * @param string $content_type
+   * {@inheritdoc}
    */
   public function setContentType($content_type) {
     $this->content_type = $content_type;
@@ -187,7 +187,7 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
   }
 
   /**
-   * @param string $content_type_name
+   * {@inheritdoc}
    */
   public function setContentTypeName($content_type_name) {
     $this->content_type_name = $content_type_name;
@@ -201,17 +201,14 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
   }
 
   /**
-   * @param string $updated_drupal
+   * {@inheritdoc}
    */
   public function setUpdatedDrupal($updated_drupal) {
     $this->updated_drupal = $updated_drupal;
   }
 
   /**
-   * Formatter for content type property.
-   *
-   * @return string
-   *   If not empty return human name for content type, else return None string.
+   * {@inheritdoc}
    */
   public function getFormattedContentType() {
     $content_type = $this->get('content_type_name');
@@ -224,10 +221,7 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
   }
 
   /**
-   * Formatter for updated drupal property.
-   *
-   * @return string
-   *   If not empty return formatted date, else return string Never.
+   * {@inheritdoc}
    */
   public function getFormatterUpdatedDrupal() {
     $updated_drupal = $this->get('updated_drupal');
@@ -248,14 +242,13 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
   }
 
   /**
-   * @param string $template
+   * {@inheritdoc}
    */
   public function setTemplate($template) {
     $this->template = $template;
   }
 
   /**
-   * @return string
    * {@inheritdoc}
    */
   public function getData() {
@@ -263,17 +256,14 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
   }
 
   /**
-   * @param string $data
+   * {@inheritdoc}
    */
   public function setData($data) {
     $this->data = $data;
   }
 
   /**
-   * Validate if object is configured with mapping.
-   *
-   * @return bool
-   *   Return TRUE if object has mapping, otherwise FALSE.
+   * {@inheritdoc}
    */
   public function hasMapping() {
     return !empty($this->get('data'));

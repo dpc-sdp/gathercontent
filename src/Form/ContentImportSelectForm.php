@@ -56,7 +56,7 @@ class ContentImportSelectForm extends FormBase {
       foreach ($created_mapping_ids as $mapping) {
         /** @var Mapping $mapping */
         if ($mapping->hasMapping()) {
-          if (!array_key_exists($mapping->getGathercontentTemplateId(), $$content_types)) {
+          if (!array_key_exists($mapping->getGathercontentTemplateId(), $content_types)) {
             $content_types[$mapping->getGathercontentTemplateId()] = $mapping->getContentType();
           }
           $projects[$mapping->getGathercontentProjectId()] = $mapping->getGathercontentProject();
@@ -214,7 +214,9 @@ class ContentImportSelectForm extends FormBase {
                 '#wrapper_attributes' => [
                   'class' => ['gc-item', 'gc-item-date'],
                 ],
-                'data-date' => date('Y-m-d.H:i:s', strtotime($item->updated_at->date)),
+                '#attributes' => [
+                  'data-date' => date('Y-m-d.H:i:s', strtotime($item->updated_at->date)),
+                ],
               ],
               'template' => [
                 'data' => [

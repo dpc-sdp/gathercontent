@@ -9,6 +9,7 @@ use Drupal\Component\Render\PlainTextOutput;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Language\Language;
+use Drupal\Core\Language\LanguageInterface;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\gathercontent\DAO\Content;
 use Drupal\gathercontent\DAO\Project;
@@ -25,6 +26,7 @@ use Drupal\gathercontent\Event\PreNodeUploadEvent;
 use Drupal\menu_link_content\Entity\MenuLinkContent;
 use Drupal\node\Entity\Node;
 use Drupal\node\NodeInterface;
+use Drupal\taxonomy\Entity\Term;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
 /**
@@ -544,12 +546,22 @@ function gc_gc_process_section_field(NodeInterface &$node, $local_field_name, $i
  *   Array of options.
  */
 function gc_gc_process_choice_checkbox_field(NodeInterface &$node, $local_field_name, $is_translatable, $language, $options) {
+  $field = FieldConfig::loadByName('node', $node->bundle(), $local_field_name);
   $node->{$local_field_name} = array(NULL);
-  $node->save();
   $selected_options = array();
   foreach ($options as $option) {
     if ($option->selected) {
-      $selected_options[] = $option->name;
+      if ($field->getType() === 'entity_reference') {
+        /** @var \Drupal\taxonomy\Entity\Term $term */
+        $term = array_shift(\Drupal::entityTypeManager()
+          ->getStorage('taxonomy_term')
+          ->loadByProperties(['gathercontent_option_ids' => $option->name])
+        );
+        $selected_options[] = $term->id();
+      }
+      else {
+        $selected_options[] = $option->name;
+      }
     }
     if ($is_translatable) {
       $node->getTranslation($language)->{$local_field_name} = $selected_options;
@@ -575,14 +587,82 @@ function gc_gc_process_choice_checkbox_field(NodeInterface &$node, $local_field_
  *   Array of options.
  */
 function gc_gc_process_choice_radio_field(NodeInterface &$node, $local_field_name, $is_translatable, $language, $options) {
+  $field = FieldConfig::loadByName('node', $node->bundle(), $local_field_name);
   foreach ($options as $option) {
-    if ($option->selected) {
-      if (isset($option->value)) {
+    if (!$option->selected) {
+      continue;
+    }
+    if (isset($option->value)) {
+      if (empty($option->value)) {
+        continue;
+      }
+      // Dealing with "Other" option.
+      if ($field->getType() === 'entity_reference') {
+        // Load vocabulary id.
+        if (!empty($field->getSetting('handler_settings')['auto_create_bundle'])) {
+          $vid = $field->getSetting('handler_settings')['auto_create_bundle'];
+        }
+        else {
+          $handler_settings = $field->getSetting('handler_settings');
+          $handler_settings = reset($handler_settings);
+          $vid = array_shift($handler_settings);
+        }
+
+        // Prepare confitions.
+        $condition_array = [
+          'name' => $option->value,
+          'vid' => $vid,
+        ];
+        if ($is_translatable && $language !== LanguageInterface::LANGCODE_NOT_SPECIFIED) {
+          $condition_array['langcode'] = $language;
+        }
+
+        $terms = \Drupal::entityTypeManager()
+          ->getStorage('taxonomy_term')
+          ->loadByProperties($condition_array);
+        /** @var \Drupal\taxonomy\Entity\Term $term */
+        $term = array_shift($terms);
+        if (empty($term)) {
+          $term = Term::create([
+            'vid' => $vid,
+            'name' => $option->value,
+            'langcode' => $language,
+          ]);
+          $term->save();
+        }
+        if ($is_translatable && $node->hasTranslation($language)) {
+          $node->getTranslation($language)
+            ->set($local_field_name, $term->id());
+        }
+        else {
+          $node->set($local_field_name, $term->id());
+        }
+      }
+      else {
         if ($is_translatable) {
           $node->getTranslation($language)->{$local_field_name}->value = $option->value;
         }
         else {
           $node->{$local_field_name}->value = $option->value;
+        }
+      }
+    }
+    else {
+      // Dealing with predefined options.
+      if ($field->getType() === 'entity_reference') {
+        $terms = \Drupal::entityTypeManager()
+          ->getStorage('taxonomy_term')
+          ->loadByProperties(['gathercontent_option_ids' => $option->name]);
+        /** @var \Drupal\taxonomy\Entity\Term $term */
+        $term = array_shift($terms);
+        if (!empty($term)) {
+          if ($is_translatable) {
+            $node->getTranslation($language)
+              ->set($local_field_name, $term->id());
+          }
+          else {
+            $node->set($local_field_name, $term->id());
+          }
         }
       }
       else {

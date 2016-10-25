@@ -32,3 +32,11 @@ template_counter:
     - core/jquery
     - core/drupal
     - core/jquery.once
+
+entity_references:
+  version: 1.x
+  js:
+    js/gathercontent.entity_references.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupal
