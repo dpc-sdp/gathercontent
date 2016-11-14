@@ -1143,7 +1143,7 @@ class MappingEditForm extends EntityForm {
     if (!empty($languages) && !empty($row['terms'])) {
       $terms = $entityStorage->loadByProperties(['gathercontent_option_ids' => $row[$languages[0]]]);
       /** @var \Drupal\taxonomy\Entity\Term $term */
-      $term = array_shift();
+      $term = array_shift($terms);
       // If term already exists.
       if (!empty($term)) {
         // If term was changed, remove option ids for every
