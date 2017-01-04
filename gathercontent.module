@@ -1025,6 +1025,7 @@ function gathercontent_gathercontent_process_choice_radio_field(EntityMetadataWr
  */
 function gathercontent_gathercontent_process_files_field(EntityMetadataWrapper &$node, $local_field_name, $gathercontent_field_name, $is_translatable = FALSE, $language = 'und', $files) {
   $found_files = array();
+  $field_info = field_info_field($local_field_name);
   foreach ($files as $file) {
     if ($file->field === $gathercontent_field_name) {
       $found = FALSE;
@@ -1040,22 +1041,28 @@ function gathercontent_gathercontent_process_files_field(EntityMetadataWrapper &
         $local_file = file_save_data(file_get_contents($file->url), 'public://' . $file->filename);
         $local_file->gathercontent_id = $file->id;
         file_save($local_file);
-        $field_info = field_info_field($local_field_name);
-        $file_data = array('fid' => $local_file->fid);
-        if ($field_info['cardinality'] == 1) {
-          $found_files = $file_data;
+        if ($field_info['type'] === 'file') {
+          $file_data = array('fid' => $local_file->fid, 'display' => TRUE);
         }
         else {
-          $found_files[] = $file_data;
+          $file_data = array('fid' => $local_file->fid);
         }
-      }
-      if ($is_translatable) {
-        $node->language($language)->{$local_field_name} = $found_files;
-      }
-      else {
-        $node->{$local_field_name} = $found_files;
+
+        $found_files[] = $file_data;
       }
     }
+  }
+
+  $is_multiple = $field_info['cardinality'] != 1;
+  if (!$is_multiple) {
+    $found_files = reset($found_files);
+  }
+
+  if ($is_translatable) {
+    $node->language($language)->{$local_field_name}->set($found_files);
+  }
+  else {
+    $node->{$local_field_name}->set($found_files);
   }
 }
 
