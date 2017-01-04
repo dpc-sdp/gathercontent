@@ -567,6 +567,8 @@ class MappingEditForm extends EntityForm {
         'string',
         'email',
         'telephone',
+        'date',
+        'datetime',
       ],
       'choice_radio' => [
         'string',

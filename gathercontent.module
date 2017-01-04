@@ -364,28 +364,7 @@ function gc_gc_process_content_pane(NodeInterface &$entity, $local_field_name, $
       break;
 
     default:
-      if ($local_field_name === 'title') {
-        if ($is_translatable) {
-          $entity->getTranslation($language)->setTitle($field->value);
-        }
-        else {
-          $entity->setTitle($field->value);
-        }
-      }
-      else {
-        if ($is_translatable) {
-          $entity->getTranslation($language)->{$local_field_name} = (array(
-            'value' => $field->value,
-            'format' => ($field->plain_text ? 'plain_text' : 'basic_html'),
-          ));
-        }
-        else {
-          $entity->{$local_field_name} = (array(
-            'value' => $field->value,
-            'format' => ($field->plain_text ? 'plain_text' : 'basic_html'),
-          ));
-        }
-      }
+      gc_gc_process_default_field($entity, $local_field_name, $is_translatable, $language, $field);
       break;
   }
 }
@@ -499,6 +478,70 @@ function _gc_get_menu_by_gc_id(&$mlid, &$menu_name, $language = NULL) {
       $menu_name = $ml_object->getMenuName();
       $mlid = $ml_object->id();
     }
+  }
+}
+
+
+/**
+ * Default processing function, when no other matches found. Probably a text
+ * field from GC.
+ *
+ * @param \Drupal\node\NodeInterface $node
+ *   Object of node.
+ * @param string $local_field_name
+ *   Local field name.
+ * @param bool $is_translatable
+ *   Indicator if node is translatable.
+ * @param string $language
+ *   Language of translation if applicable.
+ * @param object $field
+ *   Object with field attributes.
+ */
+function gc_gc_process_default_field(NodeInterface &$entity, $local_field_name, $is_translatable, $language, $field) {
+
+  $value = $field->value;
+  $target = &$entity;
+  if ($is_translatable) {
+    $target = $entity->getTranslation($language);
+  }
+
+  // Title is not a field, breaks everything. Short-circuit here.
+  if ($local_field_name === 'title') {
+    $target->setTitle($value);
+    return;
+  }
+
+  // For all non-title fields, decide what to do based on Drupal field type.
+  $field_info = FieldConfig::loadByName('node', $entity->bundle(), $local_field_name);
+  switch ($field_info->getType()) {
+    case 'datetime':
+      $value = strtotime($value);
+      if ($value === FALSE) {
+        // If we failed to convert to a timestamp, abort.
+        return;
+      }
+      $target->{$local_field_name} = [
+        'value' => gmdate(DATETIME_DATETIME_STORAGE_FORMAT, $value),
+      ];
+      break;
+
+    case 'date':
+      $value = strtotime($value);
+      if ($value === FALSE) {
+        return;
+      }
+      $target->{$local_field_name} = [
+        'value' => gmdate(DATETIME_DATE_STORAGE_FORMAT, $value),
+      ];
+      break;
+
+    default:
+      // Probably some kind of text field.
+      $target->{$local_field_name} = [
+        'value' => $value,
+        'format' => ($field->plain_text ? 'plain_text' : 'basic_html'),
+      ];
+      break;
   }
 }
 
