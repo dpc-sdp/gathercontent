@@ -163,7 +163,7 @@ function theme_gathercontent_tableselect(array $variables) {
   // If tablesorter available, add it to the scope.
   if (module_exists('libraries')) {
     $library = libraries_detect('tablesorter-mottie');
-    if ($library['installed'] && $element['#tablesorter']) {
+    if ($library['installed'] && isset($element['#tablesorter'])) {
       $element['#attributes']['class'][] = 'tablesorter-enabled';
       drupal_add_js($gathercontent_module_path . '/js/gathercontent-tablesorter.js');
       libraries_load('tablesorter-mottie');
@@ -193,7 +193,7 @@ function theme_gathercontent_tableselect(array $variables) {
 
   // Add an empty header or a "Select all" checkbox to provide room for the
   // checkboxes/radios in the first table column.
-  if ($element['#js_select']) {
+  if (isset($element['#js_select'])) {
     // Add a "Select all" checkbox.
     drupal_add_js($gathercontent_module_path . '/js/gathercontent-tableselect.js');
     array_unshift($element['#header'], array(
