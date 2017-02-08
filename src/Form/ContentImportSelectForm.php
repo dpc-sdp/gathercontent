@@ -235,7 +235,7 @@ class ContentImportSelectForm extends FormBase {
                 '#type' => 'checkbox',
                 '#title' => $this->t('Publish'),
                 '#title_display' => 'invisible',
-                '#checked' => isset($this->drupalStatus[$item->id]) ? $this->drupalStatus[$item->id] : $import_config->get('node_default_status'),
+                '#default_value' => isset($this->drupalStatus[$item->id]) ? $this->drupalStatus[$item->id] : $import_config->get('node_default_status'),
               ),
               'menu' => [
                 '#type' => 'select',
