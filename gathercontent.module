@@ -397,7 +397,7 @@ function gc_create_menu_link($nid, $title, $plid, $lang = NULL, &$original_link_
         'link' => ['uri' => 'entity:node/' . $nid],
         'title' => $title,
         'menu_name' => $menu_name,
-        'plid' => $mlid,
+        'parent' => $mlid,
       );
       MenuLinkContent::create($link)->set('weight', $weight)->save();
     }
@@ -416,7 +416,7 @@ function gc_create_menu_link($nid, $title, $plid, $lang = NULL, &$original_link_
           'link' => ['uri' => 'entity:node/' . $nid],
           'title' => $title,
           'menu_name' => $menu_name,
-          'plid' => $mlid,
+          'parent' => $mlid,
           'langcode' => $lang,
         );
         $menu_link = MenuLinkContent::create($link);
@@ -435,7 +435,7 @@ function gc_create_menu_link($nid, $title, $plid, $lang = NULL, &$original_link_
           'link' => ['uri' => 'entity:node/' . $nid],
           'title' => $title,
           'menu_name' => $menu_name,
-          'plid' => $mlid,
+          'parent' => $mlid,
           'langcode' => $lang,
         );
 
