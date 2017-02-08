@@ -18,14 +18,14 @@
  * this hook. Menu items and meta tags aren't saved/created while calling this hook.
  * For operations requiring node ID @see hook_gathercontent_post_node_save_alter().
  *
- * @param object $node
- *   Object of node.
+ * @param object $entity
+ *   Entity metadata wrapper of node.
  * @param $source_values
  *   Source fields representing object in GatherContent.
  * @param array $files
  *   Array of files fetched from GatherContent.
  */
-function hook_gathercontent_pre_node_save_alter(&$node, &$source_values, array &$files) {
+function hook_gathercontent_pre_node_save_alter(&$entity, &$source_values, array &$files) {
 }
 
 /**
@@ -36,14 +36,14 @@ function hook_gathercontent_pre_node_save_alter(&$node, &$source_values, array &
  * this hook. Menu items and meta tags are already saved/created while calling
  * this hook.
  *
- * @param object $node
- *   Object of node.
+ * @param object $entity
+ *   Entity metadata wrapper of node.
  * @param $source_values
  *   Source fields representing object in GatherContent.
  * @param array $files
  *   Array of files fetched from GatherContent.
  */
-function hook_gathercontent_post_node_save($node, $source_values, array $files) {
+function hook_gathercontent_post_node_save($entity, $source_values, array $files) {
 }
 
 /**

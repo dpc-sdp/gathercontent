@@ -537,7 +537,7 @@ function _gathercontent_fetcher($gathercontent_id, $uuid, $drupal_status, $statu
             $node->save();
           }
           elseif ($is_translatable && (isset($node->language) || !empty($node->language))) {
-            $handler = entity_translation_get_handler('node', $entity);
+            $handler = entity_translation_get_handler('node', $node);
             $translation = array(
               'translate' => 0,
               'status' => 1,
@@ -552,7 +552,7 @@ function _gathercontent_fetcher($gathercontent_id, $uuid, $drupal_status, $statu
           $node->title->set($content->name);
         }
 
-        drupal_alter('gathercontent_pre_node_save', $entity, $content, $files);
+        drupal_alter('gathercontent_pre_node_save', $node, $content, $files);
         $node->save();
 
         // Create menu link item.
@@ -589,10 +589,10 @@ function _gathercontent_fetcher($gathercontent_id, $uuid, $drupal_status, $statu
         // Save metatags.
         if (module_exists('metatag') && metatag_entity_supports_metatags('node', $mapping->content_type)) {
           module_load_include('module', 'metatag');
-          metatag_metatags_save('node', $entity->nid, $entity->vid, $metatags);
+          metatag_metatags_save('node', $node->nid->value(), $node->vid->value(), $metatags);
         }
 
-        module_invoke_all('gathercontent_post_node_save', $entity, $content, $files);
+        module_invoke_all('gathercontent_post_node_save', $node, $content, $files);
 
         $operation_item->status = "Success";
         $operation_item->nid = $node->nid->value();
