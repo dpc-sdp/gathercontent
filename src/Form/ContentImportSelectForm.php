@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * @file
+ * Content Import Select multistep form.
+ */
+
 namespace Drupal\gathercontent\Form;
 
 use Drupal\Core\Form\FormBase;
@@ -237,8 +242,8 @@ class ContentImportSelectForm extends FormBase {
                 '#default_value' => $node_type->getThirdPartySetting('menu_ui', 'parent'),
                 '#empty_option' => $this->t("- Don't create menu item -"),
                 '#empty_value' => 0,
-                '#options' => [-1 => t("Parent being imported")]
-                  + \Drupal::service('menu.parent_form_selector')
+                '#options' => [- 1 => t("Parent being imported")]
+                + \Drupal::service('menu.parent_form_selector')
                   ->getParentSelectOptions('', $available_menus),
                 '#title' => t('Menu'),
                 '#title_display' => 'invisible',
@@ -361,6 +366,62 @@ class ContentImportSelectForm extends FormBase {
   /**
    * {@inheritdoc}
    */
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+    if ($form_state->getTriggeringElement()['#id'] === 'edit-submit') {
+      if ($this->step === 1) {
+        $stack = array();
+        $import_content = [];
+        $selected_menus = [];
+        foreach ($form_state->getValue('items') as $item_id => $item) {
+          if ($item['selected'] === "1") {
+            $import_content[] = $item_id;
+            $selected_menus[$item_id] = $item['menu'];
+          }
+        }
+        foreach ($import_content as $k => $value) {
+          if ((isset($selected_menus[$value]) && $selected_menus[$value] != -1) || !isset($selected_menus[$value])) {
+            $stack[$value] = $value;
+            unset($import_content[$k]);
+          }
+        }
+
+        if (!empty($import_content)) {
+          // Load all by project_id.
+          $content_obj = new Content();
+          $contents_source = $content_obj->getContents($form_state->getValue('project'));
+          $content = array();
+
+          foreach ($contents_source as $value) {
+            $content[$value->id] = $value;
+          }
+
+          $num_of_repeats = 0;
+          $size = count($import_content);
+
+          while (!empty($import_content)) {
+            $current = reset($import_content);
+            if (isset($stack[$content[$current]->parent_id])) {
+              $stack[$current] = $current;
+              array_shift($import_content);
+            }
+            else {
+              array_shift($import_content);
+              array_push($import_content, $current);
+              $num_of_repeats++;
+              if ($num_of_repeats >= ($size * $size)) {
+                $form_state->setErrorByName('form', t("Please check your menu selection, some of items don't have parent in import."));
+                $import_content = array();
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     if ($form_state->getTriggeringElement()['#id'] === 'edit-submit') {
       if ($this->step === 1) {
@@ -393,19 +454,19 @@ class ContentImportSelectForm extends FormBase {
         foreach ($import_content as $k => $value) {
           if ((isset($this->menu[$value]) && $this->menu[$value] != -1) || !isset($this->menu[$value])) {
             $parent_menu_item = isset($this->menu[$value]) ? $this->menu[$value] : NULL;
-            $drupalStatus = isset($this->drupalStatus[$value]) ? $this->drupalStatus[$value] : 0;
+            $drupal_status = isset($this->drupalStatus[$value]) ? $this->drupalStatus[$value] : 0;
             $operations[] = array(
               'gathercontent_import_process',
               array(
                 $value,
                 $form_state->getValue('status'),
                 $operation->uuid(),
-                $drupalStatus,
+                $drupal_status,
                 $form_state->getValue('node_update_method'),
                 $parent_menu_item,
               ),
             );
-            $stack[] = $value;
+            $stack[$value] = $value;
             unset($import_content[$k]);
           }
         }
@@ -424,19 +485,19 @@ class ContentImportSelectForm extends FormBase {
             $current = reset($import_content);
             if (isset($stack[$content[$current]->parent_id])) {
               $parent_menu_item = 'node:' . $content[$current]->parent_id;
-              $drupalStatus = isset($this->drupalStatus[$current]) ? $this->drupalStatus[$current] : 0;
+              $drupal_status = isset($this->drupalStatus[$current]) ? $this->drupalStatus[$current] : 0;
               $operations[] = array(
                 'gathercontent_import_process',
                 array(
                   $current,
                   $form_state->getValue('status'),
                   $operation->uuid(),
-                  $drupalStatus,
+                  $drupal_status,
                   $form_state->getValue('node_update_method'),
                   $parent_menu_item,
                 ),
               );
-              $stack[] = $current;
+              $stack[$current] = $current;
               array_shift($import_content);
             }
             else {

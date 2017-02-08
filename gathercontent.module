@@ -302,6 +302,7 @@ function gc_get_destination_node($gc_id, $node_update_method, $node_type_id, $la
  *   Language of translation if applicable.
  *
  * @throws \Exception
+ *   If content save fails, exceptions is thrown.
  */
 function gc_gc_process_metatag_pane(NodeInterface &$entity, $local_field_name, $field, $content_type, $is_translatable, $language) {
   if (\Drupal::moduleHandler()->moduleExists('metatag') && check_metatag($content_type)) {
@@ -467,7 +468,7 @@ function _gc_get_menu_by_gc_id(&$mlid, &$menu_name, $language = NULL) {
     // Load menu_link by node_id.
     $node = reset($node_ids);
     $ml_result = \Drupal::entityQuery('menu_link_content')
-      ->condition('link', 'node/' . $node);
+      ->condition('link.uri', 'entity:node/' . $node);
     if (!is_null($language)) {
       $ml_result->condition('langcode', $language);
     }
@@ -476,17 +477,16 @@ function _gc_get_menu_by_gc_id(&$mlid, &$menu_name, $language = NULL) {
       $ml = reset($mls);
       $ml_object = MenuLinkContent::load($ml);
       $menu_name = $ml_object->getMenuName();
-      $mlid = $ml_object->id();
+      $mlid = 'menu_link_content:' . $ml_object->uuid();
     }
   }
 }
 
 
 /**
- * Default processing function, when no other matches found. Probably a text
- * field from GC.
+ * Default processing function, when no other matches found, usually for text.
  *
- * @param \Drupal\node\NodeInterface $node
+ * @param \Drupal\node\NodeInterface $entity
  *   Object of node.
  * @param string $local_field_name
  *   Local field name.
@@ -794,7 +794,7 @@ function gc_gc_process_files_field(NodeInterface &$node, $local_field_name, $gc_
  *   ID of status, if 0 then we don't want to change status.
  * @param string $operation_uuid
  *   UUID of operation.
- * @param bool $drupalStatus
+ * @param bool $drupal_status
  *   Status on node in Drupal - published/unpublished.
  * @param string $node_update_method
  *   Name of the node update method.
@@ -803,8 +803,8 @@ function gc_gc_process_files_field(NodeInterface &$node, $local_field_name, $gc_
  * @param array $context
  *   Context of operation.
  */
-function gathercontent_import_process($gc_id, $status_id, $operation_uuid, $drupalStatus, $node_update_method, $parent_menu_item = NULL, &$context) {
-  if (($nid = _gc_fetcher($gc_id, $operation_uuid, $drupalStatus, $node_update_method, $status_id, $parent_menu_item)) !== FALSE) {
+function gathercontent_import_process($gc_id, $status_id, $operation_uuid, $drupal_status, $node_update_method, $parent_menu_item = NULL, &$context) {
+  if (($nid = _gc_fetcher($gc_id, $operation_uuid, $drupal_status, $node_update_method, $status_id, $parent_menu_item)) !== FALSE) {
     if ($status_id != 0) {
       // Change status.
       $content_obj = new Content();
