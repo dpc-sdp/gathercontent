@@ -1055,7 +1055,7 @@ function gathercontent_gathercontent_process_files_field(EntityMetadataWrapper &
 
   $is_multiple = $field_info['cardinality'] != 1;
   if (!$is_multiple) {
-    $found_files = reset($found_files);
+    $found_files = !empty($found_files) ? reset($found_files) : NULL;
   }
 
   if ($is_translatable) {
