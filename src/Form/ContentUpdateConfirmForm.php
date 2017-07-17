@@ -75,33 +75,33 @@ class ContentUpdateConfirmForm extends ContentConfirmForm {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     if ($form_state->getValue('confirm') && !empty($this->nodeIds)) {
-      $operation = Operation::create(array(
+      $operation = Operation::create([
         'type' => 'update',
-      ));
+      ]);
       $operation->save();
 
       $nodes = Node::loadMultiple($this->nodeIds);
       $operations = [];
       foreach ($nodes as $node) {
         $gc_id = $node->gc_id->value;
-        $operations[] = array(
+        $operations[] = [
           'gathercontent_update_process',
-          array(
+          [
             $gc_id,
             $operation->uuid(),
             $form_state->getValue('node_update_method'),
-          ),
-        );
+          ],
+        ];
       }
 
-      $batch = array(
+      $batch = [
         'title' => t('Updating content ...'),
         'operations' => $operations,
         'finished' => 'gathercontent_update_finished',
         'init_message' => t('Update is starting ...'),
         'progress_message' => t('Processed @current out of @total.'),
         'error_message' => t('An error occurred during processing'),
-      );
+      ];
 
       $this->tempStore->delete('nodes');
       batch_set($batch);

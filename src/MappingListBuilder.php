@@ -115,18 +115,18 @@ class MappingListBuilder extends ConfigEntityListBuilder {
   public function getDefaultOperations(EntityInterface $entity) {
     $operations = [];
     if ($entity->access('update') && $entity->hasLinkTemplate('edit-form')) {
-      $operations['edit'] = array(
+      $operations['edit'] = [
         'title' => $entity->hasMapping() ? $this->t('Edit') : $this->t('Create'),
         'weight' => 10,
         'url' => $entity->urlInfo('edit-form'),
-      );
+      ];
     }
     if ($entity->access('delete') && $entity->hasLinkTemplate('delete-form')) {
-      $operations['delete'] = array(
+      $operations['delete'] = [
         'title' => $this->t('Delete'),
         'weight' => 100,
         'url' => $entity->urlInfo('delete-form'),
-      );
+      ];
     }
     return $operations;
   }

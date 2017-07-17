@@ -33,20 +33,20 @@ class Template {
 
     if (empty($username || $api_key)) {
       \Drupal::logger('gathercontent')
-        ->error("Trying to call API without credentials.", array());
+        ->error("Trying to call API without credentials.", []);
     }
 
     $this->client = new Client(
-      array(
+      [
         'base_uri' => 'https://api.gathercontent.com',
-        'auth' => array(
+        'auth' => [
           $username,
           $api_key,
-        ),
-        'headers' => array(
+        ],
+        'headers' => [
           'Accept' => 'application/vnd.gathercontent.v0.5+json',
-        ),
-      )
+        ],
+      ]
     );
   }
 
@@ -57,7 +57,7 @@ class Template {
    *   Associative array of projects.
    */
   public function getTemplates($project_id) {
-    $templates = array();
+    $templates = [];
 
     try {
       $response = $this->client->get('/templates?project_id=' . $project_id);
@@ -70,7 +70,7 @@ class Template {
     }
     catch (\Exception $e) {
       drupal_set_message($e->getMessage(), 'error');
-      \Drupal::logger('gathercontent')->error($e->getMessage(), array());
+      \Drupal::logger('gathercontent')->error($e->getMessage(), []);
     }
 
     return $templates;
@@ -83,7 +83,7 @@ class Template {
    *   Associative array of projects.
    */
   public function getTemplatesObject($project_id) {
-    $templates = array();
+    $templates = [];
 
     try {
       $response = $this->client->get('/templates?project_id=' . $project_id);
@@ -96,7 +96,7 @@ class Template {
     }
     catch (\Exception $e) {
       drupal_set_message($e->getMessage(), 'error');
-      \Drupal::logger('gathercontent')->error($e->getMessage(), array());
+      \Drupal::logger('gathercontent')->error($e->getMessage(), []);
     }
 
     return $templates;
@@ -122,7 +122,7 @@ class Template {
     }
     catch (\Exception $e) {
       drupal_set_message($e->getMessage(), 'error');
-      \Drupal::logger('gathercontent')->error($e->getMessage(), array());
+      \Drupal::logger('gathercontent')->error($e->getMessage(), []);
     }
 
     return $template;

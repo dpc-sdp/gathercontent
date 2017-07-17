@@ -45,7 +45,7 @@ class GathercontentStatusColorField extends FieldPluginBase {
   protected function defineOptions() {
     $options = parent::defineOptions();
 
-    $options['hide_alter_empty'] = array('default' => FALSE);
+    $options['hide_alter_empty'] = ['default' => FALSE];
     return $options;
   }
 
@@ -62,14 +62,14 @@ class GathercontentStatusColorField extends FieldPluginBase {
   public function render(ResultRow $values) {
     /** @var \Drupal\gathercontent\Entity\OperationItem $entity */
     $entity = $values->_entity;
-    return array(
+    return [
       '#type' => 'html_tag',
       '#tag' => 'div',
       '#value' => ' ',
-      '#attributes' => array(
+      '#attributes' => [
         'style' => 'width:20px; height: 20px; float: left; margin-right: 5px; background: ' . $entity->getItemStatusColor(),
-      ),
-    );
+      ],
+    ];
   }
 
 }

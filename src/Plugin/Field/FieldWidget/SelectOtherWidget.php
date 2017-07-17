@@ -23,21 +23,21 @@ class SelectOtherWidget extends WidgetBase {
    * {@inheritdoc}
    */
   public static function defaultSettings() {
-    return array(
+    return [
       'available_options' => '',
-    ) + parent::defaultSettings();
+    ] + parent::defaultSettings();
   }
 
   /**
    * {@inheritdoc}
    */
   public function settingsForm(array $form, FormStateInterface $form_state) {
-    $element['available_options'] = array(
+    $element['available_options'] = [
       '#type' => 'textarea',
       '#title' => t('Available options'),
       '#description' => t('A list of values that are, by default, available for selection. Enter one value per line, in the format key|label. The key is the value that will be stored in the database, and the label is what will be displayed to the user.'),
       '#default_value' => $this->getSetting('available_options'),
-    );
+    ];
 
     return $element;
   }

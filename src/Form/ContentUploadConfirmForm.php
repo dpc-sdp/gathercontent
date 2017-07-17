@@ -66,31 +66,31 @@ class ContentUploadConfirmForm extends ContentConfirmForm {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     if ($form_state->getValue('confirm') && !empty($this->nodeIds)) {
-      $operation = Operation::create(array(
+      $operation = Operation::create([
         'type' => 'upload',
-      ));
+      ]);
       $operation->save();
 
       $nodes = Node::loadMultiple($this->nodeIds);
       $operations = [];
       foreach ($nodes as $node) {
-        $operations[] = array(
+        $operations[] = [
           'gathercontent_upload_process',
-          array(
+          [
             $node,
             $operation->uuid(),
-          ),
-        );
+          ],
+        ];
       }
 
-      $batch = array(
+      $batch = [
         'title' => t('Uploading content ...'),
         'operations' => $operations,
         'finished' => 'gathercontent_upload_finished',
         'init_message' => t('Upload is starting ...'),
         'progress_message' => t('Processed @current out of @total.'),
         'error_message' => t('An error occurred during processing'),
-      );
+      ];
 
       $this->tempStore->delete('nodes');
       batch_set($batch);

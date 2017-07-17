@@ -72,42 +72,42 @@ class OperationItem extends ContentEntityBase implements OperationItemInterface 
     $fields['item_status'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Operation Item Status'))
       ->setDescription(t('Operation Item Status.'))
-      ->setSettings(array(
+      ->setSettings([
         'max_length' => 10000,
         'text_processing' => 0,
-      ));
+      ]);
 
     $fields['item_status_color'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Operation Item Status Color'))
       ->setDescription(t('Operation Item Status Color.'))
-      ->setSettings(array(
+      ->setSettings([
         'max_length' => 7,
         'text_processing' => 0,
-      ));
+      ]);
 
     $fields['item_name'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Operation Item Name'))
       ->setDescription(t('Operation Item Name.'))
-      ->setSettings(array(
+      ->setSettings([
         'max_length' => 255,
         'text_processing' => 0,
-      ));
+      ]);
 
     $fields['template_name'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Operation Item Template Name'))
       ->setDescription(t('Operation Item Template Name.'))
-      ->setSettings(array(
+      ->setSettings([
         'max_length' => 255,
         'text_processing' => 0,
-      ));
+      ]);
 
     $fields['status'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Operation Item Operation Status'))
       ->setDescription(t('Operation Item Operation Status.'))
-      ->setSettings(array(
+      ->setSettings([
         'max_length' => 255,
         'text_processing' => 0,
-      ));
+      ]);
 
     $fields['gc_id'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('Operation Item GC ID'))
@@ -122,15 +122,15 @@ class OperationItem extends ContentEntityBase implements OperationItemInterface 
       ->setDescription(t('The time that the operation item was created.'))
       ->setRevisionable(TRUE)
       ->setTranslatable(TRUE)
-      ->setDisplayOptions('view', array(
+      ->setDisplayOptions('view', [
         'label' => 'hidden',
         'type' => 'timestamp',
         'weight' => 0,
-      ))
-      ->setDisplayOptions('form', array(
+      ])
+      ->setDisplayOptions('form', [
         'type' => 'datetime_timestamp',
         'weight' => 10,
-      ))
+      ])
       ->setDisplayConfigurable('form', TRUE);
 
     $fields['changed'] = BaseFieldDefinition::create('changed')

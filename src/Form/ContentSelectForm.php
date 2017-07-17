@@ -30,16 +30,16 @@ class ContentSelectForm extends MultistepFormBase {
     $form = parent::buildForm($form, $form_state);
 
     $created_mapping_ids = Mapping::loadMultiple();
-    $projects = $contents = array();
-    $mapping_array = array();
+    $projects = $contents = [];
+    $mapping_array = [];
     foreach ($created_mapping_ids as $mapping) {
       /** @var \Drupal\gathercontent\Entity\Mapping $mapping */
       if ($mapping->hasMapping()) {
         $projects[$mapping->getGathercontentProjectId()] = $mapping->getGathercontentProject();
-        $mapping_array[$mapping->id()] = array(
+        $mapping_array[$mapping->id()] = [
           'gc_template' => $mapping->getGathercontentTemplate(),
           'ct' => $mapping->getContentTypeName(),
-        );
+        ];
       }
     }
 
@@ -48,7 +48,7 @@ class ContentSelectForm extends MultistepFormBase {
       ->condition('gc_mapping_id', NULL, 'IS NOT')
       ->execute();
     $nodes = Node::loadMultiple($node_ids);
-    $selected_projects = array();
+    $selected_projects = [];
     $content_obj = new Content();
 
     foreach ($created_mapping_ids as $mapping) {
@@ -56,7 +56,7 @@ class ContentSelectForm extends MultistepFormBase {
         $selected_projects[] = $mapping->getGathercontentProjectId();
         $content = $content_obj->getContents($mapping->getGathercontentProjectId());
         foreach ($content as $c) {
-          $single_content = array();
+          $single_content = [];
           $single_content['gc_updated'] = $c->updated_at;
           $single_content['status'] = $c->status;
           $single_content['name'] = $c->name;
@@ -81,7 +81,7 @@ class ContentSelectForm extends MultistepFormBase {
     $base_url = 'http://' . \Drupal::config('gathercontent.settings')
       ->get('gathercontent_urlkey') . '.gathercontent.com/item/';
 
-    $content_table = array();
+    $content_table = [];
     foreach ($nodes as $item) {
       if (!isset($contents[$item->gc_id->value]['status']->data->name)) {
         // Don't show deleted items or items which belong to another account.
@@ -89,62 +89,62 @@ class ContentSelectForm extends MultistepFormBase {
       }
 
       /** @var Node $item */
-      $content_table[$item->id()] = array(
-        'status' => array(
-          'data' => array(
-            'color' => array(
+      $content_table[$item->id()] = [
+        'status' => [
+          'data' => [
+            'color' => [
               '#type' => 'html_tag',
               '#tag' => 'div',
               '#value' => ' ',
-              '#attributes' => array(
+              '#attributes' => [
                 'style' => 'width:20px; height: 20px; float: left; margin-right: 5px; background: ' . $contents[$item->gc_id->value]['status']->data->color,
-              ),
-            ),
-            'label' => array(
+              ],
+            ],
+            'label' => [
               '#plain_text' => $contents[$item->gc_id->value]['status']->data->name,
-            ),
-          ),
-          'class' => array('gc-item', 'status-item'),
-        ),
-        'gathercontent_project' => array(
+            ],
+          ],
+          'class' => ['gc-item', 'status-item'],
+        ],
+        'gathercontent_project' => [
           'data' => $projects[$contents[$item->gc_id->value]['project_id']],
-        ),
-        'title' => array(
+        ],
+        'title' => [
           'data' => $item->getTitle(),
-          'class' => array('gc-item', 'gc-item--name'),
-        ),
-        'gathercontent_title' => array(
+          'class' => ['gc-item', 'gc-item--name'],
+        ],
+        'gathercontent_title' => [
           'data' => $contents[$item->gc_id->value]['name'],
-        ),
-        'gathercontent_updated' => array(
+        ],
+        'gathercontent_updated' => [
           'data' => date('F d, Y - H:i', strtotime($contents[$item->gc_id->value]['gc_updated']->date)),
-          'class' => array('gc-item', 'gc-item-date'),
+          'class' => ['gc-item', 'gc-item-date'],
           'data-date' => date('Y-m-d.H:i:s', strtotime($contents[$item->gc_id->value]['gc_updated']->date)),
-        ),
-        'drupal_updated' => array(
+        ],
+        'drupal_updated' => [
           'data' => date('F d, Y - H:i', $item->getChangedTime()),
-          'class' => array('gc-item', 'gc-item-date'),
+          'class' => ['gc-item', 'gc-item-date'],
           'data-date' => date('Y-m-d.H:i:s', $item->getChangedTime()),
-        ),
-        'content_type' => array(
+        ],
+        'content_type' => [
           'data' => $mapping_array[$item->gc_mapping_id->value]['ct'],
-        ),
-        'gathercontent_template' => array(
+        ],
+        'gathercontent_template' => [
           'data' => $mapping_array[$item->gc_mapping_id->value]['gc_template'],
-          'class' => array('template-name-item'),
-        ),
-        'drupal_open' => array(
+          'class' => ['template-name-item'],
+        ],
+        'drupal_open' => [
           'data' => Link::fromTextAndUrl($this->t('Open'), Url::fromUri('entity:node/' . $item->id()))
             ->toRenderable(),
-        ),
-        'gathercontent_open' => array(
+        ],
+        'gathercontent_open' => [
           'data' => Link::fromTextAndUrl($this->t('Open'), Url::fromUri($base_url . $item->gc_id->value))
             ->toRenderable(),
-        ),
-      );
+        ],
+      ];
     }
 
-    $header = array(
+    $header = [
       'status' => $this->t('Status'),
       'gathercontent_project' => $this->t('GatherContent project'),
       'title' => $this->t('Item Name'),
@@ -155,9 +155,9 @@ class ContentSelectForm extends MultistepFormBase {
       'gathercontent_template' => $this->t('GatherContent template'),
       'drupal_open' => $this->t('Open in Drupal'),
       'gathercontent_open' => $this->t('Open in GatherContent'),
-    );
+    ];
 
-    $form['nodes'] = array(
+    $form['nodes'] = [
       '#weight' => 2,
       '#type' => 'tableselect',
       '#header' => $header,
@@ -192,7 +192,7 @@ class ContentSelectForm extends MultistepFormBase {
           ],
         ],
       ],
-    );
+    ];
 
     $form['actions']['submit']['#value'] = $this->t('Next');
 

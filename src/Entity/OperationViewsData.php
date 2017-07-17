@@ -16,11 +16,11 @@ class OperationViewsData extends EntityViewsData implements EntityViewsDataInter
   public function getViewsData() {
     $data = parent::getViewsData();
 
-    $data['gathercontent_operation']['table']['base'] = array(
+    $data['gathercontent_operation']['table']['base'] = [
       'field' => 'id',
       'title' => $this->t('Gathercontent operation'),
       'help' => $this->t('The Gathercontent operation ID.'),
-    );
+    ];
 
     return $data;
   }

@@ -26,18 +26,18 @@ class MappingImportForm extends EntityForm {
 
     $template_obj = new Template();
 
-    $form['description'] = array(
+    $form['description'] = [
       '#type' => 'html_tag',
       '#tag' => 'div',
       '#value' => t("Please select the GatherContent Templates you'd like to map. Only Templates you've not selected will be listed."),
-      '#attributes' => array(
-        'class' => array('description'),
-      ),
-    );
+      '#attributes' => [
+        'class' => ['description'],
+      ],
+    ];
 
-    $form['projects'] = array(
+    $form['projects'] = [
       '#type' => 'vertical_tabs',
-    );
+    ];
 
     $form['template_counter'] = [
       '#type' => 'container',
@@ -54,7 +54,7 @@ class MappingImportForm extends EntityForm {
     ];
 
     $created_mapping_ids = Mapping::loadMultiple();
-    $local_templates = array();
+    $local_templates = [];
 
     foreach ($created_mapping_ids as $mapping) {
       /** @var Mapping $mapping */
@@ -69,13 +69,13 @@ class MappingImportForm extends EntityForm {
         continue;
       }
 
-      $form['p' . $project_id] = array(
+      $form['p' . $project_id] = [
         '#type' => 'details',
         '#title' => $project,
         '#group' => 'projects',
         '#tree' => TRUE,
-      );
-      $form['p' . $project_id]['templates'] = array(
+      ];
+      $form['p' . $project_id]['templates'] = [
         '#type' => 'checkboxes',
         '#title' => $project,
         '#options' => $templates,
@@ -84,7 +84,7 @@ class MappingImportForm extends EntityForm {
             'gather-content-counted',
           ],
         ],
-      );
+      ];
     }
 
     return $form;
@@ -107,14 +107,14 @@ class MappingImportForm extends EntityForm {
         foreach ($templates as $template_id => $selected) {
           $tmp_obj = new Template();
           $template = $tmp_obj->getTemplate($template_id);
-          $mapping_values = array(
+          $mapping_values = [
             'id' => $template_id,
             'gathercontent_project_id' => $template->project_id,
             'gathercontent_project' => $projects[$template->project_id],
             'gathercontent_template_id' => $template_id,
             'gathercontent_template' => $template->name,
             'template' => serialize($template),
-          );
+          ];
           $mapping = \Drupal::entityManager()
             ->getStorage('gathercontent_mapping')
             ->create($mapping_values);
@@ -134,10 +134,10 @@ class MappingImportForm extends EntityForm {
   protected function actions(array $form, FormStateInterface $form_state) {
     $actions = parent::actions($form, $form_state);
     $actions['submit']['#value'] = $this->t('Select');
-    $actions['close'] = array(
+    $actions['close'] = [
       '#type' => 'submit',
       '#value' => t('Close'),
-    );
+    ];
     return $actions;
   }
 

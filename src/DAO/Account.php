@@ -34,20 +34,20 @@ class Account {
 
     if (empty($username || $api_key)) {
       \Drupal::logger('gathercontent')
-        ->error("Trying to call API without credentials.", array());
+        ->error("Trying to call API without credentials.", []);
     }
 
     $this->client = new Client(
-      array(
+      [
         'base_uri' => 'https://api.gathercontent.com',
-        'auth' => array(
+        'auth' => [
           $username,
           $api_key,
-        ),
-        'headers' => array(
+        ],
+        'headers' => [
           'Accept' => 'application/vnd.gathercontent.v0.5+json',
-        ),
-      )
+        ],
+      ]
     );
 
   }
@@ -59,7 +59,7 @@ class Account {
    *   Array with accounts.
    */
   public function getAccounts() {
-    $accounts = array();
+    $accounts = [];
 
     try {
       $response = $this->client->get('/accounts');
@@ -74,7 +74,7 @@ class Account {
       }
     }
     catch (\Exception $e) {
-      \Drupal::logger('gathercontent')->error($e->getMessage(), array());
+      \Drupal::logger('gathercontent')->error($e->getMessage(), []);
       drupal_set_message(t("User with provided credentials wasn't found. 1"), 'error');
       $accounts = NULL;
     }

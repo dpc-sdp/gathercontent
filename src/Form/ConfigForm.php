@@ -51,24 +51,24 @@ class ConfigForm extends ConfigFormBase {
       if (!empty($account)) {
         $account = unserialize($account);
         $account = array_pop($account);
-        $form['current_account'] = array(
+        $form['current_account'] = [
           '#type' => 'html_tag',
           '#tag' => 'div',
-          '#value' => $this->t('Current account is <strong>@account</strong>.', array('@account' => $account)),
-        );
+          '#value' => $this->t('Current account is <strong>@account</strong>.', ['@account' => $account]),
+        ];
       }
     }
 
     if ($form_state->isSubmitted()) {
       $account_obj = new Account();
       $data = $account_obj->getAccounts();
-      $accounts = array();
+      $accounts = [];
       if (!is_null($data)) {
         foreach ($data as $account) {
           $accounts[$account->id] = $account->name;
         }
 
-        $form['account'] = array(
+        $form['account'] = [
           '#type' => 'select',
           '#options' => $accounts,
           '#title' => $this->t('Select GatherContent Account'),
@@ -76,27 +76,27 @@ class ConfigForm extends ConfigFormBase {
           '#description' => $this->t('Multiple accounts will be listed if the GatherContent
        user has more than one account. Please select the account you want to
        import and update content from.'),
-        );
+        ];
       }
-      $form['actions']['submit'] = array(
+      $form['actions']['submit'] = [
         '#type' => 'submit',
         '#value' => (is_null($data)) ? $this->t('Verify') : $this->t('Save'),
         '#button_type' => 'primary',
-      );
+      ];
     }
     else {
-      $form['actions']['submit'] = array(
+      $form['actions']['submit'] = [
         '#type' => 'submit',
         '#value' => (!empty($account) ? $this->t('Change GatherContent Account') : $this->t('Verify')),
         '#button_type' => 'primary',
-      );
+      ];
     }
 
     if (!empty($account)) {
-      $form['actions']['reset'] = array(
+      $form['actions']['reset'] = [
         '#type' => 'submit',
         '#value' => $this->t('Reset credentials'),
-      );
+      ];
     }
 
     // By default, render the form using theme_system_config_form().
@@ -133,7 +133,7 @@ class ConfigForm extends ConfigFormBase {
         foreach ($data as $account) {
           if ($account->id == $submitted_account_id) {
             $account_name = $account->name;
-            $this->config('gathercontent.settings')->set('gathercontent_account', serialize(array($submitted_account_id => $account_name)))->save();
+            $this->config('gathercontent.settings')->set('gathercontent_account', serialize([$submitted_account_id => $account_name]))->save();
             drupal_set_message(t("Credentials and project were saved."));
             $this->config('gathercontent.settings')->set('gathercontent_urlkey', $account->slug)->save();
             break;

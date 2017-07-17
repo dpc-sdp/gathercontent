@@ -48,10 +48,10 @@ class Operation extends ContentEntityBase implements OperationInterface {
     $fields['type'] = BaseFieldDefinition::create('string')
       ->setLabel(t('Type'))
       ->setDescription(t('Operation Type.'))
-      ->setSettings(array(
+      ->setSettings([
         'max_length' => 50,
         'text_processing' => 0,
-      ));
+      ]);
 
     return $fields;
   }

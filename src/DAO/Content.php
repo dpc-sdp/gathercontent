@@ -34,20 +34,20 @@ class Content {
 
     if (empty($username) || empty($api_key)) {
       \Drupal::logger('gathercontent')
-        ->error("Trying to call API without credentials.", array());
+        ->error("Trying to call API without credentials.", []);
     }
 
     $this->client = new Client(
-      array(
+      [
         'base_uri' => 'https://api.gathercontent.com',
-        'auth' => array(
+        'auth' => [
           $username,
           $api_key,
-        ),
-        'headers' => array(
+        ],
+        'headers' => [
           'Accept' => 'application/vnd.gathercontent.v0.5+json',
-        ),
-      )
+        ],
+      ]
     );
 
   }
@@ -65,11 +65,11 @@ class Content {
    */
   public function updateStatus($content_id, $status_id) {
     try {
-      $response = $this->client->post('/items/' . $content_id . '/choose_status', array(
-        'form_params' => array(
+      $response = $this->client->post('/items/' . $content_id . '/choose_status', [
+        'form_params' => [
           'status_id' => $status_id,
-        ),
-      ));
+        ],
+      ]);
       if ($response->getStatusCode() === 202) {
         return TRUE;
       }
@@ -79,7 +79,7 @@ class Content {
     }
     catch (\Exception $e) {
       drupal_set_message($e->getMessage(), 'error');
-      \Drupal::logger('gathercontent')->error($e->getMessage(), array());
+      \Drupal::logger('gathercontent')->error($e->getMessage(), []);
       return FALSE;
     }
   }
@@ -94,7 +94,7 @@ class Content {
    *   Array with content.
    */
   public function getContents($project_id) {
-    $accounts = array();
+    $accounts = [];
 
     try {
       $response = $this->client->get('/items?project_id=' . $project_id);
@@ -109,7 +109,7 @@ class Content {
     }
     catch (\Exception $e) {
       drupal_set_message($e->getMessage(), 'error');
-      \Drupal::logger('gathercontent')->error($e->getMessage(), array());
+      \Drupal::logger('gathercontent')->error($e->getMessage(), []);
     }
 
     return $accounts;
@@ -140,7 +140,7 @@ class Content {
     }
     catch (\Exception $e) {
       drupal_set_message($e->getMessage(), 'error');
-      \Drupal::logger('gathercontent')->error($e->getMessage(), array());
+      \Drupal::logger('gathercontent')->error($e->getMessage(), []);
     }
 
     return $content;
@@ -159,7 +159,7 @@ class Content {
    */
   public function postContent($content_id, array $config) {
     try {
-      $response = $this->client->post('/items/' . $content_id . '/save', array('form_params' => array('config' => base64_encode(json_encode($config)))));
+      $response = $this->client->post('/items/' . $content_id . '/save', ['form_params' => ['config' => base64_encode(json_encode($config))]]);
       if ($response->getStatusCode() === 202) {
         return TRUE;
       }
@@ -185,7 +185,7 @@ class Content {
    *   Array with accounts.
    */
   public function getFiles($content_id) {
-    $accounts = array();
+    $accounts = [];
 
     try {
       $response = $this->client->get('/items/' . $content_id . '/files');
@@ -200,7 +200,7 @@ class Content {
     }
     catch (\Exception $e) {
       drupal_set_message($e->getMessage(), 'error');
-      \Drupal::logger('gathercontent')->error($e->getMessage(), array());
+      \Drupal::logger('gathercontent')->error($e->getMessage(), []);
     }
 
     return $accounts;

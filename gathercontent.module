@@ -37,7 +37,7 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
  * {@inheritdoc}
  */
 function gathercontent_entity_base_field_info(EntityTypeInterface $entity_type) {
-  $fields = array();
+  $fields = [];
   if ($entity_type->id() === 'node') {
     $fields['gc_mapping_id'] = $storage_definition = BaseFieldDefinition::create('integer')
       ->setLabel(t('GC mapping ID'))
@@ -95,14 +95,14 @@ function _gc_fetcher($gc_id, $uuid, $drupal_status, $node_update_method, $status
 
   $operation_item = \Drupal::entityTypeManager()
     ->getStorage('gathercontent_operation_item')
-    ->create(array(
+    ->create([
       'operation_uuid' => $uuid,
       'item_status' => (!empty($status) ? $status->name : $content->status->data->name),
       'item_status_color' => (!empty($status) ? $status->color : $content->status->data->color),
       'template_name' => $template->name,
       'item_name' => $content->name,
       'gc_id' => $gc_id,
-    ));
+    ]);
 
   $mapping_id = Drupal::entityQuery('gathercontent_mapping')
     ->condition('gathercontent_project_id', $content->project_id)
@@ -204,7 +204,7 @@ function _gc_fetcher($gc_id, $uuid, $drupal_status, $node_update_method, $status
         return $entity->id();
       }
       catch (Exception $e) {
-        \Drupal::logger('gc_import')->error(print_r($e, TRUE), array());
+        \Drupal::logger('gc_import')->error(print_r($e, TRUE), []);
         $operation_item->status = "Operation failed:" . $e->getMessage();
         $operation_item->save();
         return FALSE;
@@ -394,12 +394,12 @@ function gc_create_menu_link($nid, $title, $plid, $lang = NULL, &$original_link_
       if ($menu_name === 'node') {
         _gc_get_menu_by_gc_id($mlid, $menu_name);
       }
-      $link = array(
+      $link = [
         'link' => ['uri' => 'entity:node/' . $nid],
         'title' => $title,
         'menu_name' => $menu_name,
         'parent' => $mlid,
-      );
+      ];
       MenuLinkContent::create($link)->set('weight', $weight)->save();
     }
     elseif (\Drupal::moduleHandler()->moduleExists('content_translation')
@@ -413,13 +413,13 @@ function gc_create_menu_link($nid, $title, $plid, $lang = NULL, &$original_link_
         if ($menu_name === 'node') {
           _gc_get_menu_by_gc_id($mlid, $menu_name, $lang);
         }
-        $link = array(
+        $link = [
           'link' => ['uri' => 'entity:node/' . $nid],
           'title' => $title,
           'menu_name' => $menu_name,
           'parent' => $mlid,
           'langcode' => $lang,
-        );
+        ];
         $menu_link = MenuLinkContent::create($link);
         $menu_link->set('weight', $weight);
         $menu_link->save();
@@ -432,13 +432,13 @@ function gc_create_menu_link($nid, $title, $plid, $lang = NULL, &$original_link_
         if ($menu_name === 'node') {
           _gc_get_menu_by_gc_id($mlid, $menu_name, $lang);
         }
-        $link = array(
+        $link = [
           'link' => ['uri' => 'entity:node/' . $nid],
           'title' => $title,
           'menu_name' => $menu_name,
           'parent' => $mlid,
           'langcode' => $lang,
-        );
+        ];
 
         // Load parent item.
         $original_item = MenuLinkContent::load($original_link_id);
@@ -561,16 +561,16 @@ function gc_gc_process_default_field(NodeInterface &$entity, $local_field_name, 
  */
 function gc_gc_process_section_field(NodeInterface &$node, $local_field_name, $is_translatable, $language, $field) {
   if ($is_translatable) {
-    $node->getTranslation($language)->{$local_field_name} = array(
+    $node->getTranslation($language)->{$local_field_name} = [
       'value' => '<h3>' . $field->title . '</h3>' . $field->subtitle,
       'format' => 'basic_html',
-    );
+    ];
   }
   else {
-    $node->{$local_field_name} = array(
+    $node->{$local_field_name} = [
       'value' => '<h3>' . $field->title . '</h3>' . $field->subtitle,
       'format' => 'basic_html',
-    );
+    ];
   }
 }
 
@@ -590,8 +590,8 @@ function gc_gc_process_section_field(NodeInterface &$node, $local_field_name, $i
  */
 function gc_gc_process_choice_checkbox_field(NodeInterface &$node, $local_field_name, $is_translatable, $language, $options) {
   $field = FieldConfig::loadByName('node', $node->bundle(), $local_field_name);
-  $node->{$local_field_name} = array(NULL);
-  $selected_options = array();
+  $node->{$local_field_name} = [NULL];
+  $selected_options = [];
   foreach ($options as $option) {
     if ($option->selected) {
       if ($field->getType() === 'entity_reference') {
@@ -861,10 +861,10 @@ function gathercontent_import_finished($success, $results, $operations) {
     $error_operation = reset($operations);
     drupal_set_message(
       t('An error occurred while processing @operation with arguments : @args',
-        array(
+        [
           '@operation' => $error_operation[0],
           '@args' => print_r($error_operation[0], TRUE),
-        )
+        ]
       ),
       'error'
     );
@@ -939,10 +939,10 @@ function gathercontent_update_finished($success, $results, $operations) {
     $error_operation = reset($operations);
     drupal_set_message(
       t('An error occurred while processing @operation with arguments : @args',
-        array(
+        [
           '@operation' => $error_operation[0],
           '@args' => print_r($error_operation[0], TRUE),
-        )
+        ]
       ),
       'error'
     );
@@ -977,7 +977,7 @@ function gathercontent_upload_process(NodeInterface $entity, $uuid, &$context) {
 
   $operation_item = \Drupal::entityTypeManager()
     ->getStorage('gathercontent_operation_item')
-    ->create(array(
+    ->create([
       'operation_uuid' => $uuid,
       'item_status' => $remote_node->status->data->name,
       'item_status_color' => $remote_node->status->data->color,
@@ -985,7 +985,7 @@ function gathercontent_upload_process(NodeInterface $entity, $uuid, &$context) {
       'item_name' => $remote_node->name,
       'gc_id' => $entity->get('gc_id'),
       'nid' => $entity->id(),
-    ));
+    ]);
 
   if ($remote_template->config == unserialize($mapping->getTemplate())->config) {
     try {
@@ -1018,7 +1018,7 @@ function gathercontent_upload_process(NodeInterface $entity, $uuid, &$context) {
                   break;
 
                 case 'choice_radio':
-                  $option_names = array();
+                  $option_names = [];
                   foreach ($field->options as &$option) {
                     // Set selected to false for each option.
                     $option->selected = FALSE;
@@ -1140,7 +1140,7 @@ function gathercontent_upload_process(NodeInterface $entity, $uuid, &$context) {
 
     }
     catch (\Exception $e) {
-      \Drupal::logger('gc_upload')->error(print_r($e, TRUE), array());
+      \Drupal::logger('gc_upload')->error(print_r($e, TRUE), []);
       $operation_item->status = 'Mapping doesn\'t match';
       $operation_item->save();
     }
@@ -1200,10 +1200,10 @@ function gathercontent_upload_finished($success, $results, $operations) {
     $error_operation = reset($operations);
     drupal_set_message(
       t('An error occurred while processing @operation with arguments : @args',
-        array(
+        [
           '@operation' => $error_operation[0],
           '@args' => print_r($error_operation[0], TRUE),
-        )
+        ]
       ),
       'error'
     );
