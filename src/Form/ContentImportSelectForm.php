@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Content Import Select multistep form.
- */
-
 namespace Drupal\gathercontent\Form;
 
 use Drupal\Core\Form\FormBase;
