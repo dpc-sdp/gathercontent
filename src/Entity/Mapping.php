@@ -117,7 +117,10 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
   }
 
   /**
+   * Set the template used in GatherContent.
+   *
    * @param int $gathercontent_template_id
+   *   The template id.
    */
   public function setGathercontentTemplateId($gathercontent_template_id) {
     $this->gathercontent_template_id = $gathercontent_template_id;
@@ -131,7 +134,10 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
   }
 
   /**
+   * Set the project id used in GatherContent.
+   *
    * @param int $gathercontent_project_id
+   *   The project id.
    */
   public function setGathercontentProjectId($gathercontent_project_id) {
     $this->gathercontent_project_id = $gathercontent_project_id;
@@ -145,7 +151,10 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
   }
 
   /**
+   * Set the project name used in GatherContent.
+   *
    * @param string $gathercontent_project
+   *   The name of the project.
    */
   public function setGathercontentProject($gathercontent_project) {
     $this->gathercontent_project = $gathercontent_project;
@@ -159,7 +168,10 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
   }
 
   /**
+   * Set the template name used in Gathercontent.
+   *
    * @param string $gathercontent_template
+   *   The name of the template.
    */
   public function setGathercontentTemplate($gathercontent_template) {
     $this->gathercontent_template = $gathercontent_template;
@@ -187,6 +199,8 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
   }
 
   /**
+   * Set the content type name.
+   *
    * {@inheritdoc}
    */
   public function setContentTypeName($content_type_name) {
@@ -194,7 +208,10 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
   }
 
   /**
+   * Get the date of the last update.
+   *
    * @return string
+   *   Userfriendly timestamp of the last update.
    */
   public function getUpdatedDrupal() {
     return $this->get('updated_drupal');

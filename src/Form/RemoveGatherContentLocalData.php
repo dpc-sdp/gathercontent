@@ -68,7 +68,7 @@ class RemoveGatherContentLocalData extends FormBase {
    * @param array $context
    *   Array of context.
    */
-  public static function deleteAllEntity($entity_type_id, &$context) {
+  public static function deleteAllEntity($entity_type_id, array &$context) {
     $entity_type_manager = \Drupal::entityTypeManager();
     if (empty($context['sandbox'])) {
       $context['sandbox']['num_of_deleted_items'] = 0;
@@ -99,7 +99,7 @@ class RemoveGatherContentLocalData extends FormBase {
    * @param array $context
    *   Array of context.
    */
-  public static function cleanUpGcData($entity_type_id, &$context) {
+  public static function cleanUpGcData($entity_type_id, array &$context) {
     if (empty($context['sandbox'])) {
       $context['sandbox']['num_of_precessed_items'] = 0;
       $context['sandbox']['current_id'] = 0;

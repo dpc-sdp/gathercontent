@@ -56,13 +56,13 @@ abstract class MultistepFormBase extends FormBase {
   /**
    * Constructor for class.
    *
-   * @param EntityManagerInterface $entity_manager
+   * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
    *   EntityManagerInterface object.
-   * @param DateFormatterInterface $date_formatter
+   * @param \Drupal\Core\Datetime\DateFormatterInterface $date_formatter
    *   DateFormatterInterface object.
-   * @param PrivateTempStoreFactory $temp_store_factory
+   * @param \Drupal\user\PrivateTempStoreFactory $temp_store_factory
    *   PrivateTempStoreFactory object.
-   * @param QueryFactory $entityQuery
+   * @param \Drupal\Core\Entity\Query\QueryFactory $entityQuery
    *   QueryFactory object.
    */
   public function __construct(

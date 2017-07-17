@@ -88,7 +88,7 @@ class ContentSelectForm extends MultistepFormBase {
         continue;
       }
 
-      /** @var Node $item */
+      /** @var \Drupal\node\Entity\Node $item */
       $content_table[$item->id()] = [
         'status' => [
           'data' => [

@@ -54,7 +54,7 @@ class ContentImportSelectForm extends FormBase {
       $mapping_array = [];
       $content_types = [];
       foreach ($created_mapping_ids as $mapping) {
-        /** @var Mapping $mapping */
+        /** @var \Drupal\gathercontent\Entity\Mapping $mapping */
         if ($mapping->hasMapping()) {
           if (!array_key_exists($mapping->getGathercontentTemplateId(), $content_types)) {
             $content_types[$mapping->getGathercontentTemplateId()] = $mapping->getContentType();
@@ -237,7 +237,7 @@ class ContentImportSelectForm extends FormBase {
                 '#default_value' => $node_type->getThirdPartySetting('menu_ui', 'parent'),
                 '#empty_option' => $this->t("- Don't create menu item -"),
                 '#empty_value' => 0,
-                '#options' => [- 1 => t("Parent being imported")]
+                '#options' => [-1 => t("Parent being imported")]
                 + \Drupal::service('menu.parent_form_selector')
                   ->getParentSelectOptions('', $available_menus),
                 '#title' => t('Menu'),

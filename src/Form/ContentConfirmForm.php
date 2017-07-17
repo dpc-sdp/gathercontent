@@ -149,7 +149,7 @@ class ContentConfirmForm extends ConfirmFormBase {
 
     $content_table = [];
     foreach ($nodes as $item) {
-      /** @var Node $item */
+      /** @var Drupal\node\Entity\Node $item */
       $content_table[$item->id()] = [
         'status' => [
           'data' => [

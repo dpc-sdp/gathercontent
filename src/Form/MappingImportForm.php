@@ -57,7 +57,7 @@ class MappingImportForm extends EntityForm {
     $local_templates = [];
 
     foreach ($created_mapping_ids as $mapping) {
-      /** @var Mapping $mapping */
+      /** @var \Drupal\gathercontent\Entity\Mapping $mapping */
       $local_templates[$mapping->getGathercontentTemplateId()] = $mapping->getGathercontentTemplate();
     }
 

@@ -115,8 +115,8 @@ class MappingEditForm extends EntityForm {
       $form['form_description'] = [
         '#type' => 'html_tag',
         '#tag' => 'i',
-        '#value' => t('Please map your GatherContent Template fields to your Drupal 
-    Content Type Fields. Please note that a GatherContent field can only be 
+        '#value' => t('Please map your GatherContent Template fields to your Drupal
+    Content Type Fields. Please note that a GatherContent field can only be
     mapped to a single Drupal field. So each field can only be mapped to once.'),
       ];
 
@@ -996,10 +996,12 @@ class MappingEditForm extends EntityForm {
   /**
    * Generate automatically terms for local field from GatherContent options.
    *
-   * @param FieldConfig $handlerSettings
+   * @param \Drupal\field\Entity\FieldConfig $handlerSettings
    *   Field config for local field.
    * @param array $localOptions
    *   Array of remote options.
+   * @param string $langcode
+   *   The language of the generated term.
    */
   public function automaticTermsGenerator(FieldConfig $handlerSettings, array $localOptions, $langcode) {
     $settings = $handlerSettings->getSetting('handler_settings');
@@ -1136,7 +1138,7 @@ class MappingEditForm extends EntityForm {
    *
    * @param array|null $languages
    *   Array with languages available for mapping.
-   * @param EntityStorageInterface $entityStorage
+   * @param \Drupal\Core\Entity\EntityStorageInterface $entityStorage
    *   Storage object for taxonomy terms.
    * @param array $row
    *   Array with mapping options.
@@ -1214,7 +1216,7 @@ class MappingEditForm extends EntityForm {
    *
    * @param array|null $languages
    *   Array with languages available for mapping.
-   * @param EntityStorageInterface $entityStorage
+   * @param Drupal\Core\Entity\EntityStorageInterface $entityStorage
    *   Storage object for taxonomy terms.
    * @param array $row
    *   Array with mapping options.

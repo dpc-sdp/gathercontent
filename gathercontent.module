@@ -321,7 +321,7 @@ function gc_gc_process_metatag_pane(NodeInterface &$entity, $local_field_name, $
     }
   }
   else {
-    throw new Exception("Metatag module not enabled or entity doesn't support 
+    throw new Exception("Metatag module not enabled or entity doesn't support
     metatags while trying to map values with metatag content.");
   }
 }
@@ -482,7 +482,6 @@ function _gc_get_menu_by_gc_id(&$mlid, &$menu_name, $language = NULL) {
   }
 }
 
-
 /**
  * Default processing function, when no other matches found, usually for text.
  *
@@ -588,7 +587,7 @@ function gc_gc_process_section_field(NodeInterface &$node, $local_field_name, $i
  * @param array $options
  *   Array of options.
  */
-function gc_gc_process_choice_checkbox_field(NodeInterface &$node, $local_field_name, $is_translatable, $language, $options) {
+function gc_gc_process_choice_checkbox_field(NodeInterface &$node, $local_field_name, $is_translatable, $language, array $options) {
   $field = FieldConfig::loadByName('node', $node->bundle(), $local_field_name);
   $node->{$local_field_name} = [NULL];
   $selected_options = [];
@@ -629,7 +628,7 @@ function gc_gc_process_choice_checkbox_field(NodeInterface &$node, $local_field_
  * @param array $options
  *   Array of options.
  */
-function gc_gc_process_choice_radio_field(NodeInterface &$node, $local_field_name, $is_translatable, $language, $options) {
+function gc_gc_process_choice_radio_field(NodeInterface &$node, $local_field_name, $is_translatable, $language, array $options) {
   $field = FieldConfig::loadByName('node', $node->bundle(), $local_field_name);
   foreach ($options as $option) {
     if (!$option->selected) {
@@ -736,7 +735,7 @@ function gc_gc_process_choice_radio_field(NodeInterface &$node, $local_field_nam
  * @param array $files
  *   Array of remote files.
  */
-function gc_gc_process_files_field(NodeInterface &$node, $local_field_name, $gc_field_name, $is_translatable, $language, $files) {
+function gc_gc_process_files_field(NodeInterface &$node, $local_field_name, $gc_field_name, $is_translatable, $language, array $files) {
   $found_files = [];
   /** @var \Drupal\field\Entity\FieldConfig $translatable_file_config */
   $translatable_file_config = $node->getFieldDefinition($local_field_name);
@@ -803,7 +802,7 @@ function gc_gc_process_files_field(NodeInterface &$node, $local_field_name, $gc_
  * @param array $context
  *   Context of operation.
  */
-function gathercontent_import_process($gc_id, $status_id, $operation_uuid, $drupal_status, $node_update_method, $parent_menu_item = NULL, &$context) {
+function gathercontent_import_process($gc_id, $status_id, $operation_uuid, $drupal_status, $node_update_method, $parent_menu_item = NULL, array &$context = []) {
   if (($nid = _gc_fetcher($gc_id, $operation_uuid, $drupal_status, $node_update_method, $status_id, $parent_menu_item)) !== FALSE) {
     if ($status_id != 0) {
       // Change status.
@@ -960,7 +959,7 @@ function gathercontent_update_finished($success, $results, $operations) {
  * @param array $context
  *   Context of operation.
  */
-function gathercontent_upload_process(NodeInterface $entity, $uuid, &$context) {
+function gathercontent_upload_process(NodeInterface $entity, $uuid, array &$context) {
   // 1. Load template from remote
   // 2. Compare local and remote template
   // 3. If templates are same, load node from remote.

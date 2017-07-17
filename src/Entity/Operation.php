@@ -2,7 +2,6 @@
 
 namespace Drupal\gathercontent\Entity;
 
-use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\EntityChangedTrait;
@@ -31,13 +30,6 @@ use Drupal\Core\Entity\EntityTypeInterface;
 class Operation extends ContentEntityBase implements OperationInterface {
 
   use EntityChangedTrait;
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function preCreate(EntityStorageInterface $storage_controller, array &$values) {
-    parent::preCreate($storage_controller, $values);
-  }
 
   /**
    * {@inheritdoc}
