@@ -47,4 +47,3 @@ gathercontent.upload_select_form:
   route_name: gathercontent.upload_select_form
   parent: system.admin_content
   weight: 100
-
