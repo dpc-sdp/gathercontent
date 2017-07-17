@@ -19,7 +19,7 @@ function gathercontent_views_data() {
 
   $data['views']['gathercontent_content_link'] = [
     'title' => t('Gathercontent content link'),
-    'help' => t(''),
+    'help' => t('Provide a link to the GatherContent content instance'),
     'field' => [
       'id' => 'gathercontent_content_link',
     ],
@@ -27,7 +27,7 @@ function gathercontent_views_data() {
 
   $data['views']['gathercontent_status_color_field'] = [
     'title' => t('Gathercontent status color'),
-    'help' => t(''),
+    'help' => t('Status indicator'),
     'field' => [
       'id' => 'gathercontent_status_color_field',
     ],
@@ -35,7 +35,7 @@ function gathercontent_views_data() {
 
   $data['views']['content_link'] = [
     'title' => t('Content link'),
-    'help' => t(''),
+    'help' => t('Provide a link to the content instance'),
     'field' => [
       'id' => 'content_link',
     ],
