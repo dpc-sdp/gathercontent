@@ -1,0 +1,4 @@
+services:
+  gathercontent.client:
+    class: Cheppers\GatherContent\GatherContentClient
+    arguments: ['@http_client']
