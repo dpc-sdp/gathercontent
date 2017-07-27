@@ -2,11 +2,14 @@
 
 namespace Drupal\gathercontent\Form;
 
+use Cheppers\GatherContent\DataTypes\Account;
+use Cheppers\GatherContent\GatherContentClient;
+use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Link;
 use Drupal\Core\Url;
-use Drupal\gathercontent\DAO\Account;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Class ConfigForm.
@@ -14,6 +17,29 @@ use Drupal\gathercontent\DAO\Account;
  * @package Drupal\gathercontent\Form
  */
 class ConfigForm extends ConfigFormBase {
+
+  protected $client;
+
+  /**
+   * {@inheritdoc}
+   */
+  public function __construct(ConfigFactoryInterface $config_factory, GatherContentClient $client) {
+    parent::__construct($config_factory);
+    $this->client = $client;
+    $this->client
+      ->setEmail(\Drupal::config('gathercontent.settings')->get('gathercontent_username'))
+      ->setApiKey(\Drupal::config('gathercontent.settings')->get('gathercontent_api_key'));
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('config.factory'),
+      $container->get('gathercontent.client')
+    );
+  }
 
   /**
    * {@inheritdoc}
@@ -60,9 +86,10 @@ class ConfigForm extends ConfigFormBase {
     }
 
     if ($form_state->isSubmitted()) {
-      $account_obj = new Account();
-      $data = $account_obj->getAccounts();
+      /** @var \Cheppers\GatherContent\DataTypes\Account[] $data */
+      $data = $this->client->accountsGet();
       $accounts = [];
+
       if (!is_null($data)) {
         foreach ($data as $account) {
           $accounts[$account->id] = $account->name;
@@ -112,17 +139,22 @@ class ConfigForm extends ConfigFormBase {
     $triggering_element = $form_state->getTriggeringElement();
     if ($triggering_element['#id'] === 'edit-submit') {
       if (!$form_state->hasValue('account')) {
+        $username = $form_state->getValue('gathercontent_username');
+        $apikey = $form_state->getValue('gathercontent_api_key');
         $this->config('gathercontent.settings')
-          ->set('gathercontent_username', $form_state->getValue('gathercontent_username'))
-          ->set('gathercontent_api_key', $form_state->getValue('gathercontent_api_key'))
+          ->set('gathercontent_username', $username)
+          ->set('gathercontent_api_key', $apikey)
           ->save();
+        $this->client
+          ->setEmail($username)
+          ->setApiKey($apikey);
         $form_state->setSubmitted()->setRebuild();
       }
       else {
         $submitted_account_id = $form_state->getValue('account');
 
-        $account_obj = new Account();
-        $data = $account_obj->getAccounts();
+        /** @var \Cheppers\GatherContent\DataTypes\Account[] $data */
+        $data = $this->client->accountsGet();
         foreach ($data as $account) {
           if ($account->id == $submitted_account_id) {
             $account_name = $account->name;
