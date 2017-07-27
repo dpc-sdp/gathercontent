@@ -3,7 +3,7 @@
 namespace Drupal\gathercontent\Form;
 
 use Cheppers\GatherContent\DataTypes\Account;
-use Cheppers\GatherContent\GatherContentClient;
+use Cheppers\GatherContent\GatherContentClientInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -18,17 +18,19 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 class ConfigForm extends ConfigFormBase {
 
+  /**
+   * GatherContent client.
+   *
+   * @var \Drupal\gathercontent\DrupalGatherContentClient
+   */
   protected $client;
 
   /**
    * {@inheritdoc}
    */
-  public function __construct(ConfigFactoryInterface $config_factory, GatherContentClient $client) {
+  public function __construct(ConfigFactoryInterface $config_factory, GatherContentClientInterface $client) {
     parent::__construct($config_factory);
     $this->client = $client;
-    $this->client
-      ->setEmail(\Drupal::config('gathercontent.settings')->get('gathercontent_username'))
-      ->setApiKey(\Drupal::config('gathercontent.settings')->get('gathercontent_api_key'));
   }
 
   /**
@@ -139,15 +141,11 @@ class ConfigForm extends ConfigFormBase {
     $triggering_element = $form_state->getTriggeringElement();
     if ($triggering_element['#id'] === 'edit-submit') {
       if (!$form_state->hasValue('account')) {
-        $username = $form_state->getValue('gathercontent_username');
-        $apikey = $form_state->getValue('gathercontent_api_key');
         $this->config('gathercontent.settings')
-          ->set('gathercontent_username', $username)
-          ->set('gathercontent_api_key', $apikey)
+          ->set('gathercontent_username', $form_state->getValue('gathercontent_username'))
+          ->set('gathercontent_api_key', $form_state->getValue('gathercontent_api_key'))
           ->save();
-        $this->client
-          ->setEmail($username)
-          ->setApiKey($apikey);
+        $this->client->setCredentials();
         $form_state->setSubmitted()->setRebuild();
       }
       else {

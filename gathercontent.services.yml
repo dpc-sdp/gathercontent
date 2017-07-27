@@ -1,4 +1,4 @@
 services:
   gathercontent.client:
-    class: Cheppers\GatherContent\GatherContentClient
+    class: Drupal\gathercontent\DrupalGatherContentClient
     arguments: ['@http_client']
