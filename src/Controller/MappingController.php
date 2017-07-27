@@ -2,8 +2,9 @@
 
 namespace Drupal\gathercontent\Controller;
 
+use Cheppers\GatherContent\GatherContentClient;
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\gathercontent\DAO\Account;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Class MappingController.
@@ -12,20 +13,40 @@ use Drupal\gathercontent\DAO\Account;
  */
 class MappingController extends ControllerBase {
 
+  protected $client;
+
+  /**
+   * {@inheritdoc}
+   */
+  public function __construct(GatherContentClient $client) {
+    $this->client = $client;
+    $this->client
+      ->setEmail(\Drupal::config('gathercontent.settings')->get('gathercontent_username'))
+      ->setApiKey(\Drupal::config('gathercontent.settings')->get('gathercontent_api_key'));
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('gathercontent.client')
+    );
+  }
+
   /**
    * Page callback for connection testing page.
    *
-   * @return string
+   * @return array
    *   Content of the page.
    */
   public function testConnectionPage() {
-    $account = new Account();
-    $success = $account->testConnection();
+    $message = $this->t('Connection successful.');
 
-    if ($success === TRUE) {
-      $message = $this->t('Connection successful.');
+    try {
+      $this->client->meGet();
     }
-    else {
+    catch (\Exception $e) {
       $message = $this->t("Connection wasn't successful.");
     }
 
