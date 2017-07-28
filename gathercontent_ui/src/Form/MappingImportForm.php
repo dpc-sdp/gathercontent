@@ -2,11 +2,13 @@
 
 namespace Drupal\gathercontent_ui\Form;
 
+use Cheppers\GatherContent\GatherContentClientInterface;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\gathercontent\DAO\Project;
 use Drupal\gathercontent\DAO\Template;
+use Drupal\gathercontent\DrupalGatherContentClient;
 use Drupal\gathercontent\Entity\Mapping;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Class MappingImportForm.
@@ -18,11 +20,35 @@ class MappingImportForm extends EntityForm {
   /**
    * {@inheritdoc}
    */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('gathercontent.client')
+    );
+  }
+
+  /**
+   * Client to query the GatherContent API.
+   *
+   * @var \Drupal\gathercontent\DrupalGatherContentClient
+   */
+  protected $client;
+
+  /**
+   * {@inheritdoc}
+   */
+  public function __construct(GatherContentClientInterface $client) {
+    $this->client = $client;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function form(array $form, FormStateInterface $form_state) {
     $form = parent::form($form, $form_state);
 
-    $pr_obj = new Project();
-    $projects = $pr_obj->getProjects();
+    $account_id = DrupalGatherContentClient::getAccountId();
+    /** @var \Cheppers\GatherContent\DataTypes\Project[] $projects */
+    $projects = $this->client->getActiveProjects($account_id);
 
     $template_obj = new Template();
 
@@ -71,13 +97,13 @@ class MappingImportForm extends EntityForm {
 
       $form['p' . $project_id] = [
         '#type' => 'details',
-        '#title' => $project,
+        '#title' => $project->name,
         '#group' => 'projects',
         '#tree' => TRUE,
       ];
       $form['p' . $project_id]['templates'] = [
         '#type' => 'checkboxes',
-        '#title' => $project,
+        '#title' => $project->name,
         '#options' => $templates,
         '#attributes' => [
           'class' => [
@@ -96,8 +122,10 @@ class MappingImportForm extends EntityForm {
   public function save(array $form, FormStateInterface $form_state) {
     if ($form_state->getTriggeringElement()['#id'] == 'edit-submit') {
       // Load all projects.
-      $pr_obj = new Project();
-      $projects = $pr_obj->getProjects();
+      $account_id = DrupalGatherContentClient::getAccountId();
+      /** @var \Cheppers\GatherContent\DataTypes\Project[] $projects */
+      $projects = $this->client->getActiveProjects($account_id);
+
       $values = $form_state->getValues();
       foreach ($values as $k => $tree) {
         if (!is_array($tree)) {
@@ -110,7 +138,7 @@ class MappingImportForm extends EntityForm {
           $mapping_values = [
             'id' => $template_id,
             'gathercontent_project_id' => $template->project_id,
-            'gathercontent_project' => $projects[$template->project_id],
+            'gathercontent_project' => $projects[$template->project_id]->name,
             'gathercontent_template_id' => $template_id,
             'gathercontent_template' => $template->name,
             'template' => serialize($template),
