@@ -2,11 +2,15 @@
 
 namespace Drupal\gathercontent_ui;
 
+use Cheppers\GatherContent\GatherContentClientInterface;
 use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
 use Drupal\Core\Entity\EntityInterface;
-use Drupal\gathercontent\DAO\Project;
+use Drupal\Core\Entity\EntityStorageInterface;
+use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\gathercontent\DAO\Template;
+use Drupal\gathercontent\DrupalGatherContentClient;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Provides a listing of GatherContent Mapping entities.
@@ -16,10 +20,39 @@ class MappingListBuilder extends ConfigEntityListBuilder {
   protected $templates;
 
   /**
+   * Client for querying the GatherContent API.
+   *
+   * @var \Drupal\gathercontent\DrupalGatherContentClient
+   */
+  protected $client;
+
+  /**
+   * {@inheritdoc}
+   */
+  public function __construct(
+    EntityTypeInterface $entity_type,
+    EntityStorageInterface $storage,
+    GatherContentClientInterface $client
+  ) {
+    parent::__construct($entity_type, $storage);
+    $this->client = $client;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function createInstance(ContainerInterface $container, EntityTypeInterface $entity_type) {
+    return new static(
+      $entity_type,
+      $container->get('entity.manager')->getStorage($entity_type->id()),
+      $container->get('gathercontent.client')
+    );
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function load() {
-
     /** @var \Drupal\Core\Config\Entity\ConfigEntityStorageInterface|\Drupal\Core\Entity\Query\QueryInterface $entity_query */
     $entity_query = \Drupal::service('entity.query')
       ->get('gathercontent_mapping');
@@ -97,8 +130,9 @@ class MappingListBuilder extends ConfigEntityListBuilder {
    * {@inheritdoc}
    */
   public function render() {
-    $project_obj = new Project();
-    $projects = $project_obj->getProjectObjects();
+    $account_id = DrupalGatherContentClient::getAccountId();
+    $projects = $this->client->getActiveProjects($account_id);
+
     $temp_obj = new Template();
     foreach ($projects as $project) {
       $remote_templates = $temp_obj->getTemplatesObject($project->id);
@@ -106,6 +140,7 @@ class MappingListBuilder extends ConfigEntityListBuilder {
         $this->templates[$remote_template->id] = $remote_template->updated_at;
       }
     }
+
     return parent::render();
   }
 
