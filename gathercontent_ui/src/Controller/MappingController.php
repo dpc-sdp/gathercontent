@@ -2,7 +2,7 @@
 
 namespace Drupal\gathercontent_ui\Controller;
 
-use Cheppers\GatherContent\GatherContentClient;
+use Cheppers\GatherContent\GatherContentClientInterface;
 use Drupal\Core\Controller\ControllerBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -13,16 +13,18 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 class MappingController extends ControllerBase {
 
+  /**
+   * GatherContent client.
+   *
+   * @var \Drupal\gathercontent\DrupalGatherContentClient
+   */
   protected $client;
 
   /**
    * {@inheritdoc}
    */
-  public function __construct(GatherContentClient $client) {
+  public function __construct(GatherContentClientInterface $client) {
     $this->client = $client;
-    $this->client
-      ->setEmail(\Drupal::config('gathercontent.settings')->get('gathercontent_username'))
-      ->setApiKey(\Drupal::config('gathercontent.settings')->get('gathercontent_api_key'));
   }
 
   /**
