@@ -5,8 +5,7 @@
  * Drush command to cli config import.
  */
 
-use Drupal\gathercontent\DAO\Content;
-use Drupal\gathercontent\DAO\Project;
+use Drupal\gathercontent\DrupalGatherContentClient;
 use Drupal\gathercontent\Entity\Mapping;
 use Drupal\gathercontent\Entity\Operation;
 use Drupal\gathercontent\Entity\OperationItem;
@@ -122,13 +121,19 @@ function drush_gathercontent_list_mappings() {
  * Implements drush_COMMAND().
  */
 function drush_gathercontent_list_status($project_id = NULL) {
-  $project_obj = new Project();
+  /** @var \Drupal\gathercontent\DrupalGatherContentClient $client */
+  $client = \Drupal::service('gathercontent.client');
+
   if ($project_id === NULL) {
-    $projects = $project_obj->getProjects();
+    $account_id = DrupalGatherContentClient::getAccountId();
+    if (!$account_id) {
+      return drush_set_error('gathercontent_no_accounts_configured', t('No accounts configured.'));
+    }
+    $projects = $client->projectsGet($account_id);
 
     $options = [];
-    foreach ($projects as $id => $label) {
-      $options[$id] = $id . ' | ' . $label;
+    foreach ($projects as $id => $project) {
+      $options[$id] = $id . ' | ' . $project->name;
     }
     $project_id = drush_choice($options, dt('Select a project ID: '));
   }
@@ -137,7 +142,7 @@ function drush_gathercontent_list_status($project_id = NULL) {
     return drush_set_error('gathercontent_unknown_mapping_id', dt('Unknown mapping ID.'));
   }
 
-  $statuses = $project_obj->getStatuses($project_id);
+  $statuses = $client->projectStatusesGet($project_id);
   $mappings = [];
   foreach ($statuses as $status) {
     $mappings[$status->id] = [
@@ -194,8 +199,10 @@ function drush_gathercontent_import($mapping_id = NULL, $node_update_method = 'a
   $project_id = $mapping->getGathercontentProjectId();
   $template_id = $mapping->getGathercontentTemplateId();
 
-  $content_obj = new Content();
-  $content = $content_obj->getContents($project_id);
+  /** @var \Drupal\gathercontent\DrupalGatherContentClient $client */
+  $client = \Drupal::service('gathercontent.client');
+  /** @var \Cheppers\GatherContent\DataTypes\Item[] $content */
+  $content = $client->itemsGet($project_id);
 
   $publish = drush_get_option('publish', \Drupal::config('gathercontent.import')->get('node_default_status'));
   $publish = $publish ? '1' : '0';
@@ -203,7 +210,7 @@ function drush_gathercontent_import($mapping_id = NULL, $node_update_method = 'a
   $operations = [];
 
   foreach ($content as $item) {
-    if ($item->template_id === $template_id) {
+    if ($item->templateId === $template_id) {
       $operations[] = [
         'gathercontent_import_process',
         [
