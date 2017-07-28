@@ -25,11 +25,3 @@ gathercontent.import:
     node_update_method:
       type: string
       label: 'Content update method'
-
-field.widget.settings.select_other_widget:
-  type: mapping
-  label: 'Select or other widget display format settings'
-  mapping:
-    available_options:
-      type: string
-      label: 'Type of select form element'

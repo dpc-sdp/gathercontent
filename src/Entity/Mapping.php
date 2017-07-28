@@ -10,30 +10,10 @@ use Drupal\Core\Config\Entity\ConfigEntityBase;
  * @ConfigEntityType(
  *   id = "gathercontent_mapping",
  *   label = @Translation("GatherContent Mapping"),
- *   handlers = {
- *     "list_builder" = "Drupal\gathercontent\MappingListBuilder",
- *     "form" = {
- *       "default" = "Drupal\gathercontent\Form\MappingImportForm",
- *       "add" = "Drupal\gathercontent\Form\MappingImportForm",
- *       "edit" = "Drupal\gathercontent\Form\MappingEditForm",
- *       "delete" = "Drupal\gathercontent\Form\MappingDeleteForm"
- *     },
- *     "route_provider" = {
- *       "html" = "Drupal\gathercontent\MappingHtmlRouteProvider",
- *     },
- *   },
  *   config_prefix = "gathercontent_mapping",
- *   admin_permission = "administer site configuration",
  *   entity_keys = {
  *     "id" = "id",
  *     "uuid" = "uuid"
- *   },
- *   links = {
- *     "canonical" = "/admin/config/gathercontent/mapping/{gathercontent_mapping}",
- *     "add-form" = "/admin/config/gathercontent/mapping/create",
- *     "edit-form" = "/admin/config/gathercontent/mapping/{gathercontent_mapping}/edit",
- *     "delete-form" = "/admin/config/gathercontent/mapping/{gathercontent_mapping}/delete",
- *     "collection" = "/admin/config/gathercontent/mapping"
  *   }
  * )
  */

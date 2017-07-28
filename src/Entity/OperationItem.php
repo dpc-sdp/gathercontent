@@ -15,9 +15,6 @@ use Drupal\Core\Entity\EntityTypeInterface;
  * @ContentEntityType(
  *   id = "gathercontent_operation_item",
  *   label = @Translation("Gathercontent operation item"),
- *   handlers = {
- *     "views_data" = "Drupal\gathercontent\Entity\OperationItemViewsData",
- *   },
  *   base_table = "gathercontent_operation_item",
  *   admin_permission = "administer gathercontent operation item entities",
  *   entity_keys = {

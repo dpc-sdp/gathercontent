@@ -3,3 +3,6 @@ description: 'GatherContent User Interface module'
 package: GatherContent
 core: 8.x
 type: module
+dependencies:
+  - gathercontent
+  - views
