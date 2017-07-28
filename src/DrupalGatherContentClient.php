@@ -52,4 +52,19 @@ class DrupalGatherContentClient extends GatherContentClient {
     return NULL;
   }
 
+  /**
+   * Retrieve all the active projects.
+   */
+  public function getActiveProjects(int $account_id) {
+    $projects = $this->projectsGet($account_id);
+
+    foreach ($projects as $id => $project) {
+      if (!$project->active) {
+        unset($projects[$id]);
+      }
+    }
+
+    return $projects;
+  }
+
 }
