@@ -2,13 +2,14 @@
 
 namespace Drupal\gathercontent_ui\Form;
 
+use Cheppers\GatherContent\GatherContentClientInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\gathercontent\DAO\Content;
-use Drupal\gathercontent\DAO\Project;
 use Drupal\gathercontent\Entity\Mapping;
 use Drupal\gathercontent\Entity\Operation;
 use Drupal\node\Entity\NodeType;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Class ContentImportSelectForm.
@@ -28,6 +29,24 @@ class ContentImportSelectForm extends FormBase {
   protected $items;
 
   protected $drupalStatus;
+
+  protected $client;
+
+  /**
+   * {@inheritdoc}
+   */
+  public function __construct(GatherContentClientInterface $client) {
+    $this->client = $client;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('gathercontent.client')
+    );
+  }
 
   /**
    * {@inheritdoc}
@@ -315,8 +334,9 @@ class ContentImportSelectForm extends FormBase {
       ];
 
       $options = [];
-      $project_obj = new Project();
-      $statuses = $project_obj->getStatuses($this->projectId);
+      /** @var \Cheppers\GatherContent\DataTypes\Status[] $statuses */
+      $statuses = $this->client->projectStatusesGet($this->projectId);
+
       foreach ($statuses as $status) {
         $options[$status->id] = $status->name;
       }
