@@ -2,7 +2,6 @@
 
 namespace Drupal\gathercontent\Form;
 
-use Cheppers\GatherContent\DataTypes\Account;
 use Cheppers\GatherContent\GatherContentClientInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Form\ConfigFormBase;
