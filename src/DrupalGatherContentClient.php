@@ -27,4 +27,29 @@ class DrupalGatherContentClient extends GatherContentClient {
     $this->setApiKey($config->get('gathercontent_api_key'));
   }
 
+  /**
+   * Retrieve the account id of the given account.
+   *
+   * If none given, retrieve the first account by default.
+   */
+  public static function getAccountId(string $account_name = NULL) {
+    $account = \Drupal::config('gathercontent.settings')
+      ->get('gathercontent_account');
+    $account = unserialize($account);
+
+    if (!$account_name) {
+      if (reset($account)) {
+        return key($account);
+      }
+    }
+
+    foreach ($account as $id => $name) {
+      if ($name === $account_name) {
+        return $id;
+      }
+    }
+
+    return NULL;
+  }
+
 }
