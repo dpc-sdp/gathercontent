@@ -12,7 +12,6 @@ use Drupal\Core\Language\Language;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\gathercontent\DAO\Content;
-use Drupal\gathercontent\DAO\Project;
 use Drupal\gathercontent\DAO\Template;
 use Drupal\gathercontent\Entity\Mapping;
 use Drupal\gathercontent\Entity\OperationItem;
@@ -78,34 +77,35 @@ function gathercontent_entity_base_field_info(EntityTypeInterface $entity_type) 
  */
 function _gc_fetcher($gc_id, $uuid, $drupal_status, $node_update_method, $status = NULL, $parent_menu_item = NULL) {
   $user = \Drupal::currentUser();
+  /** @var \Drupal\gathercontent\DrupalGatherContentClient $client */
+  $client = \Drupal::service('gathercontent.client');
 
   $tsid = NULL;
 
-  $content_obj = new Content();
-  $content = $content_obj->getContent($gc_id);
+  /** @var \Cheppers\GatherContent\DataTypes\Item $content */
+  $content = $client->itemGet($gc_id);
 
   if (!empty($status)) {
-    $status_obj = new Project();
-    $status = $status_obj->getStatus($content->project_id, $status);
+    $status = $client->projectStatusGet($content->projectId, $status);
   }
 
   $temp_obj = new Template();
-  $template = $temp_obj->getTemplate($content->template_id);
+  $template = $temp_obj->getTemplate($content->templateId);
 
   $operation_item = \Drupal::entityTypeManager()
     ->getStorage('gathercontent_operation_item')
     ->create([
       'operation_uuid' => $uuid,
-      'item_status' => (!empty($status) ? $status->name : $content->status->data->name),
-      'item_status_color' => (!empty($status) ? $status->color : $content->status->data->color),
+      'item_status' => (!empty($status) ? $status->name : $content->status->name),
+      'item_status_color' => (!empty($status) ? $status->color : $content->status->color),
       'template_name' => $template->name,
       'item_name' => $content->name,
       'gc_id' => $gc_id,
     ]);
 
   $mapping_id = Drupal::entityQuery('gathercontent_mapping')
-    ->condition('gathercontent_project_id', $content->project_id)
-    ->condition('gathercontent_template_id', $content->template_id)
+    ->condition('gathercontent_project_id', $content->projectId)
+    ->condition('gathercontent_template_id', $content->templateId)
     ->execute();
 
   if (!empty($mapping_id)) {
@@ -141,10 +141,10 @@ function _gc_fetcher($gc_id, $uuid, $drupal_status, $node_update_method, $status
           && \Drupal::service('content_translation.manager')
             ->isEnabled('node', $mapping->getContentType());
         foreach ($content->config as $pane) {
-          $is_translatable &= isset($mapping_data[$pane->name]['language'])
-            && ($mapping_data[$pane->name]['language'] != Language::LANGCODE_NOT_SPECIFIED);
+          $is_translatable &= isset($mapping_data[$pane->id]['language'])
+            && ($mapping_data[$pane->id]['language'] != Language::LANGCODE_NOT_SPECIFIED);
           if ($is_translatable) {
-            $language = $mapping_data[$pane->name]['language'];
+            $language = $mapping_data[$pane->id]['language'];
             if (!$entity->hasTranslation($language)) {
               $entity->addTranslation($language);
               if ($entity->isNew()) {
@@ -156,12 +156,12 @@ function _gc_fetcher($gc_id, $uuid, $drupal_status, $node_update_method, $status
             $language = Language::LANGCODE_NOT_SPECIFIED;
           }
           foreach ($pane->elements as $field) {
-            if (isset($mapping_data[$pane->name]['elements'][$field->name]) && !empty($mapping_data[$pane->name]['elements'][$field->name])) {
-              $local_field_name = $mapping_data[$pane->name]['elements'][$field->name];
-              if (isset($mapping_data[$pane->name]['type']) && ($mapping_data[$pane->name]['type'] === 'content') || !isset($mapping_data[$pane->name]['type'])) {
+            if (isset($mapping_data[$pane->id]['elements'][$field->id]) && !empty($mapping_data[$pane->id]['elements'][$field->id])) {
+              $local_field_name = $mapping_data[$pane->id]['elements'][$field->id];
+              if (isset($mapping_data[$pane->id]['type']) && ($mapping_data[$pane->id]['type'] === 'content') || !isset($mapping_data[$pane->id]['type'])) {
                 gc_gc_process_content_pane($entity, $local_field_name, $field, $is_translatable, $language, $files);
               }
-              elseif (isset($mapping_data[$pane->name]['type']) && ($mapping_data[$pane->name]['type'] === 'metatag')) {
+              elseif (isset($mapping_data[$pane->id]['type']) && ($mapping_data[$pane->id]['type'] === 'metatag')) {
                 gc_gc_process_metatag_pane($entity, $local_field_name, $field, $mapping->getContentType(), $is_translatable, $language);
               }
             }
