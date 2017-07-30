@@ -2,12 +2,17 @@
 
 namespace Drupal\gathercontent_ui\Form;
 
+use Cheppers\GatherContent\GatherContentClientInterface;
+use Drupal\Core\Datetime\DateFormatterInterface;
+use Drupal\Core\Entity\EntityManagerInterface;
+use Drupal\Core\Entity\Query\QueryFactory;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Link;
 use Drupal\Core\Url;
-use Drupal\gathercontent\DAO\Content;
 use Drupal\gathercontent\Entity\Mapping;
 use Drupal\node\Entity\Node;
+use Drupal\user\PrivateTempStoreFactory;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Class ContentUpdateSelectForm.
@@ -15,6 +20,39 @@ use Drupal\node\Entity\Node;
  * @package Drupal\gathercontent\Form
  */
 class ContentSelectForm extends MultistepFormBase {
+
+  /**
+   * @var \Drupal\gathercontent\DrupalGatherContentClient
+   */
+  protected $client;
+
+  /**
+   * {@inheritdoc}
+   */
+  public function __construct(
+    EntityManagerInterface $entity_manager,
+    DateFormatterInterface $date_formatter,
+    PrivateTempStoreFactory $temp_store_factory,
+    QueryFactory $entityQuery,
+    GatherContentClientInterface $client
+  ) {
+    parent::__construct($entity_manager, $date_formatter, $temp_store_factory,
+      $entityQuery);
+    $this->client = $client;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('entity.manager'),
+      $container->get('date.formatter'),
+      $container->get('user.private_tempstore'),
+      $container->get('entity.query'),
+      $container->get('gathercontent.client')
+    );
+  }
 
   /**
    * {@inheritdoc}
@@ -49,18 +87,19 @@ class ContentSelectForm extends MultistepFormBase {
       ->execute();
     $nodes = Node::loadMultiple($node_ids);
     $selected_projects = [];
-    $content_obj = new Content();
 
     foreach ($created_mapping_ids as $mapping) {
       if (!in_array($mapping->getGathercontentProjectId(), $selected_projects)) {
         $selected_projects[] = $mapping->getGathercontentProjectId();
-        $content = $content_obj->getContents($mapping->getGathercontentProjectId());
+        /** @var \Cheppers\GatherContent\DataTypes\Item[] $content */
+        $content = $this->client->itemsGet($mapping->getGathercontentProjectId());
+
         foreach ($content as $c) {
           $single_content = [];
-          $single_content['gc_updated'] = $c->updated_at;
+          $single_content['gc_updated'] = $c->updatedAt;
           $single_content['status'] = $c->status;
           $single_content['name'] = $c->name;
-          $single_content['project_id'] = $c->project_id;
+          $single_content['project_id'] = $c->projectId;
           $contents[$c->id] = $single_content;
         }
       }

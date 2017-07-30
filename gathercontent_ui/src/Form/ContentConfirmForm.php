@@ -2,12 +2,12 @@
 
 namespace Drupal\gathercontent_ui\Form;
 
+use Cheppers\GatherContent\GatherContentClientInterface;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Form\ConfirmFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Link;
 use Drupal\Core\Url;
-use Drupal\gathercontent\DAO\Content;
 use Drupal\gathercontent\Entity\Mapping;
 use Drupal\node\Entity\Node;
 use Drupal\user\PrivateTempStoreFactory;
@@ -40,6 +40,13 @@ class ContentConfirmForm extends ConfirmFormBase {
   protected $manager;
 
   /**
+   * Client for querying the GatherContent API.
+   *
+   * @var \Drupal\gathercontent\DrupalGatherContentClient
+   */
+  protected $client;
+
+  /**
    * Constructs a DeleteMultiple form object.
    *
    * @param \Drupal\user\PrivateTempStoreFactory $temp_store_factory
@@ -47,10 +54,15 @@ class ContentConfirmForm extends ConfirmFormBase {
    * @param \Drupal\Core\Entity\EntityManagerInterface $manager
    *   The entity manager.
    */
-  public function __construct(PrivateTempStoreFactory $temp_store_factory, EntityManagerInterface $manager) {
+  public function __construct(
+    PrivateTempStoreFactory $temp_store_factory,
+    EntityManagerInterface $manager,
+    GatherContentClientInterface $client
+  ) {
     $this->tempStore = $temp_store_factory->get('gathercontent_multistep_data');
     $this->storage = $manager->getStorage('node');
     $this->nodeIds = $this->tempStore->get('nodes');
+    $this->client = $client;
   }
 
   /**
@@ -59,7 +71,8 @@ class ContentConfirmForm extends ConfirmFormBase {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('user.private_tempstore'),
-      $container->get('entity.manager')
+      $container->get('entity.manager'),
+      $container->get('gathercontent.client')
     );
   }
 
@@ -127,18 +140,18 @@ class ContentConfirmForm extends ConfirmFormBase {
 
     $nodes = Node::loadMultiple($this->nodeIds);
     $selected_projects = [];
-    $content_obj = new Content();
 
     foreach ($created_mapping_ids as $mapping) {
       if (!in_array($mapping->getGathercontentProjectId(), $selected_projects)) {
         $selected_projects[] = $mapping->getGathercontentProjectId();
-        $content = $content_obj->getContents($mapping->getGathercontentProjectId());
+        /** @var \Cheppers\GatherContent\DataTypes\Item[] $content */
+        $content = $this->client->itemsGet($mapping->getGathercontentProjectId());
         foreach ($content as $c) {
           $single_content = [];
-          $single_content['gc_updated'] = $c->updated_at;
+          $single_content['gc_updated'] = $c->updatedAt;
           $single_content['status'] = $c->status;
           $single_content['name'] = $c->name;
-          $single_content['project_id'] = $c->project_id;
+          $single_content['project_id'] = $c->projectId;
           $contents[$c->id] = $single_content;
         }
       }
@@ -149,7 +162,7 @@ class ContentConfirmForm extends ConfirmFormBase {
 
     $content_table = [];
     foreach ($nodes as $item) {
-      /** @var Drupal\node\Entity\Node $item */
+      /** @var \Drupal\node\Entity\Node $item */
       $content_table[$item->id()] = [
         'status' => [
           'data' => [

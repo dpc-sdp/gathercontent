@@ -5,7 +5,6 @@ namespace Drupal\gathercontent_ui\Form;
 use Cheppers\GatherContent\GatherContentClientInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\gathercontent\DAO\Content;
 use Drupal\gathercontent\Entity\Mapping;
 use Drupal\gathercontent\Entity\Operation;
 use Drupal\node\Entity\NodeType;
@@ -123,8 +122,8 @@ class ContentImportSelectForm extends FormBase {
         ];
 
         $project_id = $form_state->hasValue('project') ? $form_state->getValue('project') : $this->projectId;
-        $content_obj = new Content();
-        $content = $content_obj->getContents($project_id);
+        /** @var \Cheppers\GatherContent\DataTypes\Item[] $content */
+        $content = $this->client->itemsGet($project_id);
         $import_config = $this->configFactory()->get('gathercontent.import');
 
         $form['import']['items'] = [
@@ -174,20 +173,20 @@ class ContentImportSelectForm extends FormBase {
         foreach ($content as $item) {
           // If template is not empty, we have mapped template and item
           // isn't synced yet.
-          if (!is_null($item->template_id)
-            && $item->template_id != 'null'
-            && isset($mapping_array[$item->template_id])
+          if (!is_null($item->templateId)
+            && $item->templateId != 'null'
+            && isset($mapping_array[$item->templateId])
           ) {
-            $node_type = NodeType::load($content_types[$item->template_id]);
+            $node_type = NodeType::load($content_types[$item->templateId]);
             $selected_boxes = $node_type->getThirdPartySetting('menu_ui', 'available_menus', ['main']);
             $available_menus = [];
             foreach ($selected_boxes as $selected_box) {
               $available_menus[$selected_box] = $selected_box;
             }
             $this->items[$item->id] = [
-              'color' => $item->status->data->color,
-              'label' => $item->status->data->name,
-              'template' => $mapping_array[$item->template_id]['gc_template'],
+              'color' => $item->status->color,
+              'label' => $item->status->name,
+              'template' => $mapping_array[$item->templateId]['gc_template'],
               'title' => $item->name,
             ];
             $form['import']['items'][$item->id] = [
@@ -210,11 +209,11 @@ class ContentImportSelectForm extends FormBase {
                   '#tag' => 'div',
                   '#value' => ' ',
                   '#attributes' => [
-                    'style' => 'width:20px; height: 20px; float: left; margin-right: 5px; background: ' . $item->status->data->color,
+                    'style' => 'width:20px; height: 20px; float: left; margin-right: 5px; background: ' . $item->status->color,
                   ],
                 ],
                 'label' => [
-                  '#plain_text' => $item->status->data->name,
+                  '#plain_text' => $item->status->name,
                 ],
               ],
               'title' => [
@@ -228,18 +227,18 @@ class ContentImportSelectForm extends FormBase {
               ],
               'updated' => [
                 'data' => [
-                  '#markup' => date('F d, Y - H:i', strtotime($item->updated_at->date)),
+                  '#markup' => date('F d, Y - H:i', strtotime($item->updatedAt->date)),
                 ],
                 '#wrapper_attributes' => [
                   'class' => ['gc-item', 'gc-item-date'],
                 ],
                 '#attributes' => [
-                  'data-date' => date('Y-m-d.H:i:s', strtotime($item->updated_at->date)),
+                  'data-date' => date('Y-m-d.H:i:s', strtotime($item->updatedAt->date)),
                 ],
               ],
               'template' => [
                 'data' => [
-                  '#markup' => $mapping_array[$item->template_id]['gc_template'],
+                  '#markup' => $mapping_array[$item->templateId]['gc_template'],
                 ],
                 '#wrapper_attributes' => [
                   'class' => ['template-name-item'],
@@ -402,20 +401,15 @@ class ContentImportSelectForm extends FormBase {
 
         if (!empty($import_content)) {
           // Load all by project_id.
-          $content_obj = new Content();
-          $contents_source = $content_obj->getContents($form_state->getValue('project'));
-          $content = [];
-
-          foreach ($contents_source as $value) {
-            $content[$value->id] = $value;
-          }
+          /** @var \Cheppers\GatherContent\DataTypes\Item[] $content */
+          $content = $this->client->itemsGet($form_state->getValue('project'));
 
           $num_of_repeats = 0;
           $size = count($import_content);
 
           while (!empty($import_content)) {
             $current = reset($import_content);
-            if (isset($stack[$content[$current]->parent_id])) {
+            if (isset($stack[$content[$current]->parentId])) {
               $stack[$current] = $current;
               array_shift($import_content);
             }
@@ -488,18 +482,13 @@ class ContentImportSelectForm extends FormBase {
 
         if (!empty($import_content)) {
           // Load all by project_id.
-          $content_obj = new Content();
-          $contents_source = $content_obj->getContents($this->projectId);
-          $content = [];
-
-          foreach ($contents_source as $value) {
-            $content[$value->id] = $value;
-          }
+          /** @var \Cheppers\GatherContent\DataTypes\Item[] $content */
+          $content = $this->client->itemsGet($this->projectId);
 
           while (!empty($import_content)) {
             $current = reset($import_content);
-            if (isset($stack[$content[$current]->parent_id])) {
-              $parent_menu_item = 'node:' . $content[$current]->parent_id;
+            if (isset($stack[$content[$current]->parentId])) {
+              $parent_menu_item = 'node:' . $content[$current]->parentId;
               $drupal_status = isset($this->drupalStatus[$current]) ? $this->drupalStatus[$current] : 0;
               $operations[] = [
                 'gathercontent_import_process',
