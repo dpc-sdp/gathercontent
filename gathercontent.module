@@ -799,12 +799,13 @@ function gc_gc_process_files_field(NodeInterface &$node, $local_field_name, $gc_
  * @param array $context
  *   Context of operation.
  */
-function gathercontent_import_process($gc_id, $status_id, $operation_uuid, $drupal_status, $node_update_method, $parent_menu_item = NULL, array &$context = []) {
+function gathercontent_import_process($gc_id, $status_id, $operation_uuid, $drupal_status, $node_update_method, $parent_menu_item = NULL, &$context = []) {
   if (($nid = _gc_fetcher($gc_id, $operation_uuid, $drupal_status, $node_update_method, $status_id, $parent_menu_item)) !== FALSE) {
     if ($status_id != 0) {
       // Change status.
-      $content_obj = new Content();
-      $content_obj->updateStatus($gc_id, $status_id);
+      /** @var \Drupal\gathercontent\DrupalGatherContentClient $client */
+      $client = \Drupal::service('gathercontent.client');
+      $client->itemChooseStatusPost($gc_id, $status_id);
     }
   };
   $context['results']['uuid'] = $operation_uuid;
