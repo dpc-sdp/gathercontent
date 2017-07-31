@@ -67,4 +67,43 @@ class DrupalGatherContentClient extends GatherContentClient {
     return $projects;
   }
 
+  /**
+   * Returns a formatted array with the template ID's as a key.
+   *
+   * @param int $project_id
+   *   Project ID.
+   *
+   * @return array
+   *   Return array.
+   */
+  public function getTemplatesOptionArray(int $project_id) {
+    $formatted = [];
+    $templates = $this->templatesGet($project_id);
+
+    foreach ($templates as $id => $template) {
+      $formatted[$id] = $template->name;
+    }
+
+    return $formatted;
+  }
+
+  /**
+   * Returns the response body.
+   *
+   * @param bool $json_decoded
+   *   If TRUE the method will return the body json_decoded.
+   *
+   * @return \Psr\Http\Message\StreamInterface
+   *   Response body.
+   */
+  public function getBody(bool $json_decoded = FALSE) {
+    $body = $this->getResponse()->getBody();
+
+    if ($json_decoded) {
+      return \GuzzleHttp\json_decode($body);
+    }
+
+    return $body;
+  }
+
 }

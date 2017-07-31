@@ -2,6 +2,8 @@
 
 namespace Drupal\gathercontent_ui\Form;
 
+use Cheppers\GatherContent\DataTypes\Template;
+use Cheppers\GatherContent\GatherContentClientInterface;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
@@ -9,8 +11,8 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
-use Drupal\gathercontent\DAO\Template;
 use Drupal\taxonomy\Entity\Term;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Class MappingEditForm.
@@ -93,6 +95,32 @@ class MappingEditForm extends EntityForm {
   protected $erImported;
 
   /**
+   * GatherContent client.
+   *
+   * @var \Drupal\gathercontent\DrupalGatherContentClient
+   */
+  protected $client;
+
+  /**
+   * MappingImportForm constructor.
+   *
+   * @param \Cheppers\GatherContent\GatherContentClientInterface $client
+   *   GatherContent client.
+   */
+  public function __construct(GatherContentClientInterface $client) {
+    $this->client = $client;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('gathercontent.client')
+    );
+  }
+
+  /**
    * {@inheritdoc}
    */
   public function form(array $form, FormStateInterface $form_state) {
@@ -107,8 +135,7 @@ class MappingEditForm extends EntityForm {
     $mapping = $this->entity;
     $this->new = !$mapping->hasMapping();
 
-    $tmp = new Template();
-    $this->template = $tmp->getTemplate($mapping->getGathercontentTemplateId());
+    $template = $this->client->templateGet($mapping->getGathercontentTemplateId());
 
     if ($this->step === 'field_mapping') {
       $content_types = node_type_get_names();
@@ -166,9 +193,9 @@ class MappingEditForm extends EntityForm {
           '#suffix' => '</div>',
         ];
 
-        foreach ($this->template->config as $i => $fieldset) {
+        foreach ($template->config as $i => $fieldset) {
           if ($fieldset->hidden === FALSE) {
-            $form['mapping'][$fieldset->name] = [
+            $form['mapping'][$fieldset->id] = [
               '#type' => 'details',
               '#title' => $fieldset->label,
               '#open' => ($i === 0 ? TRUE : FALSE),
@@ -176,14 +203,14 @@ class MappingEditForm extends EntityForm {
             ];
 
             if (\Drupal::moduleHandler()->moduleExists('metatag')) {
-              $form['mapping'][$fieldset->name]['type'] = [
+              $form['mapping'][$fieldset->id]['type'] = [
                 '#type' => 'select',
                 '#options' => [
                   'content' => t('Content'),
                   'metatag' => t('Metatag'),
                 ],
                 '#title' => t('Type'),
-                '#default_value' => (isset($this->mappingData[$fieldset->name]['type']) || $form_state->hasValue($fieldset->name)['type']) ? ($form_state->hasValue($fieldset->name)['type'] ? $form_state->getValue($fieldset->name)['type'] : $this->mappingData[$fieldset->name]['type']) : 'content',
+                '#default_value' => (isset($this->mappingData[$fieldset->id]['type']) || $form_state->hasValue($fieldset->id)['type']) ? ($form_state->hasValue($fieldset->id)['type'] ? $form_state->getValue($fieldset->id)['type'] : $this->mappingData[$fieldset->id]['type']) : 'content',
                 '#ajax' => [
                   'callback' => '::getMappingTable',
                   'wrapper' => 'edit-mapping',
@@ -198,11 +225,11 @@ class MappingEditForm extends EntityForm {
                 ->isEnabled('node', $form_state->getValue('content_type'))
             ) {
 
-              $form['mapping'][$fieldset->name]['language'] = [
+              $form['mapping'][$fieldset->id]['language'] = [
                 '#type' => 'select',
                 '#options' => ['und' => t('None')] + $this->getLanguageList(),
                 '#title' => t('Language'),
-                '#default_value' => isset($this->mappingData[$fieldset->name]['language']) ? $this->mappingData[$fieldset->name]['language'] : 'und',
+                '#default_value' => isset($this->mappingData[$fieldset->id]['language']) ? $this->mappingData[$fieldset->id]['language'] : 'und',
               ];
             }
 
@@ -210,7 +237,7 @@ class MappingEditForm extends EntityForm {
               $d_fields = [];
               if (isset($form_state->getTriggeringElement()['#name'])) {
                 // We need different handling for changed fieldset.
-                if ($form_state->getTriggeringElement()['#array_parents'][1] === $fieldset->name) {
+                if ($form_state->getTriggeringElement()['#array_parents'][1] === $fieldset->id) {
                   if ($form_state->getTriggeringElement()['#value'] === 'content') {
                     $d_fields = $this->filterFields($gc_field, $mapping->getContentType());
                   }
@@ -219,7 +246,7 @@ class MappingEditForm extends EntityForm {
                   }
                 }
                 else {
-                  if ($form_state->getValue($fieldset->name)['type'] === 'content') {
+                  if ($form_state->getValue($fieldset->id)['type'] === 'content') {
                     $d_fields = $this->filterFields($gc_field, $mapping->getContentType());
                   }
                   elseif ($form_state->getTriggeringElement()['#value'] === 'metatag') {
@@ -228,18 +255,18 @@ class MappingEditForm extends EntityForm {
                 }
               }
               else {
-                if ((isset($this->mappingData[$fieldset->name]['type']) && $this->mappingData[$fieldset->name]['type'] === 'content') || !isset($this->mappingData[$fieldset->name]['type'])) {
+                if ((isset($this->mappingData[$fieldset->id]['type']) && $this->mappingData[$fieldset->id]['type'] === 'content') || !isset($this->mappingData[$fieldset->id]['type'])) {
                   $d_fields = $this->filterFields($gc_field, $mapping->getContentType());
                 }
                 else {
                   $d_fields = $this->filterMetatags($gc_field);
                 }
               }
-              $form['mapping'][$fieldset->name]['elements'][$gc_field->name] = [
+              $form['mapping'][$fieldset->id]['elements'][$gc_field->id] = [
                 '#type' => 'select',
                 '#options' => $d_fields,
                 '#title' => (isset($gc_field->label) ? $gc_field->label : $gc_field->title),
-                '#default_value' => isset($this->mappingData[$fieldset->name]['elements'][$gc_field->name]) ? $this->mappingData[$fieldset->name]['elements'][$gc_field->name] : NULL,
+                '#default_value' => isset($this->mappingData[$fieldset->id]['elements'][$gc_field->id]) ? $this->mappingData[$fieldset->id]['elements'][$gc_field->id] : NULL,
                 '#empty_option' => t("Don't map"),
                 '#attributes' => [
                   'class' => [
@@ -293,9 +320,9 @@ class MappingEditForm extends EntityForm {
 
         if ($form_state->hasValue('content_type')) {
           $this->contentType = $form_state->getValue('content_type');
-          foreach ($this->template->config as $i => $fieldset) {
+          foreach ($template->config as $i => $fieldset) {
             if ($fieldset->hidden === FALSE) {
-              $form['mapping'][$fieldset->name] = [
+              $form['mapping'][$fieldset->id] = [
                 '#type' => 'details',
                 '#title' => $fieldset->label,
                 '#open' => ($i === 0 ? TRUE : FALSE),
@@ -303,21 +330,21 @@ class MappingEditForm extends EntityForm {
               ];
 
               if ($i === 0) {
-                $form['mapping'][$fieldset->name]['#prefix'] = '<div id="edit-mapping">';
+                $form['mapping'][$fieldset->id]['#prefix'] = '<div id="edit-mapping">';
               }
-              if (end($this->template->config) === $fieldset) {
-                $form['mapping'][$fieldset->name]['#suffix'] = '</div>';
+              if (end($template->config) === $fieldset) {
+                $form['mapping'][$fieldset->id]['#suffix'] = '</div>';
               }
 
               if (\Drupal::moduleHandler()->moduleExists('metatag')) {
-                $form['mapping'][$fieldset->name]['type'] = [
+                $form['mapping'][$fieldset->id]['type'] = [
                   '#type' => 'select',
                   '#options' => [
                     'content' => t('Content'),
                     'metatag' => t('Metatag'),
                   ],
                   '#title' => t('Type'),
-                  '#default_value' => $form_state->hasValue($fieldset->name)['type'] ? $form_state->getValue($fieldset->name)['type'] : 'content',
+                  '#default_value' => $form_state->hasValue($fieldset->id)['type'] ? $form_state->getValue($fieldset->id)['type'] : 'content',
                   '#ajax' => [
                     'callback' => '::getMappingTable',
                     'wrapper' => 'edit-mapping',
@@ -333,11 +360,11 @@ class MappingEditForm extends EntityForm {
                   ->isEnabled('node', $form_state->getValue('content_type'))
               ) {
 
-                $form['mapping'][$fieldset->name]['language'] = [
+                $form['mapping'][$fieldset->id]['language'] = [
                   '#type' => 'select',
                   '#options' => ['und' => t('None')] + $this->getLanguageList(),
                   '#title' => t('Language'),
-                  '#default_value' => $form_state->hasValue($fieldset->name)['language'] ? $form_state->getValue($fieldset->name)['language'] : 'und',
+                  '#default_value' => $form_state->hasValue($fieldset->id)['language'] ? $form_state->getValue($fieldset->id)['language'] : 'und',
                 ];
               }
 
@@ -345,7 +372,7 @@ class MappingEditForm extends EntityForm {
                 $d_fields = [];
                 if ($form_state->getTriggeringElement()['#name'] !== 'content_type') {
                   // We need different handling for changed fieldset.
-                  if ($form_state->getTriggeringElement()['#array_parents'][1] === $fieldset->name) {
+                  if ($form_state->getTriggeringElement()['#array_parents'][1] === $fieldset->id) {
                     if ($form_state->getTriggeringElement()['#value'] === 'content') {
                       $d_fields = $this->filterFields($gc_field, $this->contentType);
                     }
@@ -354,10 +381,10 @@ class MappingEditForm extends EntityForm {
                     }
                   }
                   else {
-                    if ($form_state->getValue($fieldset->name)['type'] === 'content') {
+                    if ($form_state->getValue($fieldset->id)['type'] === 'content') {
                       $d_fields = $this->filterFields($gc_field, $this->contentType);
                     }
-                    elseif ($form_state->getValue($fieldset->name)['type'] === 'metatag') {
+                    elseif ($form_state->getValue($fieldset->id)['type'] === 'metatag') {
                       $d_fields = $this->filterMetatags($gc_field);
                     }
                   }
@@ -365,13 +392,13 @@ class MappingEditForm extends EntityForm {
                 else {
                   $d_fields = $this->filterFields($gc_field, $this->contentType);
                 }
-                $form['mapping'][$fieldset->name]['elements'][$gc_field->name] = [
+                $form['mapping'][$fieldset->id]['elements'][$gc_field->id] = [
                   '#type' => 'select',
                   '#options' => $d_fields,
-                  '#title' => (isset($gc_field->label) ? $gc_field->label : $gc_field->title),
+                  '#title' => (!empty($gc_field->label) ? $gc_field->label : $gc_field->title),
                   '#empty_option' => $this->t("Don't map"),
-                  '#default_value' => $form_state->hasValue($fieldset->name)['elements'][$gc_field->name]
-                  ? $form_state->getValue($fieldset->name)['elements'][$gc_field->name] : NULL,
+                  '#default_value' => $form_state->hasValue($fieldset->id)['elements'][$gc_field->id]
+                  ? $form_state->getValue($fieldset->id)['elements'][$gc_field->id] : NULL,
                   '#attributes' => [
                     'class' => [
                       'gathercontent-ct-element',
@@ -415,10 +442,10 @@ class MappingEditForm extends EntityForm {
 
         // Prepare options for every language.
         foreach ($gcMapping as $lang => $fieldSettings) {
-          foreach ($this->template->config as $tab) {
-            if ($tab->name === $fieldSettings['tab']) {
+          foreach ($template->config as $tab) {
+            if ($tab->id === $fieldSettings['tab']) {
               foreach ($tab->elements as $element) {
-                if ($element->name == $fieldSettings['name']) {
+                if ($element->id == $fieldSettings['name']) {
                   $header[$lang] = $this->t('@field (@lang values)', [
                     '@field' => $element->label,
                     '@lang' => strtoupper($lang),
@@ -598,7 +625,7 @@ class MappingEditForm extends EntityForm {
         // and checkboxes (GC).
         switch ($gc_field->type) {
           case 'text':
-            if (!$gc_field->plain_text && in_array($instance->getType(), [
+            if ($gc_field->plainText && in_array($instance->getType(), [
               'string',
               'string_long',
               'email',
@@ -630,7 +657,7 @@ class MappingEditForm extends EntityForm {
     }
 
     if ($gc_field->type === 'text'
-      && $gc_field->plain_text
+      && $gc_field->plainText
     ) {
       $fields['title'] = 'Title';
     }
@@ -837,17 +864,16 @@ class MappingEditForm extends EntityForm {
         $mapping->setData(serialize($this->mappingData));
         $mapping->setUpdatedDrupal(time());
 
-        $tmp = new Template();
-        $template = $tmp->getTemplate($mapping->getGathercontentTemplateId());
+        $template = $this->client->templateGet($mapping->getGathercontentTemplateId());
 
-        $mapping->setTemplate(serialize($template));
+        $mapping->setTemplate(serialize($this->client->getBody(TRUE)));
         $mapping->save();
 
         // We need to modify field for checkboxes and field instance for radios.
         foreach ($template->config as $i => $fieldset) {
           if ($fieldset->hidden === FALSE) {
             foreach ($fieldset->elements as $gc_field) {
-              $local_field_name = $this->mappingData[$fieldset->name]['elements'][$gc_field->name];
+              $local_field_name = $this->mappingData[$fieldset->id]['elements'][$gc_field->id];
               if ($gc_field->type === 'choice_checkbox') {
                 if (!empty($local_field_name)) {
                   $local_options = [];
@@ -857,7 +883,7 @@ class MappingEditForm extends EntityForm {
                   $field_info = FieldConfig::loadByName('node', $mapping->getContentType(), $local_field_name);
                   if ($field_info->getType() === 'entity_reference') {
                     if ($this->erImportType === 'automatic') {
-                      $this->automaticTermsGenerator($field_info, $local_options, isset($this->mappingData[$fieldset->name]['language']) ? $this->mappingData[$fieldset->name]['language'] : LanguageInterface::LANGCODE_NOT_SPECIFIED);
+                      $this->automaticTermsGenerator($field_info, $local_options, isset($this->mappingData[$fieldset->id]['language']) ? $this->mappingData[$fieldset->id]['language'] : LanguageInterface::LANGCODE_NOT_SPECIFIED);
                     }
                   }
                   else {
@@ -874,7 +900,7 @@ class MappingEditForm extends EntityForm {
                 }
               }
               elseif ($gc_field->type === 'choice_radio') {
-                if (!empty($mapping_data[$fieldset->name]['elements'][$gc_field->name])) {
+                if (!empty($mapping_data[$fieldset->id]['elements'][$gc_field->id])) {
                   $local_options = [];
                   foreach ($gc_field->options as $option) {
                     if (!isset($option->value)) {
@@ -884,7 +910,7 @@ class MappingEditForm extends EntityForm {
                   $field_info = FieldConfig::loadByName('node', $mapping->getContentType(), $local_field_name);
                   if ($field_info->getType() === 'entity_reference') {
                     if ($this->erImportType === 'automatic') {
-                      $this->automaticTermsGenerator($field_info, $local_options, isset($this->mappingData[$fieldset->name]['language']) ? $this->mappingData[$fieldset->name]['language'] : LanguageInterface::LANGCODE_NOT_SPECIFIED);
+                      $this->automaticTermsGenerator($field_info, $local_options, isset($this->mappingData[$fieldset->id]['language']) ? $this->mappingData[$fieldset->id]['language'] : LanguageInterface::LANGCODE_NOT_SPECIFIED);
                     }
                   }
                   else {
@@ -910,7 +936,7 @@ class MappingEditForm extends EntityForm {
           $form_state->cleanValues();
           $fields = $form_state->getValues();
           // Prepare options for every language for every field.
-          $options = $this->prepareOptions();
+          $options = $this->prepareOptions($template);
 
           foreach ($fields as $field_name => $tables) {
             $vid = $this->getVocabularyId($field_name);
@@ -1069,17 +1095,20 @@ class MappingEditForm extends EntityForm {
   /**
    * Prepare options for every language for every field.
    *
+   * @param \Cheppers\GatherContent\DataTypes\Template $template
+   *   GatherContent template object.
+   *
    * @return array
    *   Array with options.
    */
-  public function prepareOptions() {
+  public function prepareOptions(Template $template) {
     $options = [];
     foreach ($this->entityReferenceFields as $field => $gcMapping) {
       foreach ($gcMapping as $lang => $fieldSettings) {
-        foreach ($this->template->config as $tab) {
-          if ($tab->name === $fieldSettings['tab']) {
+        foreach ($template->config as $tab) {
+          if ($tab->id === $fieldSettings['tab']) {
             foreach ($tab->elements as $element) {
-              if ($element->name === $fieldSettings['name']) {
+              if ($element->id === $fieldSettings['name']) {
                 foreach ($element->options as $option) {
                   if (!isset($option->value)) {
                     $options[$option->name] = $option->label;
@@ -1216,7 +1245,7 @@ class MappingEditForm extends EntityForm {
    *
    * @param array|null $languages
    *   Array with languages available for mapping.
-   * @param Drupal\Core\Entity\EntityStorageInterface $entityStorage
+   * @param \Drupal\Core\Entity\EntityStorageInterface $entityStorage
    *   Storage object for taxonomy terms.
    * @param array $row
    *   Array with mapping options.

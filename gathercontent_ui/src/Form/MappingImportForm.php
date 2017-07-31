@@ -5,7 +5,6 @@ namespace Drupal\gathercontent_ui\Form;
 use Cheppers\GatherContent\GatherContentClientInterface;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\gathercontent\DAO\Template;
 use Drupal\gathercontent\DrupalGatherContentClient;
 use Drupal\gathercontent\Entity\Mapping;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -18,26 +17,29 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class MappingImportForm extends EntityForm {
 
   /**
-   * {@inheritdoc}
-   */
-  public static function create(ContainerInterface $container) {
-    return new static(
-      $container->get('gathercontent.client')
-    );
-  }
-
-  /**
-   * Client to query the GatherContent API.
+   * GatherContent client.
    *
    * @var \Drupal\gathercontent\DrupalGatherContentClient
    */
   protected $client;
 
   /**
-   * {@inheritdoc}
+   * MappingImportForm constructor.
+   *
+   * @param \Cheppers\GatherContent\GatherContentClientInterface $client
+   *   GatherContent client.
    */
   public function __construct(GatherContentClientInterface $client) {
     $this->client = $client;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('gathercontent.client')
+    );
   }
 
   /**
@@ -49,8 +51,6 @@ class MappingImportForm extends EntityForm {
     $account_id = DrupalGatherContentClient::getAccountId();
     /** @var \Cheppers\GatherContent\DataTypes\Project[] $projects */
     $projects = $this->client->getActiveProjects($account_id);
-
-    $template_obj = new Template();
 
     $form['description'] = [
       '#type' => 'html_tag',
@@ -88,7 +88,7 @@ class MappingImportForm extends EntityForm {
     }
 
     foreach ($projects as $project_id => $project) {
-      $remote_templates = $template_obj->getTemplates($project_id);
+      $remote_templates = $this->client->getTemplatesOptionArray($project_id);
       $templates = array_diff_assoc($remote_templates, $local_templates);
 
       if (empty($templates)) {
@@ -127,22 +127,25 @@ class MappingImportForm extends EntityForm {
       $projects = $this->client->getActiveProjects($account_id);
 
       $values = $form_state->getValues();
+
       foreach ($values as $k => $tree) {
         if (!is_array($tree)) {
           continue;
         }
         $templates = array_filter($values[$k]['templates']);
         foreach ($templates as $template_id => $selected) {
-          $tmp_obj = new Template();
-          $template = $tmp_obj->getTemplate($template_id);
+          $template = $this->client->templateGet($template_id);
+          $templateBody = $this->client->getBody(TRUE);
+
           $mapping_values = [
             'id' => $template_id,
-            'gathercontent_project_id' => $template->project_id,
-            'gathercontent_project' => $projects[$template->project_id]->name,
+            'gathercontent_project_id' => $template->projectId,
+            'gathercontent_project' => $projects[$template->projectId]->name,
             'gathercontent_template_id' => $template_id,
             'gathercontent_template' => $template->name,
-            'template' => serialize($template),
+            'template' => serialize($templateBody),
           ];
+
           $mapping = \Drupal::entityManager()
             ->getStorage('gathercontent_mapping')
             ->create($mapping_values);

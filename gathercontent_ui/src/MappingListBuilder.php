@@ -8,9 +8,9 @@ use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
-use Drupal\gathercontent\DAO\Template;
-use Drupal\gathercontent\DrupalGatherContentClient;
+use Drupal\gathercontent\DAO\Project;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\gathercontent\DrupalGatherContentClient;
 
 /**
  * Provides a listing of GatherContent Mapping entities.
@@ -133,11 +133,10 @@ class MappingListBuilder extends ConfigEntityListBuilder {
     $account_id = DrupalGatherContentClient::getAccountId();
     $projects = $this->client->getActiveProjects($account_id);
 
-    $temp_obj = new Template();
     foreach ($projects as $project) {
-      $remote_templates = $temp_obj->getTemplatesObject($project->id);
+      $remote_templates = $this->client->templatesGet($project->id);
       foreach ($remote_templates as $remote_template) {
-        $this->templates[$remote_template->id] = $remote_template->updated_at;
+        $this->templates[$remote_template->id] = $remote_template->updatedAt;
       }
     }
 

@@ -11,7 +11,6 @@ use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Language\Language;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\field\Entity\FieldConfig;
-use Drupal\gathercontent\DAO\Template;
 use Drupal\gathercontent\Entity\Mapping;
 use Drupal\gathercontent\Entity\OperationItem;
 use Drupal\gathercontent\Event\GatherContentEvents;
@@ -76,7 +75,7 @@ function gathercontent_entity_base_field_info(EntityTypeInterface $entity_type) 
  */
 function _gc_fetcher($gc_id, $uuid, $drupal_status, $node_update_method, $status = NULL, $parent_menu_item = NULL) {
   $user = \Drupal::currentUser();
-  /** @var \Drupal\gathercontent\DrupalGatherContentClient $client */
+  /** @var \Cheppers\GatherContent\GatherContentClientInterface $client */
   $client = \Drupal::service('gathercontent.client');
 
   $tsid = NULL;
@@ -88,8 +87,7 @@ function _gc_fetcher($gc_id, $uuid, $drupal_status, $node_update_method, $status
     $status = $client->projectStatusGet($content->projectId, $status);
   }
 
-  $temp_obj = new Template();
-  $template = $temp_obj->getTemplate($content->templateId);
+  $template = $client->templateGet($content->templateId);
 
   $operation_item = \Drupal::entityTypeManager()
     ->getStorage('gathercontent_operation_item')
@@ -962,10 +960,11 @@ function gathercontent_upload_process(NodeInterface $entity, $uuid, array &$cont
   // 2. Compare local and remote template
   // 3. If templates are same, load node from remote.
   // 4. Set values based on mapping.
+  /** @var \Cheppers\GatherContent\GatherContentClientInterface $client */
+  $client = \Drupal::service('gathercontent.client');
   $mapping = Mapping::load($entity->get('gc_mapping_id')->getValue());
 
-  $tmp_obj = new Template();
-  $remote_template = $tmp_obj->getTemplate($mapping->getGathercontentTemplateId());
+  $remote_template = $client->templateGet($mapping->getGathercontentTemplateId());
 
   $cont_obj = new Content();
   $remote_node = $cont_obj->getContent($entity->get('gc_id')->getValue());
