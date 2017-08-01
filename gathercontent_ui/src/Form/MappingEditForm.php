@@ -878,7 +878,7 @@ class MappingEditForm extends EntityForm {
                 if (!empty($local_field_name)) {
                   $local_options = [];
                   foreach ($gc_field->options as $option) {
-                    $local_options[$option->name] = $option->label;
+                    $local_options[$option['name']] = $option['label'];
                   }
                   $field_info = FieldConfig::loadByName('node', $mapping->getContentType(), $local_field_name);
                   if ($field_info->getType() === 'entity_reference') {
@@ -903,8 +903,8 @@ class MappingEditForm extends EntityForm {
                 if (!empty($mapping_data[$fieldset->id]['elements'][$gc_field->id])) {
                   $local_options = [];
                   foreach ($gc_field->options as $option) {
-                    if (!isset($option->value)) {
-                      $local_options[$option->name] = $option->label;
+                    if (!isset($option['value'])) {
+                      $local_options[$option['name']] = $option['label'];
                     }
                   }
                   $field_info = FieldConfig::loadByName('node', $mapping->getContentType(), $local_field_name);
