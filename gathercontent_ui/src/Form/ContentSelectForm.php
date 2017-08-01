@@ -211,7 +211,6 @@ class ContentSelectForm extends MultistepFormBase {
       '#attached' => [
         'library' => [
           'gathercontent_ui/tablesorter-mottie',
-          'gathercontent_ui/filter',
         ],
         'drupalSettings' => [
           'gatherContent' => [
