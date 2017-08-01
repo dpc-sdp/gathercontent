@@ -1,8 +1,9 @@
 <?php
 
-namespace Drupal\gathercontent_ui\Form;
+namespace Drupal\gathercontent_upload_ui\Form;
 
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\gathercontent_ui\Form\ContentSelectForm;
 
 /**
  * Class ContentUpdateSelectForm.
