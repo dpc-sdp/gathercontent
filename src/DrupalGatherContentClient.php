@@ -23,8 +23,8 @@ class DrupalGatherContentClient extends GatherContentClient {
    */
   public function setCredentials() {
     $config = \Drupal::config('gathercontent.settings');
-    $this->setEmail($config->get('gathercontent_username'));
-    $this->setApiKey($config->get('gathercontent_api_key'));
+    $this->setEmail($config->get('gathercontent_username') ?: '');
+    $this->setApiKey($config->get('gathercontent_api_key') ?: '');
   }
 
   /**
