@@ -31,7 +31,7 @@ class ContentUploadConfirmForm extends ContentConfirmForm {
    * {@inheritdoc}
    */
   public function getCancelUrl() {
-    return new Url('gathercontent_ui.upload_select_form');
+    return new Url('gathercontent_upload_ui.upload_select_form');
   }
 
   /**

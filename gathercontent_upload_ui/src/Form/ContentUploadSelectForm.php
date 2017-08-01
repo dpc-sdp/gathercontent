@@ -24,7 +24,7 @@ class ContentUploadSelectForm extends ContentSelectForm {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $this->store->set('nodes', array_filter($form_state->getValue('nodes')));
-    $form_state->setRedirect('gathercontent_ui.upload_confirm_form');
+    $form_state->setRedirect('gathercontent_upload_ui.upload_confirm_form');
   }
 
 }

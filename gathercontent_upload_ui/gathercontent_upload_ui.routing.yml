@@ -1,4 +1,4 @@
-gathercontent_ui.upload_select_form:
+gathercontent_upload_ui.upload_select_form:
   path: '/admin/content/upload'
   defaults:
     _form: '\Drupal\gathercontent_upload_ui\Form\ContentUploadSelectForm'
@@ -8,7 +8,7 @@ gathercontent_ui.upload_select_form:
   options:
     _admin_route: TRUE
 
-gathercontent_ui.upload_confirm_form:
+gathercontent_upload_ui.upload_confirm_form:
   path: '/admin/content/upload/confirm'
   defaults:
     _form: '\Drupal\gathercontent_upload_ui\Form\ContentUploadConfirmForm'
