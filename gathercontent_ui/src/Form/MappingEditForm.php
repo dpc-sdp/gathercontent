@@ -675,7 +675,7 @@ class MappingEditForm extends EntityForm {
    *   Array of supported metatag fields.
    */
   protected function filterMetatags($gathercontent_field) {
-    if ($gathercontent_field->type === 'text' && $gathercontent_field->plain_text) {
+    if ($gathercontent_field->type === 'text' && $gathercontent_field->plainText) {
       return [
         'title' => t('Title'),
         'description' => t('Description'),

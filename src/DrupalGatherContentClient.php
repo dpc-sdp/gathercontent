@@ -3,7 +3,9 @@
 namespace Drupal\gathercontent;
 
 use Cheppers\GatherContent\GatherContentClient;
+use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
+use GuzzleHttp\Pool;
 
 /**
  * Extends the GatherContentClient class with Drupal specific functionality.
@@ -107,6 +109,59 @@ class DrupalGatherContentClient extends GatherContentClient {
     }
 
     return $body;
+  }
+
+  /**
+   * Downloads all files asynchronously.
+   *
+   * @param array $files
+   *   Files object array.
+   * @param string $directory
+   *   Destination directory.
+   * @param string $language
+   *   Language string.
+   *
+   * @return array
+   *   Imported files array.
+   */
+  public function downloadFiles(array $files, string $directory, string $language) {
+    $httpClient = new Client();
+    $files = array_values($files);
+    $importedFiles = [];
+
+    $requests = function () use ($httpClient, $files) {
+      foreach ($files as $file) {
+        $url = $file->url;
+
+        yield function () use ($httpClient, $url) {
+          return $httpClient->getAsync($url);
+        };
+      }
+    };
+
+    $pool = new Pool($httpClient, $requests(), [
+      'fulfilled' => function ($response, $index) use ($files, $directory, $language, &$importedFiles) {
+        if ($response->getStatusCode() === 200) {
+          $path = $directory . '/' . $files[$index]->fileName;
+
+          $importedFile = file_save_data($response->getBody(), $path);
+
+          if ($importedFile) {
+            $importedFile
+              ->set('gc_id', $files[$index]->id)
+              ->set('langcode', $language)
+              ->set('filesize', $files[$index]->size);
+
+            $importedFiles[] = $importedFile->id();
+          }
+        }
+      },
+    ]);
+
+    $promise = $pool->promise();
+    $promise->wait();
+
+    return $importedFiles;
   }
 
 }

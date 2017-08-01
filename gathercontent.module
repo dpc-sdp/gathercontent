@@ -344,7 +344,7 @@ function gc_gc_process_content_pane(NodeInterface &$entity, $local_field_name, $
   }
   switch ($field->type) {
     case 'files':
-      gc_gc_process_files_field($entity, $local_field_name, $field->name, $is_translatable, $language, $files);
+      gc_gc_process_files_field($entity, $local_field_name, $field->id, $is_translatable, $language, $files);
       break;
 
     case 'choice_radio':
@@ -533,7 +533,7 @@ function gc_gc_process_default_field(NodeInterface &$entity, $local_field_name, 
       // Probably some kind of text field.
       $target->{$local_field_name} = [
         'value' => $value,
-        'format' => ($field->plain_text ? 'plain_text' : 'basic_html'),
+        'format' => ($field->plainText ? 'plain_text' : 'basic_html'),
       ];
       break;
   }
@@ -731,40 +731,49 @@ function gc_gc_process_choice_radio_field(NodeInterface &$node, $local_field_nam
  *   Array of remote files.
  */
 function gc_gc_process_files_field(NodeInterface &$node, $local_field_name, $gc_field_name, $is_translatable, $language, array $files) {
+  /** @var \Drupal\gathercontent\DrupalGatherContentClient $client */
+  $client = \Drupal::service('gathercontent.client');
   $found_files = [];
   /** @var \Drupal\field\Entity\FieldConfig $translatable_file_config */
   $translatable_file_config = $node->getFieldDefinition($local_field_name);
-  $translatable_file = $translatable_file_config->get('third_party_settings')['content_translation']['translation_sync']['file'];
-  foreach ($files as $file) {
+  $third_party_settings = $translatable_file_config->get('third_party_settings');
+
+  if (isset($third_party_settings['content_translation'])) {
+    $translatable_file = $third_party_settings['content_translation']['translation_sync']['file'];
+  }
+  else {
+    $translatable_file = NULL;
+  }
+
+  foreach ($files as $key => $file) {
     if ($file->field === $gc_field_name) {
       $drupal_files = \Drupal::entityQuery('file')
         ->condition('gc_id', $file->id)
         ->condition('filename', $file->fileName)
         ->execute();
-      if (empty($drupal_files)) {
-        if (!($node->language()->getId() !== $language && $translatable_file === '0')
-        ) {
-          $file_dir = $node->getFieldDefinition($local_field_name)
-            ->getSetting('file_directory');
-          $file_dir = PlainTextOutput::renderFromHtml(\Drupal::token()
-            ->replace($file_dir, []));
-          $uri_scheme = $node->getFieldDefinition($local_field_name)
-            ->getFieldStorageDefinition()
-            ->getSetting('uri_scheme') . '://';
-          $create_dir = \Drupal::service('file_system')
-            ->realpath($uri_scheme) . '/' . $file_dir;
-          file_prepare_directory($create_dir, FILE_CREATE_DIRECTORY);
-          $local_file = file_save_data(file_get_contents($file->url), $uri_scheme . $file_dir . '/' . $file->fileName);
-          $local_file
-            ->set('gc_id', $file->id)
-            ->set('langcode', $language)
-            ->set('filesize', $file->size);
-          $found_files[] = ['target_id' => $local_file->id()];
-        }
-      }
-      else {
+
+      if (!empty($drupal_files)) {
         $drupal_file = reset($drupal_files);
         $found_files[] = ['target_id' => $drupal_file];
+        unset($files[$key]);
+      }
+    }
+  }
+
+  if (!($node->language()->getId() !== $language && $translatable_file === '0') && !empty($files)) {
+    $file_dir = $translatable_file_config->getSetting('file_directory');
+    $file_dir = PlainTextOutput::renderFromHtml(\Drupal::token()->replace($file_dir, []));
+
+    $uri_scheme = $translatable_file_config->getFieldStorageDefinition()->getSetting('uri_scheme') . '://';
+
+    $create_dir = \Drupal::service('file_system')->realpath($uri_scheme) . '/' . $file_dir;
+    file_prepare_directory($create_dir, FILE_CREATE_DIRECTORY);
+
+    $imported_files = $client->downloadFiles($files, $uri_scheme . $file_dir, $language);
+
+    if (!empty($imported_files)) {
+      foreach ($imported_files as $file) {
+        $found_files[] = ['target_id' => $file];
       }
     }
   }
