@@ -50,7 +50,10 @@ class MappingImportForm extends EntityForm {
 
     $account_id = DrupalGatherContentClient::getAccountId();
     /** @var \Cheppers\GatherContent\DataTypes\Project[] $projects */
-    $projects = $this->client->getActiveProjects($account_id);
+    $projects = [];
+    if ($account_id) {
+      $projects = $this->client->getActiveProjects($account_id);
+    }
 
     $form['description'] = [
       '#type' => 'html_tag',
@@ -123,6 +126,13 @@ class MappingImportForm extends EntityForm {
     if ($form_state->getTriggeringElement()['#id'] == 'edit-submit') {
       // Load all projects.
       $account_id = DrupalGatherContentClient::getAccountId();
+
+      if (!$account_id) {
+        drupal_set_message($this->t('No available accounts.'), 'error');
+        $form_state->setRedirect('entity.gathercontent_mapping.collection');
+        return;
+      }
+
       /** @var \Cheppers\GatherContent\DataTypes\Project[] $projects */
       $projects = $this->client->getActiveProjects($account_id);
 

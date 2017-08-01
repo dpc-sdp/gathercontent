@@ -36,6 +36,9 @@ class DrupalGatherContentClient extends GatherContentClient {
     $account = \Drupal::config('gathercontent.settings')
       ->get('gathercontent_account');
     $account = unserialize($account);
+    if (!is_array($account)) {
+      return NULL;
+    }
 
     if (!$account_name) {
       if (reset($account)) {

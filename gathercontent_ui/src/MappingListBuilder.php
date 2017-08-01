@@ -131,6 +131,10 @@ class MappingListBuilder extends ConfigEntityListBuilder {
    */
   public function render() {
     $account_id = DrupalGatherContentClient::getAccountId();
+    if (!$account_id) {
+      return parent::render();
+    }
+
     $projects = $this->client->getActiveProjects($account_id);
 
     foreach ($projects as $project) {

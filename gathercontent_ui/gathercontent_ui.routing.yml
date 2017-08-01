@@ -18,16 +18,6 @@ gathercontent_ui.remove_local_data_form:
   options:
     _admin_route: TRUE
 
-gathercontent_ui.import_confirm_form:
-  path: '/admin/config/gathercontent/import/confirm'
-  defaults:
-    _form: '\Drupal\gathercontent_ui\Form\ContentImportConfirmForm'
-    _title: 'Confirm import selection'
-  requirements:
-    _permission: 'administer gathercontent'
-  options:
-    _admin_route: TRUE
-
 gathercontent_ui.update_select_form:
   path: '/admin/content/update'
   defaults:
