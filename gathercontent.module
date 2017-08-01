@@ -587,17 +587,17 @@ function gc_gc_process_choice_checkbox_field(NodeInterface &$node, $local_field_
   $node->{$local_field_name} = [NULL];
   $selected_options = [];
   foreach ($options as $option) {
-    if ($option->selected) {
+    if ($option['selected']) {
       if ($field->getType() === 'entity_reference') {
         /** @var \Drupal\taxonomy\Entity\Term $term */
         $term = array_shift(\Drupal::entityTypeManager()
           ->getStorage('taxonomy_term')
-          ->loadByProperties(['gathercontent_option_ids' => $option->name])
+          ->loadByProperties(['gathercontent_option_ids' => $option['name']])
         );
         $selected_options[] = $term->id();
       }
       else {
-        $selected_options[] = $option->name;
+        $selected_options[] = $option['name'];
       }
     }
     if ($is_translatable) {
@@ -955,19 +955,20 @@ function gathercontent_update_finished($success, $results, $operations) {
  * @param array $context
  *   Context of operation.
  */
-function gathercontent_upload_process(NodeInterface $entity, $uuid, array &$context) {
+function gathercontent_upload_process(NodeInterface $entity, $uuid, &$context) {
   // 1. Load template from remote
   // 2. Compare local and remote template
   // 3. If templates are same, load node from remote.
   // 4. Set values based on mapping.
-  /** @var \Cheppers\GatherContent\GatherContentClientInterface $client */
+  /** @var \Drupal\gathercontent\DrupalGatherContentClient $client */
   $client = \Drupal::service('gathercontent.client');
-  $mapping = Mapping::load($entity->get('gc_mapping_id')->getValue());
+  $mapping = Mapping::load($entity->get('gc_mapping_id')->getValue()[0]['value']);
 
+  /** @var \Cheppers\GatherContent\DataTypes\Template $remote_template */
   $remote_template = $client->templateGet($mapping->getGathercontentTemplateId());
+  $remote_template_config = $client->getBody(TRUE)->data->config;
 
-  $cont_obj = new Content();
-  $remote_node = $cont_obj->getContent($entity->get('gc_id')->getValue());
+  $remote_node = $client->itemGet($entity->get('gc_id')->getValue()[0]['value']);
   $config = $remote_node->config;
   $mapping_data = unserialize($mapping->getData());
 
@@ -975,35 +976,36 @@ function gathercontent_upload_process(NodeInterface $entity, $uuid, array &$cont
     ->getStorage('gathercontent_operation_item')
     ->create([
       'operation_uuid' => $uuid,
-      'item_status' => $remote_node->status->data->name,
-      'item_status_color' => $remote_node->status->data->color,
+      'item_status' => $remote_node->status->name,
+      'item_status_color' => $remote_node->status->color,
       'template_name' => $remote_template->name,
       'item_name' => $remote_node->name,
       'gc_id' => $entity->get('gc_id'),
       'nid' => $entity->id(),
     ]);
 
-  if ($remote_template->config == unserialize($mapping->getTemplate())->config) {
+  $local_template_config = unserialize($mapping->getTemplate())->data->config;
+  if ($remote_template_config == $local_template_config) {
     try {
       foreach ($config as &$pane) {
         $is_translatable = \Drupal::moduleHandler()
           ->moduleExists('content_translation')
           && \Drupal::service('content_translation.manager')
             ->isEnabled('node', $mapping->getContentType())
-          && isset($mapping_data[$pane->name]['language'])
-          && ($mapping_data[$pane->name]['language'] != Language::LANGCODE_NOT_SPECIFIED);
+          && isset($mapping_data[$pane->id]['language'])
+          && ($mapping_data[$pane->id]['language'] != Language::LANGCODE_NOT_SPECIFIED);
         if ($is_translatable) {
-          $language = $mapping_data[$pane->name]['language'];
+          $language = $mapping_data[$pane->id]['language'];
         }
         else {
           $language = Language::LANGCODE_NOT_SPECIFIED;
         }
         foreach ($pane->elements as &$field) {
-          if (isset($mapping_data[$pane->name]['elements'][$field->name])
-            && !empty($mapping_data[$pane->name]['elements'][$field->name])
+          if (isset($mapping_data[$pane->id]['elements'][$field->id])
+            && !empty($mapping_data[$pane->id]['elements'][$field->id])
           ) {
-            $local_field_name = $mapping_data[$pane->name]['elements'][$field->name];
-            if ((isset($mapping_data[$pane->name]['type']) && $mapping_data[$pane->name]['type'] === 'content') || !isset($mapping_data[$pane->name]['type'])) {
+            $local_field_name = $mapping_data[$pane->id]['elements'][$field->id];
+            if ((isset($mapping_data[$pane->id]['type']) && $mapping_data[$pane->id]['type'] === 'content') || !isset($mapping_data[$pane->id]['type'])) {
               $field_info = FieldConfig::loadByName('node', $entity->bundle(), $local_field_name);
               if (!is_null($field_info)) {
                 $is_translatable = $is_translatable && $field_info->isTranslatable();
@@ -1014,11 +1016,14 @@ function gathercontent_upload_process(NodeInterface $entity, $uuid, array &$cont
                   break;
 
                 case 'choice_radio':
+                  /** @var \Cheppers\GatherContent\DataTypes\ElementRadio $field */
+
                   $option_names = [];
+
                   foreach ($field->options as &$option) {
                     // Set selected to false for each option.
-                    $option->selected = FALSE;
-                    $option_names[] = $option->name;
+                    $option['selected'] = FALSE;
+                    $option_names[] = $option['name'];
                   }
 
                   // Fetch local selected option.
@@ -1032,9 +1037,9 @@ function gathercontent_upload_process(NodeInterface $entity, $uuid, array &$cont
                   if (!in_array($selected, $option_names)) {
                     // If it's other, then find that option in remote.
                     foreach ($field->options as &$option) {
-                      if (isset($option->value)) {
-                        $option->selected = TRUE;
-                        $option->value = $selected;
+                      if (isset($option['value'])) {
+                        $option['selected'] = TRUE;
+                        $option['value'] = $selected;
                       }
                     }
                   }
@@ -1042,17 +1047,19 @@ function gathercontent_upload_process(NodeInterface $entity, $uuid, array &$cont
                     // If it's checkbox, find it by remote option name,
                     // which should be same.
                     foreach ($field->options as &$option) {
-                      if ($option->name == $selected) {
-                        $option->selected = TRUE;
+                      if ($option['name'] == $selected) {
+                        $option['selected'] = TRUE;
                       }
                     }
                   }
                   break;
 
                 case 'choice_checkbox':
+                  /** @var \Cheppers\GatherContent\DataTypes\ElementCheckbox $field */
+
                   foreach ($field->options as &$option) {
                     // Set selected to false for each option.
-                    $option->selected = FALSE;
+                    $option['selected'] = FALSE;
                   }
 
                   // Fetch local selected option.
@@ -1066,8 +1073,8 @@ function gathercontent_upload_process(NodeInterface $entity, $uuid, array &$cont
                   // If it's checkbox, find it by remote option name,
                   // which should be same.
                   foreach ($field->options as &$option) {
-                    if (isset($selected[$option->name])) {
-                      $option->selected = TRUE;
+                    if (isset($selected[$option['name']])) {
+                      $option['selected'] = TRUE;
                     }
                   }
                   break;
@@ -1098,7 +1105,7 @@ function gathercontent_upload_process(NodeInterface $entity, $uuid, array &$cont
               }
 
             }
-            elseif ($mapping_data[$pane->name]['type'] === 'metatag') {
+            elseif ($mapping_data[$pane->id]['type'] === 'metatag') {
               if (\Drupal::moduleHandler()->moduleExists('metatag') && check_metatag($entity->getType())) {
                 $metatag_fields = get_metatag_fields($entity->getType());
                 foreach ($metatag_fields as $metatag_field) {
@@ -1123,17 +1130,17 @@ function gathercontent_upload_process(NodeInterface $entity, $uuid, array &$cont
         ->dispatch(GatherContentEvents::PRE_NODE_UPLOAD, new PreNodeUploadEvent($entity, $config));
       /** @var \Drupal\gathercontent\Event\PreNodeUploadEvent $event */
       $config = $event->getGathercontentValues();
-      if ($cont_obj->postContent($entity->get('gc_id')->getValue(), $config)) {
+      try {
+        $client->itemSavePost($entity->get('gc_id')->getValue()[0]['value'], $config);
         $operation_item->status = "Success";
         $operation_item->save();
         \Drupal::service('event_dispatcher')
           ->dispatch(GatherContentEvents::POST_NODE_UPLOAD, new PostNodeUploadEvent($entity, $config));
       }
-      else {
-        $operation_item->status = 'Mapping doesn\'t match';
+      catch (\Exception $e) {
+        $operation_item->status = $e->getMessage();
         $operation_item->save();
       }
-
     }
     catch (\Exception $e) {
       \Drupal::logger('gc_upload')->error(print_r($e, TRUE), []);

@@ -122,7 +122,7 @@ class ContentSelectForm extends MultistepFormBase {
 
     $content_table = [];
     foreach ($nodes as $item) {
-      if (!isset($contents[$item->gc_id->value]['status']->data->name)) {
+      if (!isset($contents[$item->gc_id->value]['status']->name)) {
         // Don't show deleted items or items which belong to another account.
         continue;
       }
@@ -136,11 +136,11 @@ class ContentSelectForm extends MultistepFormBase {
               '#tag' => 'div',
               '#value' => ' ',
               '#attributes' => [
-                'style' => 'width:20px; height: 20px; float: left; margin-right: 5px; background: ' . $contents[$item->gc_id->value]['status']->data->color,
+                'style' => 'width:20px; height: 20px; float: left; margin-right: 5px; background: ' . $contents[$item->gc_id->value]['status']->color,
               ],
             ],
             'label' => [
-              '#plain_text' => $contents[$item->gc_id->value]['status']->data->name,
+              '#plain_text' => $contents[$item->gc_id->value]['status']->name,
             ],
           ],
           'class' => ['gc-item', 'status-item'],
