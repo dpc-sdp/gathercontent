@@ -758,6 +758,9 @@ function gc_gc_process_files_field(NodeInterface &$node, $local_field_name, $gc_
         unset($files[$key]);
       }
     }
+    else {
+      unset($files[$key]);
+    }
   }
 
   if (!($node->language()->getId() !== $language && $translatable_file === '0') && !empty($files)) {
