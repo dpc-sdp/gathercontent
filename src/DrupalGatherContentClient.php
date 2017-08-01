@@ -152,7 +152,7 @@ class DrupalGatherContentClient extends GatherContentClient {
               ->set('langcode', $language)
               ->set('filesize', $files[$index]->size);
 
-            $importedFiles[] = $importedFile->id();
+            $importedFiles[$index] = $importedFile->id();
           }
         }
       },
@@ -161,6 +161,7 @@ class DrupalGatherContentClient extends GatherContentClient {
     $promise = $pool->promise();
     $promise->wait();
 
+    ksort($importedFiles);
     return $importedFiles;
   }
 

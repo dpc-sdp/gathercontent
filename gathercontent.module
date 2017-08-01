@@ -775,15 +775,16 @@ function gc_gc_process_files_field(NodeInterface &$node, $local_field_name, $gc_
       foreach ($imported_files as $file) {
         $found_files[] = ['target_id' => $file];
       }
+
+      if ($is_translatable) {
+        $node->getTranslation($language)->set($local_field_name, end($found_files));
+      }
+      else {
+        $node->set($local_field_name, end($found_files));
+      }
     }
   }
 
-  if ($is_translatable) {
-    $node->getTranslation($language)->set($local_field_name, $found_files);
-  }
-  else {
-    $node->set($local_field_name, $found_files);
-  }
 }
 
 /**
