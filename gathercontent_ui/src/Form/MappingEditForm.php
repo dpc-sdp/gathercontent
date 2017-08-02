@@ -11,6 +11,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
+use Drupal\paragraphs\Entity\Paragraph;
 use Drupal\taxonomy\Entity\Term;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -565,7 +566,7 @@ class MappingEditForm extends EntityForm {
   }
 
   /**
-   * Helper function.
+   * Wrapper function for filterFieldsRecursively.
    *
    * Use for filtering only equivalent fields.
    *
@@ -578,13 +579,42 @@ class MappingEditForm extends EntityForm {
    *   Associative array with equivalent fields.
    */
   protected function filterFields($gc_field, $content_type) {
+    $fields = $this->filterFieldsRecursively($gc_field, $content_type);
+
+    if ($gc_field->type === 'text'
+      && $gc_field->plainText
+    ) {
+      $fields['title'] = 'Title';
+    }
+
+    return $fields;
+  }
+
+  /**
+   * Helper function.
+   *
+   * Use for filtering only equivalent fields.
+   *
+   * @param object $gc_field
+   *   Type of field in GatherContent.
+   * @param string $content_type
+   *   Name of Drupal content type.
+   * @param string $entity_type
+   *   Name of Drupal Entity type.
+   *
+   * @return array
+   *   Associative array with equivalent fields.
+   */
+  protected function filterFieldsRecursively($gc_field, $content_type, $entity_type = 'node') {
     $mapping_array = [
       'files' => [
         'file',
         'image',
+        'entity_reference_revisions',
       ],
       'section' => [
         'text_long',
+        'entity_reference_revisions',
       ],
       'text' => [
         'text',
@@ -596,19 +626,25 @@ class MappingEditForm extends EntityForm {
         'telephone',
         'date',
         'datetime',
+        'entity_reference_revisions',
       ],
       'choice_radio' => [
         'string',
         'entity_reference',
+        'entity_reference_revisions',
       ],
       'choice_checkbox' => [
         'list_string',
         'entity_reference',
+        'entity_reference_revisions',
       ],
     ];
+    $entityFieldManager = \Drupal::service('entity_field.manager');
+    $paragraphStorage = \Drupal::entityTypeManager()->getStorage('paragraphs_type');
+
     /** @var \Drupal\Core\Field\FieldDefinitionInterface[] $instances */
-    $instances = \Drupal::service('entity_field.manager')
-      ->getFieldDefinitions('node', $content_type);
+    $instances = $entityFieldManager->getFieldDefinitions($entity_type, $content_type);
+
     $fields = [];
     // Fields.
     foreach ($instances as $name => $instance) {
@@ -630,8 +666,7 @@ class MappingEditForm extends EntityForm {
               'string_long',
               'email',
               'telephone',
-            ])
-            ) {
+            ])) {
               continue 2;
             }
             break;
@@ -652,14 +687,30 @@ class MappingEditForm extends EntityForm {
             }
             break;
         }
-        $fields[$instance->getName()] = $instance->getLabel();
-      }
-    }
 
-    if ($gc_field->type === 'text'
-      && $gc_field->plainText
-    ) {
-      $fields['title'] = 'Title';
+        if ($instance->getType() === 'entity_reference_revisions') {
+          $settings = $instance->getSetting('handler_settings');
+
+          if (!empty($settings['target_bundles'])) {
+            $bundles = $settings['target_bundles'];
+
+            foreach ($bundles as $bundle) {
+              $paragraphFields = $this->filterFieldsRecursively($gc_field, $bundle, 'paragraph');
+
+              if (!empty($paragraphFields)) {
+                $bundle_label = $paragraphStorage
+                  ->load($bundle)
+                  ->label();
+
+                $fields[$bundle_label] = $paragraphFields;
+              }
+            }
+          }
+        }
+        else {
+          $fields[$instance->id()] = $instance->getLabel();
+        }
+      }
     }
 
     return $fields;
