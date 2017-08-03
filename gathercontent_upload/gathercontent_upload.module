@@ -74,35 +74,29 @@ function gathercontent_upload_process(NodeInterface $entity, $uuid, &$context) {
           ) {
             $local_field_id = $mapping_data[$pane->id]['elements'][$field->id];
             if ((isset($mapping_data[$pane->id]['type']) && $mapping_data[$pane->id]['type'] === 'content') || !isset($mapping_data[$pane->id]['type'])) {
-              $local_id_array = explode('||', $local_field_id, 2);
+              $local_id_array = explode('||', $local_field_id);
+              $id_count = count($local_id_array);
+              $entityTypeManager = \Drupal::entityTypeManager();
 
-              if (count($local_id_array) > 1) {
-                $entityTypeManager = \Drupal::entityTypeManager();
-                $field_info = FieldConfig::load($local_id_array[0]);
-                $field_target_info = FieldConfig::load($local_id_array[1]);
-                $field_name = $field_info->getName();
-                $local_field_name = $field_target_info->getName();
+              $current_entity = $entity;
+              $current_field_name = FieldConfig::load($local_id_array[0])->getName();
 
-                $entityStorage = $entityTypeManager
-                  ->getStorage($field_target_info->getTargetEntityTypeId());
-
-                $target_field = $entity->get($field_name);
+              for ($i = 0; $i < $id_count - 1; $i++) {
+                $local_id = $local_id_array[$i];
+                $field_info = FieldConfig::load($local_id);
+                $current_field_name = $field_info->getName();
+                $target_field = $current_entity->get($current_field_name);
 
                 if (isset($target_field->target_id)) {
-                  $childEntity = $entityStorage->load($target_field->target_id);
-
-                  gc_gc_process_set_fields($field, $childEntity, $is_translatable, $language, $local_field_name);
+                  $field_target_info = FieldConfig::load($local_id_array[$i + 1]);
+                  $entityStorage = $entityTypeManager
+                    ->getStorage($field_target_info->getTargetEntityTypeId());
+                  $current_entity = $entityStorage->load($target_field->target_id);
+                  $current_field_name = $field_target_info->getName();
                 }
               }
-              else {
-                $field_info = FieldConfig::load($local_field_id);
-                $local_field_name = $field_info->getName();
-                if (!is_null($field_info)) {
-                  $is_translatable = $is_translatable && $field_info->isTranslatable();
-                }
 
-                gc_gc_process_set_fields($field, $entity, $is_translatable, $language, $local_field_name);
-              }
+              gc_gc_process_set_fields($field, $current_entity, $is_translatable, $language, $current_field_name);
             }
             elseif ($mapping_data[$pane->id]['type'] === 'metatag') {
               if (\Drupal::moduleHandler()->moduleExists('metatag') && check_metatag($entity->getType())) {
