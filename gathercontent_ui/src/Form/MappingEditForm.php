@@ -708,7 +708,7 @@ class MappingEditForm extends EntityForm {
             $new_nested_ids[] = $instance->id();
 
             foreach ($bundles as $bundle) {
-              $new_bundle_label = $instance->getLabel();
+              $new_bundle_label = ((!empty($bundle_label)) ? $bundle_label . ' - ' : '') . $instance->getLabel();
               $bundle_name = $entityTypeManager
                 ->getStorage($bundle_entity_type)
                 ->load($bundle)
