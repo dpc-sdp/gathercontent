@@ -150,11 +150,13 @@ function _gc_fetcher($gc_id, $uuid, $drupal_status, $node_update_method, $status
           else {
             $language = Language::LANGCODE_NOT_SPECIFIED;
           }
+
+          $reference_imported = [];
           foreach ($pane->elements as $field) {
             if (isset($mapping_data[$pane->id]['elements'][$field->id]) && !empty($mapping_data[$pane->id]['elements'][$field->id])) {
               $local_field_id = $mapping_data[$pane->id]['elements'][$field->id];
               if (isset($mapping_data[$pane->id]['type']) && ($mapping_data[$pane->id]['type'] === 'content') || !isset($mapping_data[$pane->id]['type'])) {
-                gc_gc_process_content_pane($entity, $local_field_id, $field, $is_translatable, $language, $files);
+                gc_gc_process_content_pane($entity, $local_field_id, $field, $is_translatable, $language, $files, $reference_imported);
               }
               elseif (isset($mapping_data[$pane->id]['type']) && ($mapping_data[$pane->id]['type'] === 'metatag')) {
                 gc_gc_process_metatag_pane($entity, $local_field_id, $field, $mapping->getContentType(), $is_translatable, $language);
@@ -338,8 +340,10 @@ function gc_gc_process_metatag_pane(NodeInterface &$entity, $local_field_id, $fi
  *   Language of translation if applicable.
  * @param array $files
  *   Array of files fetched from GatherContent.
+ * @param array $reference_imported
+ *   Array of reference fields which are tempered with.
  */
-function gc_gc_process_content_pane(EntityInterface &$entity, $local_field_id, $field, $is_translatable, $language, array $files) {
+function gc_gc_process_content_pane(EntityInterface &$entity, $local_field_id, $field, $is_translatable, $language, array $files, array &$reference_imported) {
   $local_id_array = explode('||', $local_field_id);
 
   if (count($local_id_array) > 1) {
@@ -351,28 +355,69 @@ function gc_gc_process_content_pane(EntityInterface &$entity, $local_field_id, $
     $entityStorage = $entityTypeManager
       ->getStorage($field_target_info->getTargetEntityTypeId());
 
-    $target_field = $entity->get($field_name);
+    $target_field_value = $entity->get($field_name)->getValue();
 
-    if (isset($target_field->target_id)) {
-      $childEntity = $entityStorage->load($target_field->target_id);
+    if (!isset($reference_imported[$local_id_array[0]])) {
+      if (!empty($target_field_value)) {
+        foreach ($target_field_value as $target) {
+          $deleteEntity = $entityStorage->load($target['target_id']);
+          $deleteEntity->delete();
+        }
+      }
+
+      $reference_imported[$local_id_array[0]] = TRUE;
+      $target_field_value = [];
+    }
+
+    if (!empty($target_field_value)) {
+      foreach ($target_field_value as $target) {
+        $childEntity = $entityStorage->loadByProperties([
+          'id' => $target['target_id'],
+          'type' => $field_target_info->getTargetBundle(),
+        ]);
+
+        if (!empty($childEntity[$target['target_id']])) {
+          array_shift($local_id_array);
+          gc_gc_process_content_pane($childEntity[$target['target_id']],
+            implode('||', $local_id_array), $field, $is_translatable,
+            $language, $files, $reference_imported);
+
+          $childEntity[$target['target_id']]->save();
+        }
+        else {
+          $childEntity = $entityStorage->create([
+            'type' => $field_target_info->getTargetBundle(),
+          ]);
+
+          array_shift($local_id_array);
+          gc_gc_process_content_pane($childEntity, implode('||', $local_id_array), $field, $is_translatable, $language, $files, $reference_imported);
+
+          $childEntity->save();
+
+          $target_field_value[] = [
+            'target_id' => $childEntity->id(),
+            'target_revision_id' => $childEntity->getRevisionId(),
+          ];
+        }
+      }
     }
     else {
       $childEntity = $entityStorage->create([
         'type' => $field_target_info->getTargetBundle(),
       ]);
-    }
 
-    array_shift($local_id_array);
-    gc_gc_process_content_pane($childEntity, implode('||', $local_id_array), $field, $is_translatable, $language, $files);
+      array_shift($local_id_array);
+      gc_gc_process_content_pane($childEntity, implode('||', $local_id_array), $field, $is_translatable, $language, $files, $reference_imported);
 
-    $childEntity->save();
+      $childEntity->save();
 
-    $entity->set($field_name, [
-      [
+      $target_field_value[] = [
         'target_id' => $childEntity->id(),
         'target_revision_id' => $childEntity->getRevisionId(),
-      ],
-    ]);
+      ];
+    }
+
+    $entity->set($field_name, $target_field_value);
   }
   else {
     $field_info = FieldConfig::load($local_field_id);
