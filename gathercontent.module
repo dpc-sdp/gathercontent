@@ -340,7 +340,7 @@ function gc_gc_process_metatag_pane(NodeInterface &$entity, $local_field_id, $fi
  *   Array of files fetched from GatherContent.
  */
 function gc_gc_process_content_pane(EntityInterface &$entity, $local_field_id, $field, $is_translatable, $language, array $files) {
-  $local_id_array = explode('||', $local_field_id, 2);
+  $local_id_array = explode('||', $local_field_id);
 
   if (count($local_id_array) > 1) {
     $entityTypeManager = \Drupal::entityTypeManager();
@@ -362,7 +362,8 @@ function gc_gc_process_content_pane(EntityInterface &$entity, $local_field_id, $
       ]);
     }
 
-    gc_gc_process_content_pane($childEntity, $local_id_array[1], $field, $is_translatable, $language, $files);
+    array_shift($local_id_array);
+    gc_gc_process_content_pane($childEntity, implode('||', $local_id_array), $field, $is_translatable, $language, $files);
 
     $childEntity->save();
 
