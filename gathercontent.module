@@ -6,6 +6,7 @@
  */
 
 use Drupal\Component\Render\PlainTextOutput;
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Language\Language;
@@ -151,12 +152,12 @@ function _gc_fetcher($gc_id, $uuid, $drupal_status, $node_update_method, $status
           }
           foreach ($pane->elements as $field) {
             if (isset($mapping_data[$pane->id]['elements'][$field->id]) && !empty($mapping_data[$pane->id]['elements'][$field->id])) {
-              $local_field_name = $mapping_data[$pane->id]['elements'][$field->id];
+              $local_field_id = $mapping_data[$pane->id]['elements'][$field->id];
               if (isset($mapping_data[$pane->id]['type']) && ($mapping_data[$pane->id]['type'] === 'content') || !isset($mapping_data[$pane->id]['type'])) {
-                gc_gc_process_content_pane($entity, $local_field_name, $field, $is_translatable, $language, $files);
+                gc_gc_process_content_pane($entity, $local_field_id, $field, $is_translatable, $language, $files);
               }
               elseif (isset($mapping_data[$pane->id]['type']) && ($mapping_data[$pane->id]['type'] === 'metatag')) {
-                gc_gc_process_metatag_pane($entity, $local_field_name, $field, $mapping->getContentType(), $is_translatable, $language);
+                gc_gc_process_metatag_pane($entity, $local_field_id, $field, $mapping->getContentType(), $is_translatable, $language);
               }
             }
           }
@@ -283,8 +284,8 @@ function gc_get_destination_node($gc_id, $node_update_method, $node_type_id, $la
  *
  * @param \Drupal\node\NodeInterface $entity
  *   Object of node.
- * @param string $local_field_name
- *   Name of local Drupal field.
+ * @param string $local_field_id
+ *   ID of local Drupal field.
  * @param object $field
  *   Object of GatherContent field.
  * @param string $content_type
@@ -297,9 +298,12 @@ function gc_get_destination_node($gc_id, $node_update_method, $node_type_id, $la
  * @throws \Exception
  *   If content save fails, exceptions is thrown.
  */
-function gc_gc_process_metatag_pane(NodeInterface &$entity, $local_field_name, $field, $content_type, $is_translatable, $language) {
+function gc_gc_process_metatag_pane(NodeInterface &$entity, $local_field_id, $field, $content_type, $is_translatable, $language) {
   if (\Drupal::moduleHandler()->moduleExists('metatag') && check_metatag($content_type)) {
+    $field_info = FieldConfig::load($local_field_id);
+    $local_field_name = $field_info->getName();
     $metatag_fields = get_metatag_fields($content_type);
+
     foreach ($metatag_fields as $metatag_field) {
       if ($is_translatable) {
         $current_value = unserialize($entity->getTranslation($language)->{$metatag_field}->value);
@@ -322,10 +326,10 @@ function gc_gc_process_metatag_pane(NodeInterface &$entity, $local_field_name, $
 /**
  * Processing function for content panes.
  *
- * @param \Drupal\node\NodeInterface $entity
+ * @param \Drupal\Core\Entity\EntityInterface $entity
  *   Object of node.
- * @param string $local_field_name
- *   Name of local Drupal field.
+ * @param string $local_field_id
+ *   ID of local Drupal field.
  * @param object $field
  *   Object of GatherContent field.
  * @param bool $is_translatable
@@ -335,31 +339,72 @@ function gc_gc_process_metatag_pane(NodeInterface &$entity, $local_field_name, $
  * @param array $files
  *   Array of files fetched from GatherContent.
  */
-function gc_gc_process_content_pane(NodeInterface &$entity, $local_field_name, $field, $is_translatable, $language, array $files) {
-  $field_info = FieldConfig::loadByName('node', $entity->bundle(), $local_field_name);
-  if (!is_null($field_info)) {
-    $is_translatable = $is_translatable && $field_info->isTranslatable();
+function gc_gc_process_content_pane(EntityInterface &$entity, $local_field_id, $field, $is_translatable, $language, array $files) {
+  $local_id_array = explode('||', $local_field_id, 2);
+
+  if (count($local_id_array) > 1 && !empty($field->value)) {
+    $entityTypeManager = \Drupal::entityTypeManager();
+    $field_info = FieldConfig::load($local_id_array[0]);
+    $field_target_info = FieldConfig::load($local_id_array[1]);
+    $field_name = $field_info->getName();
+
+    $entityStorage = $entityTypeManager
+      ->getStorage($field_target_info->getTargetEntityTypeId());
+
+    $target_field = $entity->get($field_name);
+
+    if (isset($target_field->target_id)) {
+      $childEntity = $entityStorage->load($target_field->target_id);
+    }
+    else {
+      $childEntity = $entityStorage->create([
+        'type' => $field_target_info->getTargetBundle(),
+      ]);
+    }
+
+    gc_gc_process_content_pane($childEntity, $local_id_array[1], $field, $is_translatable, $language, $files);
+
+    $childEntity->save();
+
+    $entity->set($field_name, [
+      [
+        'target_id' => $childEntity->id(),
+        'target_revision_id' => $childEntity->getRevisionId(),
+      ],
+    ]);
   }
-  switch ($field->type) {
-    case 'files':
-      gc_gc_process_files_field($entity, $local_field_name, $field->id, $is_translatable, $language, $files);
-      break;
+  else {
+    $field_info = FieldConfig::load($local_field_id);
+    if (!is_null($field_info)) {
+      $is_translatable = $is_translatable && $field_info->isTranslatable();
+    }
 
-    case 'choice_radio':
-      gc_gc_process_choice_radio_field($entity, $local_field_name, $is_translatable, $language, $field->options);
-      break;
+    switch ($field->type) {
+      case 'files':
+        gc_gc_process_files_field($entity, $field_info, $field->id,
+          $is_translatable, $language, $files);
+        break;
 
-    case 'choice_checkbox':
-      gc_gc_process_choice_checkbox_field($entity, $local_field_name, $is_translatable, $language, $field->options);
-      break;
+      case 'choice_radio':
+        gc_gc_process_choice_radio_field($entity, $field_info, $is_translatable,
+          $language, $field->options);
+        break;
 
-    case 'section':
-      gc_gc_process_section_field($entity, $local_field_name, $is_translatable, $language, $field);
-      break;
+      case 'choice_checkbox':
+        gc_gc_process_choice_checkbox_field($entity, $field_info,
+          $is_translatable, $language, $field->options);
+        break;
 
-    default:
-      gc_gc_process_default_field($entity, $local_field_name, $is_translatable, $language, $field);
-      break;
+      case 'section':
+        gc_gc_process_section_field($entity, $field_info, $is_translatable,
+          $language, $field);
+        break;
+
+      default:
+        gc_gc_process_default_field($entity, $field_info, $is_translatable,
+          $language, $field);
+        break;
+    }
   }
 }
 
@@ -478,10 +523,10 @@ function _gc_get_menu_by_gc_id(&$mlid, &$menu_name, $language = NULL) {
 /**
  * Default processing function, when no other matches found, usually for text.
  *
- * @param \Drupal\node\NodeInterface $entity
+ * @param \Drupal\Core\Entity\EntityInterface $entity
  *   Object of node.
- * @param string $local_field_name
- *   Local field name.
+ * @param \Drupal\field\Entity\FieldConfig $field_info
+ *   Local field Info object.
  * @param bool $is_translatable
  *   Indicator if node is translatable.
  * @param string $language
@@ -489,8 +534,8 @@ function _gc_get_menu_by_gc_id(&$mlid, &$menu_name, $language = NULL) {
  * @param object $field
  *   Object with field attributes.
  */
-function gc_gc_process_default_field(NodeInterface &$entity, $local_field_name, $is_translatable, $language, $field) {
-
+function gc_gc_process_default_field(EntityInterface &$entity, FieldConfig $field_info, $is_translatable, $language, $field) {
+  $local_field_name = $field_info->getName();
   $value = $field->value;
   $target = &$entity;
   if ($is_translatable) {
@@ -503,8 +548,6 @@ function gc_gc_process_default_field(NodeInterface &$entity, $local_field_name, 
     return;
   }
 
-  // For all non-title fields, decide what to do based on Drupal field type.
-  $field_info = FieldConfig::loadByName('node', $entity->bundle(), $local_field_name);
   switch ($field_info->getType()) {
     case 'datetime':
       $value = strtotime($value);
@@ -540,10 +583,10 @@ function gc_gc_process_default_field(NodeInterface &$entity, $local_field_name, 
 /**
  * Processing function for section type of field.
  *
- * @param \Drupal\node\NodeInterface $node
+ * @param \Drupal\Core\Entity\EntityInterface $entity
  *   Object of node.
- * @param string $local_field_name
- *   Local field name.
+ * @param \Drupal\field\Entity\FieldConfig $field_info
+ *   Local field Info object.
  * @param bool $is_translatable
  *   Indicator if node is translatable.
  * @param string $language
@@ -551,15 +594,16 @@ function gc_gc_process_default_field(NodeInterface &$entity, $local_field_name, 
  * @param object $field
  *   Object with field attributes.
  */
-function gc_gc_process_section_field(NodeInterface &$node, $local_field_name, $is_translatable, $language, $field) {
+function gc_gc_process_section_field(EntityInterface &$entity, FieldConfig $field_info, $is_translatable, $language, $field) {
+  $local_field_name = $field_info->getName();
   if ($is_translatable) {
-    $node->getTranslation($language)->{$local_field_name} = [
+    $entity->getTranslation($language)->{$local_field_name} = [
       'value' => '<h3>' . $field->title . '</h3>' . $field->subtitle,
       'format' => 'basic_html',
     ];
   }
   else {
-    $node->{$local_field_name} = [
+    $entity->{$local_field_name} = [
       'value' => '<h3>' . $field->title . '</h3>' . $field->subtitle,
       'format' => 'basic_html',
     ];
@@ -569,10 +613,10 @@ function gc_gc_process_section_field(NodeInterface &$node, $local_field_name, $i
 /**
  * Processing function for checkbox type of field.
  *
- * @param \Drupal\node\NodeInterface $node
+ * @param \Drupal\Core\Entity\EntityInterface $entity
  *   Object of node.
- * @param string $local_field_name
- *   Local field name.
+ * @param \Drupal\field\Entity\FieldConfig $field_info
+ *   Local field Info object.
  * @param bool $is_translatable
  *   Indicator if node is translatable.
  * @param string $language
@@ -580,18 +624,19 @@ function gc_gc_process_section_field(NodeInterface &$node, $local_field_name, $i
  * @param array $options
  *   Array of options.
  */
-function gc_gc_process_choice_checkbox_field(NodeInterface &$node, $local_field_name, $is_translatable, $language, array $options) {
-  $field = FieldConfig::loadByName('node', $node->bundle(), $local_field_name);
-  $node->{$local_field_name} = [NULL];
+function gc_gc_process_choice_checkbox_field(EntityInterface &$entity, FieldConfig $field_info, $is_translatable, $language, array $options) {
+  $local_field_name = $field_info->getName();
+  $entity->{$local_field_name} = [NULL];
   $selected_options = [];
   foreach ($options as $option) {
     if ($option['selected']) {
-      if ($field->getType() === 'entity_reference') {
-        /** @var \Drupal\taxonomy\Entity\Term $term */
-        $term = array_shift(\Drupal::entityTypeManager()
+      if ($field_info->getType() === 'entity_reference') {
+        $taxonomy = \Drupal::entityTypeManager()
           ->getStorage('taxonomy_term')
-          ->loadByProperties(['gathercontent_option_ids' => $option['name']])
-        );
+          ->loadByProperties(['gathercontent_option_ids' => $option['name']]);
+
+        /** @var \Drupal\taxonomy\Entity\Term $term */
+        $term = array_shift($taxonomy);
         $selected_options[] = $term->id();
       }
       else {
@@ -599,10 +644,10 @@ function gc_gc_process_choice_checkbox_field(NodeInterface &$node, $local_field_
       }
     }
     if ($is_translatable) {
-      $node->getTranslation($language)->{$local_field_name} = $selected_options;
+      $entity->getTranslation($language)->{$local_field_name} = $selected_options;
     }
     else {
-      $node->{$local_field_name} = $selected_options;
+      $entity->{$local_field_name} = $selected_options;
     }
   }
 }
@@ -610,10 +655,10 @@ function gc_gc_process_choice_checkbox_field(NodeInterface &$node, $local_field_
 /**
  * Processing function for radio type of field.
  *
- * @param \Drupal\node\NodeInterface $node
+ * @param \Drupal\Core\Entity\EntityInterface $entity
  *   Object of node.
- * @param string $local_field_name
- *   Local field name.
+ * @param \Drupal\field\Entity\FieldConfig $field_info
+ *   Local field Info object.
  * @param bool $is_translatable
  *   Indicator if node is translatable.
  * @param string $language
@@ -621,31 +666,31 @@ function gc_gc_process_choice_checkbox_field(NodeInterface &$node, $local_field_
  * @param array $options
  *   Array of options.
  */
-function gc_gc_process_choice_radio_field(NodeInterface &$node, $local_field_name, $is_translatable, $language, array $options) {
-  $field = FieldConfig::loadByName('node', $node->bundle(), $local_field_name);
+function gc_gc_process_choice_radio_field(EntityInterface &$entity, FieldConfig $field_info, $is_translatable, $language, array $options) {
+  $local_field_name = $field_info->getName();
   foreach ($options as $option) {
-    if (!$option->selected) {
+    if (!$option['selected']) {
       continue;
     }
-    if (isset($option->value)) {
-      if (empty($option->value)) {
+    if (isset($option['value'])) {
+      if (empty($option['value'])) {
         continue;
       }
       // Dealing with "Other" option.
-      if ($field->getType() === 'entity_reference') {
+      if ($field_info->getType() === 'entity_reference') {
         // Load vocabulary id.
-        if (!empty($field->getSetting('handler_settings')['auto_create_bundle'])) {
-          $vid = $field->getSetting('handler_settings')['auto_create_bundle'];
+        if (!empty($field_info->getSetting('handler_settings')['auto_create_bundle'])) {
+          $vid = $field_info->getSetting('handler_settings')['auto_create_bundle'];
         }
         else {
-          $handler_settings = $field->getSetting('handler_settings');
+          $handler_settings = $field_info->getSetting('handler_settings');
           $handler_settings = reset($handler_settings);
           $vid = array_shift($handler_settings);
         }
 
         // Prepare confitions.
         $condition_array = [
-          'name' => $option->value,
+          'name' => $option['value'],
           'vid' => $vid,
         ];
         if ($is_translatable && $language !== LanguageInterface::LANGCODE_NOT_SPECIFIED) {
@@ -660,52 +705,52 @@ function gc_gc_process_choice_radio_field(NodeInterface &$node, $local_field_nam
         if (empty($term)) {
           $term = Term::create([
             'vid' => $vid,
-            'name' => $option->value,
+            'name' => $option['value'],
             'langcode' => $language,
           ]);
           $term->save();
         }
-        if ($is_translatable && $node->hasTranslation($language)) {
-          $node->getTranslation($language)
+        if ($is_translatable && $entity->hasTranslation($language)) {
+          $entity->getTranslation($language)
             ->set($local_field_name, $term->id());
         }
         else {
-          $node->set($local_field_name, $term->id());
+          $entity->set($local_field_name, $term->id());
         }
       }
       else {
         if ($is_translatable) {
-          $node->getTranslation($language)->{$local_field_name}->value = $option->value;
+          $entity->getTranslation($language)->{$local_field_name}->value = $option['value'];
         }
         else {
-          $node->{$local_field_name}->value = $option->value;
+          $entity->{$local_field_name}->value = $option['value'];
         }
       }
     }
     else {
       // Dealing with predefined options.
-      if ($field->getType() === 'entity_reference') {
+      if ($field_info->getType() === 'entity_reference') {
         $terms = \Drupal::entityTypeManager()
           ->getStorage('taxonomy_term')
-          ->loadByProperties(['gathercontent_option_ids' => $option->name]);
+          ->loadByProperties(['gathercontent_option_ids' => $option['name']]);
         /** @var \Drupal\taxonomy\Entity\Term $term */
         $term = array_shift($terms);
         if (!empty($term)) {
           if ($is_translatable) {
-            $node->getTranslation($language)
+            $entity->getTranslation($language)
               ->set($local_field_name, $term->id());
           }
           else {
-            $node->set($local_field_name, $term->id());
+            $entity->set($local_field_name, $term->id());
           }
         }
       }
       else {
         if ($is_translatable) {
-          $node->getTranslation($language)->{$local_field_name}->value = $option->name;
+          $entity->getTranslation($language)->{$local_field_name}->value = $option['name'];
         }
         else {
-          $node->{$local_field_name}->value = $option->name;
+          $entity->{$local_field_name}->value = $option['name'];
         }
       }
     }
@@ -715,10 +760,10 @@ function gc_gc_process_choice_radio_field(NodeInterface &$node, $local_field_nam
 /**
  * Processing function for file type of field.
  *
- * @param \Drupal\node\NodeInterface $node
+ * @param \Drupal\Core\Entity\EntityInterface $entity
  *   Object of node.
- * @param string $local_field_name
- *   Local field name.
+ * @param \Drupal\field\Entity\FieldConfig $field_info
+ *   Local field Info object.
  * @param string $gc_field_name
  *   Name of field in GatherContent.
  * @param bool $is_translatable
@@ -728,12 +773,13 @@ function gc_gc_process_choice_radio_field(NodeInterface &$node, $local_field_nam
  * @param array $files
  *   Array of remote files.
  */
-function gc_gc_process_files_field(NodeInterface &$node, $local_field_name, $gc_field_name, $is_translatable, $language, array $files) {
+function gc_gc_process_files_field(EntityInterface &$entity, FieldConfig $field_info, $gc_field_name, $is_translatable, $language, array $files) {
   /** @var \Drupal\gathercontent\DrupalGatherContentClient $client */
   $client = \Drupal::service('gathercontent.client');
   $found_files = [];
+  $local_field_name = $field_info->getName();
   /** @var \Drupal\field\Entity\FieldConfig $translatable_file_config */
-  $translatable_file_config = $node->getFieldDefinition($local_field_name);
+  $translatable_file_config = $entity->getFieldDefinition($local_field_name);
   $third_party_settings = $translatable_file_config->get('third_party_settings');
 
   if (isset($third_party_settings['content_translation'])) {
@@ -761,7 +807,7 @@ function gc_gc_process_files_field(NodeInterface &$node, $local_field_name, $gc_
     }
   }
 
-  if (!($node->language()->getId() !== $language && $translatable_file === '0') && !empty($files)) {
+  if (!($entity->language()->getId() !== $language && $translatable_file === '0') && !empty($files)) {
     $file_dir = $translatable_file_config->getSetting('file_directory');
     $file_dir = PlainTextOutput::renderFromHtml(\Drupal::token()->replace($file_dir, []));
 
@@ -778,10 +824,10 @@ function gc_gc_process_files_field(NodeInterface &$node, $local_field_name, $gc_
       }
 
       if ($is_translatable) {
-        $node->getTranslation($language)->set($local_field_name, end($found_files));
+        $entity->getTranslation($language)->set($local_field_name, end($found_files));
       }
       else {
-        $node->set($local_field_name, end($found_files));
+        $entity->set($local_field_name, end($found_files));
       }
     }
   }

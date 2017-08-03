@@ -266,7 +266,7 @@ class MappingEditForm extends EntityForm {
               $form['mapping'][$fieldset->id]['elements'][$gc_field->id] = [
                 '#type' => 'select',
                 '#options' => $d_fields,
-                '#title' => (isset($gc_field->label) ? $gc_field->label : $gc_field->title),
+                '#title' => (!empty($gc_field->label) ? $gc_field->label : $gc_field->title),
                 '#default_value' => isset($this->mappingData[$fieldset->id]['elements'][$gc_field->id]) ? $this->mappingData[$fieldset->id]['elements'][$gc_field->id] : NULL,
                 '#empty_option' => t("Don't map"),
                 '#attributes' => [
@@ -601,11 +601,13 @@ class MappingEditForm extends EntityForm {
    *   Name of Drupal content type.
    * @param string $entity_type
    *   Name of Drupal Entity type.
+   * @param array $nested_ids
+   *   Nested ID array.
    *
    * @return array
    *   Associative array with equivalent fields.
    */
-  protected function filterFieldsRecursively($gc_field, $content_type, $entity_type = 'node') {
+  protected function filterFieldsRecursively($gc_field, $content_type, $entity_type = 'node', array $nested_ids = []) {
     $mapping_array = [
       'files' => [
         'file',
@@ -640,7 +642,7 @@ class MappingEditForm extends EntityForm {
       ],
     ];
     $entityFieldManager = \Drupal::service('entity_field.manager');
-    $paragraphStorage = \Drupal::entityTypeManager()->getStorage('paragraphs_type');
+    $entityTypeManager = \Drupal::entityTypeManager();
 
     /** @var \Drupal\Core\Field\FieldDefinitionInterface[] $instances */
     $instances = $entityFieldManager->getFieldDefinitions($entity_type, $content_type);
@@ -693,22 +695,38 @@ class MappingEditForm extends EntityForm {
 
           if (!empty($settings['target_bundles'])) {
             $bundles = $settings['target_bundles'];
+            $target_type = $instance->getFieldStorageDefinition()
+              ->getSetting('target_type');
+            $bundle_entity_type = $entityTypeManager
+              ->getStorage($target_type)
+              ->getEntityType()
+              ->get('bundle_entity_type');
+
+            $nested_ids[] = $instance->id();
 
             foreach ($bundles as $bundle) {
-              $paragraphFields = $this->filterFieldsRecursively($gc_field, $bundle, 'paragraph');
+              $targetFields = $this->filterFieldsRecursively($gc_field, $bundle, $target_type, $nested_ids);
 
-              if (!empty($paragraphFields)) {
-                $bundle_label = $paragraphStorage
+              if (!empty($targetFields)) {
+                $bundle_label = $entityTypeManager
+                  ->getStorage($bundle_entity_type)
                   ->load($bundle)
                   ->label();
 
-                $fields[$bundle_label] = $paragraphFields;
+                $fields[$bundle_label] = $targetFields;
               }
             }
           }
         }
         else {
-          $fields[$instance->id()] = $instance->getLabel();
+          $key = $instance->id();
+
+          if (!empty($nested_ids)) {
+            $nested_ids[] = $instance->id();
+            $key = implode('||', $nested_ids);
+          }
+
+          $fields[$key] = $instance->getLabel();
         }
       }
     }
@@ -924,14 +942,14 @@ class MappingEditForm extends EntityForm {
         foreach ($template->config as $i => $fieldset) {
           if ($fieldset->hidden === FALSE) {
             foreach ($fieldset->elements as $gc_field) {
-              $local_field_name = $this->mappingData[$fieldset->id]['elements'][$gc_field->id];
+              $local_field_id = $this->mappingData[$fieldset->id]['elements'][$gc_field->id];
               if ($gc_field->type === 'choice_checkbox') {
-                if (!empty($local_field_name)) {
+                if (!empty($local_field_id)) {
                   $local_options = [];
                   foreach ($gc_field->options as $option) {
                     $local_options[$option['name']] = $option['label'];
                   }
-                  $field_info = FieldConfig::loadByName('node', $mapping->getContentType(), $local_field_name);
+                  $field_info = FieldConfig::load($local_field_id);
                   if ($field_info->getType() === 'entity_reference') {
                     if ($this->erImportType === 'automatic') {
                       $this->automaticTermsGenerator($field_info, $local_options, isset($this->mappingData[$fieldset->id]['language']) ? $this->mappingData[$fieldset->id]['language'] : LanguageInterface::LANGCODE_NOT_SPECIFIED);
@@ -958,7 +976,7 @@ class MappingEditForm extends EntityForm {
                       $local_options[$option['name']] = $option['label'];
                     }
                   }
-                  $field_info = FieldConfig::loadByName('node', $mapping->getContentType(), $local_field_name);
+                  $field_info = FieldConfig::load($local_field_id);
                   if ($field_info->getType() === 'entity_reference') {
                     if ($this->erImportType === 'automatic') {
                       $this->automaticTermsGenerator($field_info, $local_options, isset($this->mappingData[$fieldset->id]['language']) ? $this->mappingData[$fieldset->id]['language'] : LanguageInterface::LANGCODE_NOT_SPECIFIED);
@@ -973,7 +991,7 @@ class MappingEditForm extends EntityForm {
                       ->getStorage('entity_form_display')
                       ->load('node.' . $mapping->getContentType() . '.default');
                     /** @var \Drupal\Core\Entity\Entity\EntityFormDisplay $entity */
-                    $entity->getRenderer($local_field_name)
+                    $entity->getRenderer($field_info->getName())
                       ->setSetting('available_options', implode("\n", $new_local_options));
                   }
                 }
@@ -1063,7 +1081,7 @@ class MappingEditForm extends EntityForm {
       ->getFieldDefinitions('node', $this->contentType);
     foreach ($instances as $instance) {
       if ($instance->getType() === 'entity_reference' && $instance->getSetting('handler') === 'default:taxonomy_term') {
-        $entityReferenceFields[] = $instance->getName();
+        $entityReferenceFields[] = $instance->id();
       }
     }
 
