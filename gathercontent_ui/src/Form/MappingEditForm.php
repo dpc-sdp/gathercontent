@@ -603,11 +603,13 @@ class MappingEditForm extends EntityForm {
    *   Name of Drupal Entity type.
    * @param array $nested_ids
    *   Nested ID array.
+   * @param string $bundle_label
+   *   Bundle label string.
    *
    * @return array
    *   Associative array with equivalent fields.
    */
-  protected function filterFieldsRecursively($gc_field, $content_type, $entity_type = 'node', array $nested_ids = []) {
+  protected function filterFieldsRecursively($gc_field, $content_type, $entity_type = 'node', array $nested_ids = [], $bundle_label = '') {
     $mapping_array = [
       'files' => [
         'file',
@@ -706,15 +708,18 @@ class MappingEditForm extends EntityForm {
             $new_nested_ids[] = $instance->id();
 
             foreach ($bundles as $bundle) {
-              $targetFields = $this->filterFieldsRecursively($gc_field, $bundle, $target_type, $new_nested_ids);
+              $new_bundle_label = $instance->getLabel();
+              $bundle_name = $entityTypeManager
+                ->getStorage($bundle_entity_type)
+                ->load($bundle)
+                ->label();
+
+              $new_bundle_label .= ' (' . $bundle_name . ')';
+
+              $targetFields = $this->filterFieldsRecursively($gc_field, $bundle, $target_type, $new_nested_ids, $new_bundle_label);
 
               if (!empty($targetFields)) {
-                $bundle_label = $entityTypeManager
-                  ->getStorage($bundle_entity_type)
-                  ->load($bundle)
-                  ->label();
-
-                $fields[$bundle_label] = $targetFields;
+                $fields = $fields + $targetFields;
               }
             }
           }
@@ -727,7 +732,7 @@ class MappingEditForm extends EntityForm {
             $key = implode('||', $nested_ids);
           }
 
-          $fields[$key] = $instance->getLabel();
+          $fields[$key] = ((!empty($bundle_label)) ? $bundle_label . ' - ' : '') . $instance->getLabel();
         }
       }
     }
