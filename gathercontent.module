@@ -342,7 +342,7 @@ function gc_gc_process_metatag_pane(NodeInterface &$entity, $local_field_id, $fi
 function gc_gc_process_content_pane(EntityInterface &$entity, $local_field_id, $field, $is_translatable, $language, array $files) {
   $local_id_array = explode('||', $local_field_id, 2);
 
-  if (count($local_id_array) > 1 && !empty($field->value)) {
+  if (count($local_id_array) > 1) {
     $entityTypeManager = \Drupal::entityTypeManager();
     $field_info = FieldConfig::load($local_id_array[0]);
     $field_target_info = FieldConfig::load($local_id_array[1]);

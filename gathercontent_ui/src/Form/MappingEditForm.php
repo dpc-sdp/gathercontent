@@ -702,10 +702,11 @@ class MappingEditForm extends EntityForm {
               ->getEntityType()
               ->get('bundle_entity_type');
 
-            $nested_ids[] = $instance->id();
+            $new_nested_ids = $nested_ids;
+            $new_nested_ids[] = $instance->id();
 
             foreach ($bundles as $bundle) {
-              $targetFields = $this->filterFieldsRecursively($gc_field, $bundle, $target_type, $nested_ids);
+              $targetFields = $this->filterFieldsRecursively($gc_field, $bundle, $target_type, $new_nested_ids);
 
               if (!empty($targetFields)) {
                 $bundle_label = $entityTypeManager

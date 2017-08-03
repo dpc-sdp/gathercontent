@@ -5,6 +5,7 @@
  * Main module file for GatherContent Upload module.
  */
 
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Language\Language;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\gathercontent\Entity\Mapping;
@@ -71,106 +72,37 @@ function gathercontent_upload_process(NodeInterface $entity, $uuid, &$context) {
           if (isset($mapping_data[$pane->id]['elements'][$field->id])
             && !empty($mapping_data[$pane->id]['elements'][$field->id])
           ) {
-            $local_field_name = $mapping_data[$pane->id]['elements'][$field->id];
+            $local_field_id = $mapping_data[$pane->id]['elements'][$field->id];
             if ((isset($mapping_data[$pane->id]['type']) && $mapping_data[$pane->id]['type'] === 'content') || !isset($mapping_data[$pane->id]['type'])) {
-              $field_info = FieldConfig::loadByName('node', $entity->bundle(), $local_field_name);
-              if (!is_null($field_info)) {
-                $is_translatable = $is_translatable && $field_info->isTranslatable();
+              $local_id_array = explode('||', $local_field_id, 2);
+
+              if (count($local_id_array) > 1) {
+                $entityTypeManager = \Drupal::entityTypeManager();
+                $field_info = FieldConfig::load($local_id_array[0]);
+                $field_target_info = FieldConfig::load($local_id_array[1]);
+                $field_name = $field_info->getName();
+                $local_field_name = $field_target_info->getName();
+
+                $entityStorage = $entityTypeManager
+                  ->getStorage($field_target_info->getTargetEntityTypeId());
+
+                $target_field = $entity->get($field_name);
+
+                if (isset($target_field->target_id)) {
+                  $childEntity = $entityStorage->load($target_field->target_id);
+
+                  gc_gc_process_set_fields($field, $childEntity, $is_translatable, $language, $local_field_name);
+                }
               }
-              switch ($field->type) {
-                case 'files':
-                  // There is currently no API for manipulating with files.
-                  break;
+              else {
+                $field_info = FieldConfig::load($local_field_id);
+                $local_field_name = $field_info->getName();
+                if (!is_null($field_info)) {
+                  $is_translatable = $is_translatable && $field_info->isTranslatable();
+                }
 
-                case 'choice_radio':
-                  /** @var \Cheppers\GatherContent\DataTypes\ElementRadio $field */
-
-                  $option_names = [];
-
-                  foreach ($field->options as &$option) {
-                    // Set selected to false for each option.
-                    $option['selected'] = FALSE;
-                    $option_names[] = $option['name'];
-                  }
-
-                  // Fetch local selected option.
-                  if ($is_translatable) {
-                    $selected = $entity->getTranslation($language)->{$local_field_name}->value;
-                  }
-                  else {
-                    $selected = $entity->{$local_field_name}->value;
-                  }
-
-                  if (!in_array($selected, $option_names)) {
-                    // If it's other, then find that option in remote.
-                    foreach ($field->options as &$option) {
-                      if (isset($option['value'])) {
-                        $option['selected'] = TRUE;
-                        $option['value'] = $selected;
-                      }
-                    }
-                  }
-                  else {
-                    // If it's checkbox, find it by remote option name,
-                    // which should be same.
-                    foreach ($field->options as &$option) {
-                      if ($option['name'] == $selected) {
-                        $option['selected'] = TRUE;
-                      }
-                    }
-                  }
-                  break;
-
-                case 'choice_checkbox':
-                  /** @var \Cheppers\GatherContent\DataTypes\ElementCheckbox $field */
-
-                  foreach ($field->options as &$option) {
-                    // Set selected to false for each option.
-                    $option['selected'] = FALSE;
-                  }
-
-                  // Fetch local selected option.
-                  if ($is_translatable) {
-                    $selected = $entity->getTranslation($language)->{$local_field_name}->value;
-                  }
-                  else {
-                    $selected = $entity->{$local_field_name}->value;
-                  }
-
-                  // If it's checkbox, find it by remote option name,
-                  // which should be same.
-                  foreach ($field->options as &$option) {
-                    if (isset($selected[$option['name']])) {
-                      $option['selected'] = TRUE;
-                    }
-                  }
-                  break;
-
-                case 'section':
-                  // We don't upload this because this field shouldn't be
-                  // edited.
-                  break;
-
-                default:
-                  if ($local_field_name === 'title') {
-                    if ($is_translatable) {
-                      $field->value = $entity->getTranslation($language)->getTitle();
-                    }
-                    else {
-                      $field->value = $entity->getTitle();
-                    }
-                  }
-                  else {
-                    if ($is_translatable) {
-                      $field->value = $entity->getTranslation($language)->{$local_field_name}->value;
-                    }
-                    else {
-                      $field->value = $entity->{$local_field_name}->value;
-                    }
-                  }
-                  break;
+                gc_gc_process_set_fields($field, $entity, $is_translatable, $language, $local_field_name);
               }
-
             }
             elseif ($mapping_data[$pane->id]['type'] === 'metatag') {
               if (\Drupal::moduleHandler()->moduleExists('metatag') && check_metatag($entity->getType())) {
@@ -221,4 +153,113 @@ function gathercontent_upload_process(NodeInterface $entity, $uuid, &$context) {
   }
 
   $context['results']['uuid'] = $uuid;
+}
+
+/**
+ * @param $field
+ *   Field object.
+ * @param \Drupal\Core\Entity\EntityInterface $entity
+ *   Entity object.
+ * @param bool $is_translatable
+ *   Translatable bool.
+ * @param string $language
+ *   Language string.
+ * @param string $local_field_name
+ *   Field Name.
+ */
+function gc_gc_process_set_fields(&$field, EntityInterface $entity, $is_translatable, $language, $local_field_name) {
+  switch ($field->type) {
+    case 'files':
+      // There is currently no API for manipulating with files.
+      break;
+
+    case 'choice_radio':
+      /** @var \Cheppers\GatherContent\DataTypes\ElementRadio $field */
+
+      $option_names = [];
+
+      foreach ($field->options as &$option) {
+        // Set selected to false for each option.
+        $option['selected'] = FALSE;
+        $option_names[] = $option['name'];
+      }
+
+      // Fetch local selected option.
+      if ($is_translatable) {
+        $selected = $entity->getTranslation($language)->{$local_field_name}->value;
+      }
+      else {
+        $selected = $entity->{$local_field_name}->value;
+      }
+
+      if (!in_array($selected, $option_names)) {
+        // If it's other, then find that option in remote.
+        foreach ($field->options as &$option) {
+          if (isset($option['value'])) {
+            $option['selected'] = TRUE;
+            $option['value'] = $selected;
+          }
+        }
+      }
+      else {
+        // If it's checkbox, find it by remote option name,
+        // which should be same.
+        foreach ($field->options as &$option) {
+          if ($option['name'] == $selected) {
+            $option['selected'] = TRUE;
+          }
+        }
+      }
+      break;
+
+    case 'choice_checkbox':
+      /** @var \Cheppers\GatherContent\DataTypes\ElementCheckbox $field */
+
+      foreach ($field->options as &$option) {
+        // Set selected to false for each option.
+        $option['selected'] = FALSE;
+      }
+
+      // Fetch local selected option.
+      if ($is_translatable) {
+        $selected = $entity->getTranslation($language)->{$local_field_name}->value;
+      }
+      else {
+        $selected = $entity->{$local_field_name}->value;
+      }
+
+      // If it's checkbox, find it by remote option name,
+      // which should be same.
+      foreach ($field->options as &$option) {
+        if (isset($selected[$option['name']])) {
+          $option['selected'] = TRUE;
+        }
+      }
+      break;
+
+    case 'section':
+      // We don't upload this because this field shouldn't be
+      // edited.
+      break;
+
+    default:
+      if ($local_field_name === 'title') {
+        if ($is_translatable) {
+          $field->value = $entity->getTranslation($language)
+            ->getTitle();
+        }
+        else {
+          $field->value = $entity->getTitle();
+        }
+      }
+      else {
+        if ($is_translatable) {
+          $field->value = $entity->getTranslation($language)->{$local_field_name}->value;
+        }
+        else {
+          $field->value = $entity->{$local_field_name}->value;
+        }
+      }
+      break;
+  }
 }
