@@ -11,7 +11,6 @@ use Drupal\Core\Language\Language;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\gathercontent\Entity\Mapping;
-use Drupal\gathercontent\Entity\Operation;
 use Drupal\gathercontent\Entity\OperationItem;
 use Drupal\gathercontent\Event\GatherContentEvents;
 use Drupal\gathercontent\Event\PostNodeSaveEvent;
@@ -35,18 +34,25 @@ class Importer implements ContainerInjectionInterface {
   protected $client;
 
   /**
-   * These options will apply for the next imported/updated node.
+   * Options that will apply for the imported node given as a key.
    *
-   * @var \Drupal\gathercontent\ImportOptions
+   * It looks like this:
+   * [
+   *   gc_id1 => ImportOptions1,
+   *   gc_id2 => ImportOptions2,
+   * ];
+   *
+   * The ImportOption should always be set before importing an item.
+   *
+   * @var \Drupal\gathercontent\ImportOptions[]
    */
-  protected $importOptions;
+  protected $importOptionsArray = [];
 
   /**
    * DI GatherContent Client.
    */
   public function __construct(GatherContentClientInterface $client) {
     $this->client = $client;
-    $this->importOptions = new ImportOptions();
   }
 
   /**
@@ -68,75 +74,36 @@ class Importer implements ContainerInjectionInterface {
   /**
    * Getter ImportOptions.
    */
-  public function getImportOptions() {
-    return $this->importOptions;
+  public function getImportOption(int $gc_id) {
+    return $this->importOptionsArray[$gc_id];
   }
 
   /**
    * Setter ImportOptions.
    */
-  public function setImportOptions(ImportOptions $import_options) {
-    $this->importOptions = $import_options;
+  public function setImportOption(int $gc_id, ImportOptions $import_options) {
+    $this->importOptionsArray[$gc_id] = $import_options;
     return $this;
   }
 
   /**
-   * Create a new batch for importing elements.
-   *
-   * Return the uuid of the import operation, NULL if the parameters are invalid.
+   * Don't forget to add a finished callback and the operations array.
    */
-  public function batchSetImport(array $gc_ids, $finished_callback) {
-    if (empty($gc_ids)) {
-      return NULL;
-    }
-    if (empty($finished_callback)) {
-      return NULL;
-    }
-
-    $operation = Operation::create([
-      'type' => 'import',
-    ]);
-    $operation->save();
-    
-    $batch = [
+  public static function getBasicImportBatch() {
+    return [
       'title' => t('Importing'),
       'init_message' => t('Starting import'),
       'error_message' => t('An error occurred during processing'),
       'progress_message' => t('Processed @current out of @total.'),
       'progressive' => TRUE,
-      'operations' => $this->getBatchOperations($gc_ids, $operation->uuid()),
-      'finished' => $finished_callback,
     ];
-
-    batch_set($batch);
-    return $operation->uuid();
-  }
-
-  /**
-   * Get batch import process operations for batch processing.
-   */
-  public function getBatchOperations($gc_ids, $operation_uuid) {
-    $batch_operations = [];
-
-    foreach ($gc_ids as $gc_id) {
-      $batch_operations[] = [
-        'gathercontent_my_import_process',
-        [
-          $gc_id,
-          $operation_uuid,
-          $this->importOptions,
-        ],
-      ];
-    }
-
-    return $batch_operations;
   }
 
   /**
    * Update item's status based on ImportOptions. Upload new status to GC.
    */
   public function updateStatus(Item $item) {
-    $status_id = $this->getImportOptions()->getNewStatus();
+    $status_id = $this->getImportOption($item->id)->getNewStatus();
 
     if (!is_int($status_id)) {
       // User does not want to update status.
@@ -156,6 +123,15 @@ class Importer implements ContainerInjectionInterface {
 
   /**
    * Import a single GatherContent item to Drupal.
+   *
+   * Before calling this function make sure to set the import options for the item.
+   *
+   * This function is a replacement for the old _gc_fetcher function.
+   *
+   * The caller (e.g. batch processes) should handle the thrown exceptions.
+   *
+   * @return int
+   *   The ID of the imported entity.
    */
   public function import(Item $gc_item) {
     $user = \Drupal::currentUser();
@@ -172,14 +148,14 @@ class Importer implements ContainerInjectionInterface {
     $langcode = isset($first['language']) ? $first['language'] : Language::LANGCODE_NOT_SPECIFIED;
 
     // Create a Drupal entity corresponding to GC item.
-    $entity = $this->gc_get_destination_node($gc_item->id, $this->getImportOptions()->getNodeUpdateMethod(), $content_type, $langcode);
+    $entity = $this->gc_get_destination_node($gc_item->id, $this->getImportOption($gc_item->id)->getNodeUpdateMethod(), $content_type, $langcode);
 
     $entity->set('gc_id', $gc_item->id);
     $entity->set('gc_mapping_id', $mapping->id());
     $entity->setOwnerId($user->id());
 
     if ($entity->isNew()) {
-      $entity->setPublished($this->getImportOptions()->getPublish());
+      $entity->setPublished($this->getImportOption($gc_item->id)->getPublish());
     }
 
     if ($entity === FALSE) {
@@ -203,7 +179,7 @@ class Importer implements ContainerInjectionInterface {
         if (!$entity->hasTranslation($language)) {
           $entity->addTranslation($language);
           if ($entity->isNew()) {
-            $entity->getTranslation($language)->setPublished($this->getImportOptions()->getPublish());
+            $entity->getTranslation($language)->setPublished($this->getImportOption($gc_item->id)->getPublish());
           }
         }
       }
@@ -242,12 +218,12 @@ class Importer implements ContainerInjectionInterface {
         foreach ($languages as $langcode => $language) {
           $localized_entity = $entity->hasTranslation($langcode) ? $entity->getTranslation($langcode) : NULL;
           if (!is_null($localized_entity)) {
-            gc_create_menu_link($entity->id(), $localized_entity->getTitle(), $this->getImportOptions()->getParentMenuItem(), $langcode, $original_link_id);
+            gc_create_menu_link($entity->id(), $localized_entity->getTitle(), $this->getImportOption($gc_item->id)->getParentMenuItem(), $langcode, $original_link_id);
           }
         }
       }
       else {
-        gc_create_menu_link($entity->id(), $entity->getTitle(), $this->getImportOptions()->getParentMenuItem());
+        gc_create_menu_link($entity->id(), $entity->getTitle(), $this->getImportOption($gc_item->id)->getParentMenuItem());
       }
     }
 

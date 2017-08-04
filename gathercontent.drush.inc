@@ -10,6 +10,7 @@ use Drupal\gathercontent\Entity\Mapping;
 use Drupal\gathercontent\Entity\Operation;
 use Drupal\gathercontent\Entity\OperationItem;
 use Drupal\gathercontent\Importer;
+use Drupal\gathercontent\ImportOptions;
 use Drush\Log\LogLevel;
 
 /**
@@ -211,14 +212,6 @@ function drush_gathercontent_import($mapping_id = NULL, $node_update_method = 'a
   }
 
   // Create and start Batch processes.
-  /** @var \Drupal\gathercontent\Importer $importer */
-  $importer = \Drupal::service('gathercontent.importer');
-  $importer->getImportOptions()
-    ->setNewStatus($status_id)
-    ->setPublish($publish)
-    ->setNodeUpdateMethod($node_update_method)
-    ->setParentMenuItem($parent_menu_item);
-
   $isItemFromSelectedTemplate = function ($item) use ($template_id) {
     return $item->templateId === $template_id;
   };
@@ -226,16 +219,43 @@ function drush_gathercontent_import($mapping_id = NULL, $node_update_method = 'a
     return $item->id;
   };
 
-  $selected_templates = array_filter($items, $isItemFromSelectedTemplate);
-  $gc_ids = array_map($itemToId, $selected_templates);
+  $selected_items = array_filter($items, $isItemFromSelectedTemplate);
+  $gc_ids = array_map($itemToId, $selected_items);
 
-  $operation_uuid = $importer->batchSetImport($gc_ids, 'gathercontent_drush_import_process_finished');
+  $operation = Operation::create([
+    'type' => 'import',
+  ]);
+  $operation->save();
+
+  $operations = [];
+  foreach ($gc_ids as $gc_id) {
+    $import_options = new ImportOptions(
+      $node_update_method,
+      $publish,
+      $status_id,
+      $parent_menu_item,
+      $operation->uuid()
+    );
+    $operations[] = [
+      'gathercontent_import_process',
+      [
+        $gc_id,
+        $import_options,
+      ],
+    ];
+  }
+
+  $batch = Importer::getBasicImportBatch();
+  $batch['operations'] = $operations;
+  $batch['finished'] = 'gathercontent_drush_import_process_finished';
+
+  batch_set($batch);
   drush_backend_batch_process();
 
   // Display results.
   $mappings = [];
   $result = \Drupal::entityQuery('gathercontent_operation_item')
-    ->condition('operation_uuid', $operation_uuid)
+    ->condition('operation_uuid', $operation->uuid())
     ->execute();
   if (!empty($result)) {
     $imported_items = OperationItem::loadMultiple($result);

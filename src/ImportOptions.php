@@ -42,6 +42,28 @@ class ImportOptions {
   public $parentMenuItem = NULL;
 
   /**
+   * The UUID of the Operation entity this node import's OperationItem entity connects to.
+   */
+  public $operationUuid = NULL;
+
+  /**
+   * ImportOptions constructor.
+   */
+  public function __construct(
+    $node_update_method = NodeUpdateMethod::ALWAYS_UPDATE,
+    $publish = FALSE,
+    $new_status = NULL,
+    $parent_menu_item = NULL,
+    $operation_uuid = NULL
+  ) {
+    $this->nodeUpdateMethod = $node_update_method;
+    $this->publish = $publish;
+    $this->newStatus = filter_var($new_status, FILTER_VALIDATE_INT);
+    $this->parentMenuItem = $parent_menu_item;
+    $this->operationUuid = $operation_uuid;
+  }
+
+  /**
    * Getter $nodeUpdateMethod.
    */
   public function getNodeUpdateMethod() {
@@ -98,6 +120,21 @@ class ImportOptions {
    */
   public function setParentMenuItem($parent_menu_item) {
     $this->parentMenuItem = $parent_menu_item;
+    return $this;
+  }
+
+  /**
+   * Getter $operation_uuid.
+   */
+  public function getOperationUuid() {
+    return $this->operationUuid;
+  }
+
+  /**
+   * Setter $operation_uuid.
+   */
+  public function setOperationUuid($operation_uuid) {
+    $this->operationUuid = $operation_uuid;
     return $this;
   }
 

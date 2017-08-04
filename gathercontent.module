@@ -158,53 +158,26 @@ function _gc_get_menu_by_gc_id(&$mlid, &$menu_name, $language = NULL) {
 }
 
 /**
- * Batch operation callback.
- *
- * @param int $gc_id
- *   ID of content we want to import.
- * @param int $status_id
- *   ID of status, if 0 then we don't want to change status.
- * @param string $operation_uuid
- *   UUID of operation.
- * @param bool $drupal_status
- *   Status on node in Drupal - published/unpublished.
- * @param string $node_update_method
- *   Name of the node update method.
- * @param int|null $parent_menu_item
- *   ID of mlid.
- * @param array $context
- *   Context of operation.
- */
-function gathercontent_import_process($gc_id, $status_id, $operation_uuid, $drupal_status, $node_update_method, $parent_menu_item = NULL, &$context = []) {
-  $importer = \Drupal::service('gathercontent.importer');
-  if (($nid = $importer->_gc_fetcher($gc_id, $operation_uuid, $drupal_status, $node_update_method, $status_id, $parent_menu_item)) !== FALSE) {
-    if ($status_id != 0) {
-      // Change status.
-      /** @var \Drupal\gathercontent\DrupalGatherContentClient $client */
-      $client = \Drupal::service('gathercontent.client');
-      $client->itemChooseStatusPost($gc_id, $status_id);
-    }
-  };
-  $context['results']['uuid'] = $operation_uuid;
-}
-
-/**
  * Batch operation callback for importing items.
  */
-function gathercontent_my_import_process($gc_id, $operation_uuid, ImportOptions $import_options, &$context = []) {
+function gathercontent_import_process($gc_id, ImportOptions $import_options, &$context = []) {
   /** @var \Drupal\gathercontent\Importer $importer */
   $importer = \Drupal::service('gathercontent.importer');
-  $importer->setImportOptions($import_options);
+  // Since a batch process runs on a new page request, the importer will be empty.
+  // Therefore we must provide the data necessary for this process through setImportOption.
+  $importer->setImportOption($gc_id, $import_options);
+
   $client = $importer->getClient();
   /** @var \Cheppers\GatherContent\DataTypes\Item $item */
   $item = $client->itemGet($gc_id);
   /** @var \Cheppers\GatherContent\DataTypes\Template $template */
   $template = $client->templateGet($item->templateId);
+  $importer->updateStatus($item);
 
   $operation_item = \Drupal::entityTypeManager()
     ->getStorage('gathercontent_operation_item')
     ->create([
-      'operation_uuid' => $operation_uuid,
+      'operation_uuid' => $import_options->operationUuid,
       'item_status' => $item->status->name,
       'item_status_color' => $item->status->color,
       'template_name' => $template->name,
@@ -213,7 +186,6 @@ function gathercontent_my_import_process($gc_id, $operation_uuid, ImportOptions 
     ]);
 
   try {
-    $importer->updateStatus($item);
     $importer->import($item);
     $operation_item->status = 'Success';
     $operation_item->save();
@@ -223,7 +195,7 @@ function gathercontent_my_import_process($gc_id, $operation_uuid, ImportOptions 
     $operation_item->save();
   }
 
-  $context['results']['uuid'] = $operation_uuid;
+  $context['results']['uuid'] = $import_options->operationUuid;
 }
 
 /**
