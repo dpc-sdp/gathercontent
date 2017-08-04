@@ -2,6 +2,7 @@
 
 namespace Drupal\gathercontent;
 
+use Cheppers\GatherContent\DataTypes\Item;
 use Cheppers\GatherContent\GatherContentClientInterface;
 use Drupal\Component\Render\PlainTextOutput;
 use Drupal\Core\Entity\EntityInterface;
@@ -17,6 +18,7 @@ use Drupal\gathercontent\Event\PreNodeSaveEvent;
 use Drupal\node\Entity\Node;
 use Drupal\node\NodeInterface;
 use Drupal\taxonomy\Entity\Term;
+use Exception;
 
 /**
  * Class for handling import/update logic from GatherContent to Drupal.
@@ -38,25 +40,184 @@ class Importer {
   }
 
   /**
-   * Import every node.
+   * Import every item from given GatherContent project.
    */
-  public function importAll($gc_ids) {
+  public function importAllFromProject($project_id, $node_update_method, $publish, $parent_menu_item) {
+    /** @var \Cheppers\GatherContent\DataTypes\Item[] $content */
+    $items = $this->client->itemsGet($project_id);
+    $item_ids = array_map(function ($item) {
+      return $item->id;
+    }, $items);
+    $this->importAll($item_ids, $node_update_method, $publish, $parent_menu_item);
+  }
+
+  /**
+   * Import every GatherContent item given.
+   */
+  public function importAll($gc_ids, $node_update_method, $publish, $parent_menu_item) {
+    if (empty($gc_ids)) {
+      return;
+    }
+
     $operation = Operation::create([
       'type' => 'import',
     ]);
     $operation->save();
 
     foreach ($gc_ids as $gc_id) {
-      $this->import($gc_id);
+      /** @var \Cheppers\GatherContent\DataTypes\Item $item */
+      $item = $this->client->itemGet($gc_id);
+      /** @var \Cheppers\GatherContent\DataTypes\Template $template */
+      $template = $this->client->templateGet($item->templateId);
+
+      $operation_item = \Drupal::entityTypeManager()
+        ->getStorage('gathercontent_operation_item')
+        ->create([
+          'operation_uuid' => $operation->uuid(),
+          'item_status' => $item->status->name,
+          'item_status_color' => $item->status->color,
+          'template_name' => $template->name,
+          'item_name' => $item->name,
+          'gc_id' => $gc_id,
+        ]);
+
+      try {
+        $this->import($item, $node_update_method, $publish, $parent_menu_item);
+        $operation_item->status = 'Success';
+        $operation_item->save();
+      }
+      catch (\Exception $e) {
+        $operation_item->status = $e->getMessage();
+        $operation_item->save();
+      }
     }
   }
 
   /**
    * Import a single GatherContent item to Drupal.
    */
-  public function import($gc_id) {
-    /** @var \Cheppers\GatherContent\DataTypes\Item $content */
-    $content = $this->client->itemGet($gc_id);
+  public function import(Item $gc_item, $node_update_method, $publish, $parent_menu_item) {
+    $gc_id = $gc_item->id;
+    $user = \Drupal::currentUser();
+    $mapping = $this->getMapping($gc_item);
+    $mapping_data = unserialize($mapping->getData());
+
+    if (empty($mapping_data)) {
+      throw new Exception("Mapping data is empty.");
+    }
+
+    $mapping_data_copy = $mapping_data;
+    $first = array_shift($mapping_data_copy);
+    $content_type = $mapping->getContentType();
+    $langcode = isset($first['language']) ? $first['language'] : Language::LANGCODE_NOT_SPECIFIED;
+
+    // Create a Drupal entity corresponding to GC item.
+    $entity = $this->gc_get_destination_node($gc_id, $node_update_method, $content_type, $langcode);
+
+    $entity->set('gc_id', $gc_id);
+    $entity->set('gc_mapping_id', $mapping->id());
+    $entity->setOwnerId($user->id());
+
+    if ($entity->isNew()) {
+      $entity->setPublished($publish);
+    }
+
+    if ($entity === FALSE) {
+      throw new Exception("System error, please contact you administrator.");
+    }
+
+    // Get the files corresponding to item.
+    $files = $this->client->itemFilesGet($gc_id);
+
+    $is_translatable = \Drupal::moduleHandler()
+        ->moduleExists('content_translation')
+      && \Drupal::service('content_translation.manager')
+        ->isEnabled('node', $mapping->getContentType());
+
+    foreach ($gc_item->config as $pane) {
+      $is_pane_translatable = $is_translatable && isset($mapping_data[$pane->id]['language'])
+        && ($mapping_data[$pane->id]['language'] != Language::LANGCODE_NOT_SPECIFIED);
+
+      if ($is_pane_translatable) {
+        $language = $mapping_data[$pane->id]['language'];
+        if (!$entity->hasTranslation($language)) {
+          $entity->addTranslation($language);
+          if ($entity->isNew()) {
+            $entity->getTranslation($language)->setPublished($publish);
+          }
+        }
+      }
+      else {
+        $language = Language::LANGCODE_NOT_SPECIFIED;
+      }
+
+      $reference_imported = [];
+      foreach ($pane->elements as $field) {
+        if (isset($mapping_data[$pane->id]['elements'][$field->id]) && !empty($mapping_data[$pane->id]['elements'][$field->id])) {
+          $local_field_id = $mapping_data[$pane->id]['elements'][$field->id];
+          if (isset($mapping_data[$pane->id]['type']) && ($mapping_data[$pane->id]['type'] === 'content') || !isset($mapping_data[$pane->id]['type'])) {
+            $this->gc_gc_process_content_pane($entity, $local_field_id, $field, $is_pane_translatable, $language, $files, $reference_imported);
+          }
+          elseif (isset($mapping_data[$pane->id]['type']) && ($mapping_data[$pane->id]['type'] === 'metatag')) {
+            $this->gc_gc_process_metatag_pane($entity, $local_field_id, $field, $mapping->getContentType(), $is_pane_translatable, $language);
+          }
+        }
+      }
+    }
+
+    if (!$is_translatable && empty($entity->getTitle())) {
+      $entity->setTitle($gc_item->name);
+    }
+
+    \Drupal::service('event_dispatcher')
+      ->dispatch(GatherContentEvents::PRE_NODE_SAVE, new PreNodeSaveEvent($entity, $gc_item, $files));
+    $entity->save();
+
+    // Create menu link items.
+    $menu_link_defaults = menu_ui_get_menu_link_defaults($entity);
+    if (!(bool) $menu_link_defaults['id']) {
+      if ($is_translatable) {
+        $languages = $entity->getTranslationLanguages();
+        $original_link_id = NULL;
+        foreach ($languages as $langcode => $language) {
+          $localized_entity = $entity->hasTranslation($langcode) ? $entity->getTranslation($langcode) : NULL;
+          if (!is_null($localized_entity)) {
+            gc_create_menu_link($entity->id(), $localized_entity->getTitle(), $parent_menu_item, $langcode, $original_link_id);
+          }
+        }
+      }
+      else {
+        gc_create_menu_link($entity->id(), $entity->getTitle(), $parent_menu_item);
+      }
+    }
+
+    \Drupal::service('event_dispatcher')
+      ->dispatch(GatherContentEvents::POST_NODE_SAVE, new PostNodeSaveEvent($entity, $gc_item, $files));
+
+    return $entity->id();
+  }
+
+  /**
+   * Return the mapping associated with the given Item.
+   */
+  public function getMapping(Item $gc_item) {
+    $mapping_id = \Drupal::entityQuery('gathercontent_mapping')
+      ->condition('gathercontent_project_id', $gc_item->projectId)
+      ->condition('gathercontent_template_id', $gc_item->templateId)
+      ->execute();
+
+    if (empty($mapping_id)) {
+      throw new Exception("Operation failed: Template not mapped.");
+    }
+
+    $mapping_id = reset($mapping_id);
+    $mapping = Mapping::load($mapping_id);
+
+    if ($mapping === NULL) {
+      throw new Exception("No mapping found with id: $mapping_id");
+    }
+
+    return $mapping;
   }
 
   /**
@@ -82,8 +243,6 @@ class Importer {
     $user = \Drupal::currentUser();
     /** @var \Cheppers\GatherContent\GatherContentClientInterface $client */
     $client = \Drupal::service('gathercontent.client');
-
-    $tsid = NULL;
 
     /** @var \Cheppers\GatherContent\DataTypes\Item $content */
     $content = $client->itemGet($gc_id);
