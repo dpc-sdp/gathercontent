@@ -133,6 +133,28 @@ class Importer implements ContainerInjectionInterface {
   }
 
   /**
+   * Update item's status based on ImportOptions. Upload new status to GC.
+   */
+  public function updateStatus(Item $item) {
+    $status_id = $this->getImportOptions()->getNewStatus();
+
+    if ($status_id === NULL) {
+      // User does not want to update status.
+      return;
+    }
+
+    $status = $this->client->projectStatusGet($item->projectId, $status_id);
+
+    // Update only if status exists.
+    if ($status !== NULL) {
+      // Update status on GC.
+      $this->client->itemChooseStatusPost($item->id, $status_id);
+      // Update status of item (will be uploaded to Drupal on import).
+      $item->status = $status;
+    }
+  }
+
+  /**
    * Import a single GatherContent item to Drupal.
    */
   public function import(Item $gc_item) {

@@ -195,10 +195,11 @@ function gathercontent_my_import_process($gc_id, $operation_uuid, ImportOptions 
   /** @var \Drupal\gathercontent\Importer $importer */
   $importer = \Drupal::service('gathercontent.importer');
   $importer->setImportOptions($import_options);
+  $client = $importer->getClient();
   /** @var \Cheppers\GatherContent\DataTypes\Item $item */
-  $item = $importer->getClient()->itemGet($gc_id);
+  $item = $client->itemGet($gc_id);
   /** @var \Cheppers\GatherContent\DataTypes\Template $template */
-  $template = $importer->getClient()->templateGet($item->templateId);
+  $template = $client->templateGet($item->templateId);
 
   $operation_item = \Drupal::entityTypeManager()
     ->getStorage('gathercontent_operation_item')
@@ -212,6 +213,7 @@ function gathercontent_my_import_process($gc_id, $operation_uuid, ImportOptions 
     ]);
 
   try {
+    $importer->updateStatus($item);
     $importer->import($item);
     $operation_item->status = 'Success';
     $operation_item->save();
