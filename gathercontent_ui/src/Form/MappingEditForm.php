@@ -850,7 +850,7 @@ class MappingEditForm extends EntityForm {
           $tab_type = (isset($tab['type']) ? $tab['type'] : 'content');
           if (isset($tab['elements'])) {
             foreach ($tab['elements'] as $k => $element) {
-              if (empty($element)) {
+              if (empty($element) || strpos($element, '||') > 0) {
                 continue;
               }
               if ($translatable) {

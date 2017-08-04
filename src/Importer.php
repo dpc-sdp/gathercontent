@@ -506,7 +506,7 @@ class Importer {
    * @param array $files
    *   Array of files fetched from GatherContent.
    * @param array $reference_imported
-   *   Array of reference fields which are tempered with.
+   *   Array of reference fields which are imported.
    */
   function gc_gc_process_content_pane(EntityInterface &$entity, $local_field_id, $field, $is_translatable, $language, array $files, array &$reference_imported) {
     $local_id_array = explode('||', $local_field_id);
@@ -534,7 +534,10 @@ class Importer {
         $target_field_value = [];
       }
 
+      array_shift($local_id_array);
       if (!empty($target_field_value)) {
+        $to_import = TRUE;
+
         foreach ($target_field_value as $target) {
           $childEntity = $entityStorage->loadByProperties([
             'id' => $target['target_id'],
@@ -542,28 +545,33 @@ class Importer {
           ]);
 
           if (!empty($childEntity[$target['target_id']])) {
-            array_shift($local_id_array);
-            $this->gc_gc_process_content_pane($childEntity[$target['target_id']],
-              implode('||', $local_id_array), $field, $is_translatable,
-              $language, $files, $reference_imported);
+            $check_field_name = $field_target_info->getName();
+            $check_field_value = $childEntity[$target['target_id']]->get($check_field_name)->getValue();
 
-            $childEntity[$target['target_id']]->save();
+            if (count($local_id_array) > 1 || empty($check_field_value)) {
+              $this->gc_gc_process_content_pane($childEntity[$target['target_id']],
+                implode('||', $local_id_array), $field, $is_translatable,
+                $language, $files, $reference_imported);
+
+              $childEntity[$target['target_id']]->save();
+              $to_import = FALSE;
+            }
           }
-          else {
-            $childEntity = $entityStorage->create([
-              'type' => $field_target_info->getTargetBundle(),
-            ]);
+        }
 
-            array_shift($local_id_array);
-            $this->gc_gc_process_content_pane($childEntity, implode('||', $local_id_array), $field, $is_translatable, $language, $files, $reference_imported);
+        if ($to_import) {
+          $childEntity = $entityStorage->create([
+            'type' => $field_target_info->getTargetBundle(),
+          ]);
 
-            $childEntity->save();
+          $this->gc_gc_process_content_pane($childEntity, implode('||', $local_id_array), $field, $is_translatable, $language, $files, $reference_imported);
 
-            $target_field_value[] = [
-              'target_id' => $childEntity->id(),
-              'target_revision_id' => $childEntity->getRevisionId(),
-            ];
-          }
+          $childEntity->save();
+
+          $target_field_value[] = [
+            'target_id' => $childEntity->id(),
+            'target_revision_id' => $childEntity->getRevisionId(),
+          ];
         }
       }
       else {
@@ -571,7 +579,6 @@ class Importer {
           'type' => $field_target_info->getTargetBundle(),
         ]);
 
-        array_shift($local_id_array);
         $this->gc_gc_process_content_pane($childEntity, implode('||', $local_id_array), $field, $is_translatable, $language, $files, $reference_imported);
 
         $childEntity->save();
