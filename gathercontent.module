@@ -5,23 +5,15 @@
  * Main module file for GatherContent module.
  */
 
-use Drupal\Component\Render\PlainTextOutput;
-use Drupal\Core\Entity\EntityInterface;
+use Cheppers\GatherContent\DataTypes\Item;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
-use Drupal\Core\Language\Language;
-use Drupal\Core\Language\LanguageInterface;
-use Drupal\field\Entity\FieldConfig;
-use Drupal\gathercontent\Entity\Mapping;
 use Drupal\gathercontent\Entity\OperationItem;
 use Drupal\gathercontent\Event\GatherContentEvents;
 use Drupal\gathercontent\Event\PostImportEvent;
-use Drupal\gathercontent\Event\PostNodeSaveEvent;
-use Drupal\gathercontent\Event\PreNodeSaveEvent;
+use Drupal\gathercontent\Importer;
+use Drupal\gathercontent\ImportOptions;
 use Drupal\menu_link_content\Entity\MenuLinkContent;
-use Drupal\node\Entity\Node;
-use Drupal\node\NodeInterface;
-use Drupal\taxonomy\Entity\Term;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 
 /**
@@ -168,8 +160,6 @@ function _gc_get_menu_by_gc_id(&$mlid, &$menu_name, $language = NULL) {
 /**
  * Batch operation callback.
  *
- * We are doing real import thing here.
- *
  * @param int $gc_id
  *   ID of content we want to import.
  * @param int $status_id
@@ -186,7 +176,7 @@ function _gc_get_menu_by_gc_id(&$mlid, &$menu_name, $language = NULL) {
  *   Context of operation.
  */
 function gathercontent_import_process($gc_id, $status_id, $operation_uuid, $drupal_status, $node_update_method, $parent_menu_item = NULL, &$context = []) {
-  $importer = new \Drupal\gathercontent\Importer(\Drupal::service('gathercontent.client'));
+  $importer = \Drupal::service('gathercontent.importer');
   if (($nid = $importer->_gc_fetcher($gc_id, $operation_uuid, $drupal_status, $node_update_method, $status_id, $parent_menu_item)) !== FALSE) {
     if ($status_id != 0) {
       // Change status.
@@ -195,6 +185,42 @@ function gathercontent_import_process($gc_id, $status_id, $operation_uuid, $drup
       $client->itemChooseStatusPost($gc_id, $status_id);
     }
   };
+  $context['results']['uuid'] = $operation_uuid;
+}
+
+/**
+ * Batch operation callback for importing items.
+ */
+function gathercontent_my_import_process($gc_id, $operation_uuid, ImportOptions $import_options, &$context = []) {
+  /** @var \Drupal\gathercontent\Importer $importer */
+  $importer = \Drupal::service('gathercontent.importer');
+  $importer->setImportOptions($import_options);
+  /** @var \Cheppers\GatherContent\DataTypes\Item $item */
+  $item = $importer->getClient()->itemGet($gc_id);
+  /** @var \Cheppers\GatherContent\DataTypes\Template $template */
+  $template = $importer->getClient()->templateGet($item->templateId);
+
+  $operation_item = \Drupal::entityTypeManager()
+    ->getStorage('gathercontent_operation_item')
+    ->create([
+      'operation_uuid' => $operation_uuid,
+      'item_status' => $item->status->name,
+      'item_status_color' => $item->status->color,
+      'template_name' => $template->name,
+      'item_name' => $item->name,
+      'gc_id' => $gc_id,
+    ]);
+
+  try {
+    $importer->import($item);
+    $operation_item->status = 'Success';
+    $operation_item->save();
+  }
+  catch (\Exception $e) {
+    $operation_item->status = $e->getMessage();
+    $operation_item->save();
+  }
+
   $context['results']['uuid'] = $operation_uuid;
 }
 

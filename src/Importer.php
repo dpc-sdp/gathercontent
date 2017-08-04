@@ -5,6 +5,7 @@ namespace Drupal\gathercontent;
 use Cheppers\GatherContent\DataTypes\Item;
 use Cheppers\GatherContent\GatherContentClientInterface;
 use Drupal\Component\Render\PlainTextOutput;
+use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Language\Language;
 use Drupal\Core\Language\LanguageInterface;
@@ -19,11 +20,12 @@ use Drupal\node\Entity\Node;
 use Drupal\node\NodeInterface;
 use Drupal\taxonomy\Entity\Term;
 use Exception;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Class for handling import/update logic from GatherContent to Drupal.
  */
-class Importer {
+class Importer implements ContainerInjectionInterface {
 
   /**
    * Drupal GatherContent Client.
@@ -33,71 +35,107 @@ class Importer {
   protected $client;
 
   /**
+   * These options will apply for the next imported/updated node.
+   *
+   * @var \Drupal\gathercontent\ImportOptions
+   */
+  protected $importOptions;
+
+  /**
    * DI GatherContent Client.
    */
   public function __construct(GatherContentClientInterface $client) {
     $this->client = $client;
+    $this->importOptions = new ImportOptions();
   }
 
   /**
-   * Import every item from given GatherContent project.
+   * {@inheritdoc}
    */
-  public function importAllFromProject($project_id, $node_update_method, $publish, $parent_menu_item) {
-    /** @var \Cheppers\GatherContent\DataTypes\Item[] $content */
-    $items = $this->client->itemsGet($project_id);
-    $item_ids = array_map(function ($item) {
-      return $item->id;
-    }, $items);
-    $this->importAll($item_ids, $node_update_method, $publish, $parent_menu_item);
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('gathercontent.client')
+    );
   }
 
   /**
-   * Import every GatherContent item given.
+   * Getter GatherContentClient.
    */
-  public function importAll($gc_ids, $node_update_method, $publish, $parent_menu_item) {
+  public function getClient() {
+    return $this->client;
+  }
+
+  /**
+   * Getter ImportOptions.
+   */
+  public function getImportOptions() {
+    return $this->importOptions;
+  }
+
+  /**
+   * Setter ImportOptions.
+   */
+  public function setImportOptions(ImportOptions $import_options) {
+    $this->importOptions = $import_options;
+    return $this;
+  }
+
+  /**
+   * Create a new batch for importing elements.
+   *
+   * Return the uuid of the import operation, NULL if the parameters are invalid.
+   */
+  public function batchSetImport(array $gc_ids, $finished_callback) {
     if (empty($gc_ids)) {
-      return;
+      return NULL;
+    }
+    if (empty($finished_callback)) {
+      return NULL;
     }
 
     $operation = Operation::create([
       'type' => 'import',
     ]);
     $operation->save();
+    
+    $batch = [
+      'title' => t('Importing'),
+      'init_message' => t('Starting import'),
+      'error_message' => t('An error occurred during processing'),
+      'progress_message' => t('Processed @current out of @total.'),
+      'progressive' => TRUE,
+      'operations' => $this->getBatchOperations($gc_ids, $operation->uuid()),
+      'finished' => $finished_callback,
+    ];
+
+    batch_set($batch);
+    return $operation->uuid();
+  }
+
+  /**
+   * Get batch import process operations for batch processing.
+   */
+  public function getBatchOperations($gc_ids, $operation_uuid) {
+    $batch_operations = [];
 
     foreach ($gc_ids as $gc_id) {
-      /** @var \Cheppers\GatherContent\DataTypes\Item $item */
-      $item = $this->client->itemGet($gc_id);
-      /** @var \Cheppers\GatherContent\DataTypes\Template $template */
-      $template = $this->client->templateGet($item->templateId);
-
-      $operation_item = \Drupal::entityTypeManager()
-        ->getStorage('gathercontent_operation_item')
-        ->create([
-          'operation_uuid' => $operation->uuid(),
-          'item_status' => $item->status->name,
-          'item_status_color' => $item->status->color,
-          'template_name' => $template->name,
-          'item_name' => $item->name,
-          'gc_id' => $gc_id,
-        ]);
-
-      try {
-        $this->import($item, $node_update_method, $publish, $parent_menu_item);
-        $operation_item->status = 'Success';
-        $operation_item->save();
-      }
-      catch (\Exception $e) {
-        $operation_item->status = $e->getMessage();
-        $operation_item->save();
-      }
+      $batch_operations[] = [
+        'gathercontent_my_import_process',
+        [
+          $gc_id,
+          $operation_uuid,
+          $this->importOptions,
+        ],
+      ];
     }
+
+    return $batch_operations;
   }
 
   /**
    * Import a single GatherContent item to Drupal.
    */
-  public function import(Item $gc_item, $node_update_method, $publish, $parent_menu_item) {
-    $gc_id = $gc_item->id;
+  public function import(Item $gc_item) {
     $user = \Drupal::currentUser();
     $mapping = $this->getMapping($gc_item);
     $mapping_data = unserialize($mapping->getData());
@@ -112,14 +150,14 @@ class Importer {
     $langcode = isset($first['language']) ? $first['language'] : Language::LANGCODE_NOT_SPECIFIED;
 
     // Create a Drupal entity corresponding to GC item.
-    $entity = $this->gc_get_destination_node($gc_id, $node_update_method, $content_type, $langcode);
+    $entity = $this->gc_get_destination_node($gc_item->id, $this->getImportOptions()->getNodeUpdateMethod(), $content_type, $langcode);
 
-    $entity->set('gc_id', $gc_id);
+    $entity->set('gc_id', $gc_item->id);
     $entity->set('gc_mapping_id', $mapping->id());
     $entity->setOwnerId($user->id());
 
     if ($entity->isNew()) {
-      $entity->setPublished($publish);
+      $entity->setPublished($this->getImportOptions()->getPublish());
     }
 
     if ($entity === FALSE) {
@@ -127,7 +165,7 @@ class Importer {
     }
 
     // Get the files corresponding to item.
-    $files = $this->client->itemFilesGet($gc_id);
+    $files = $this->client->itemFilesGet($gc_item->id);
 
     $is_translatable = \Drupal::moduleHandler()
         ->moduleExists('content_translation')
@@ -143,7 +181,7 @@ class Importer {
         if (!$entity->hasTranslation($language)) {
           $entity->addTranslation($language);
           if ($entity->isNew()) {
-            $entity->getTranslation($language)->setPublished($publish);
+            $entity->getTranslation($language)->setPublished($this->getImportOptions()->getPublish());
           }
         }
       }
@@ -182,12 +220,12 @@ class Importer {
         foreach ($languages as $langcode => $language) {
           $localized_entity = $entity->hasTranslation($langcode) ? $entity->getTranslation($langcode) : NULL;
           if (!is_null($localized_entity)) {
-            gc_create_menu_link($entity->id(), $localized_entity->getTitle(), $parent_menu_item, $langcode, $original_link_id);
+            gc_create_menu_link($entity->id(), $localized_entity->getTitle(), $this->getImportOptions()->getParentMenuItem(), $langcode, $original_link_id);
           }
         }
       }
       else {
-        gc_create_menu_link($entity->id(), $entity->getTitle(), $parent_menu_item);
+        gc_create_menu_link($entity->id(), $entity->getTitle(), $this->getImportOptions()->getParentMenuItem());
       }
     }
 
@@ -940,5 +978,6 @@ class Importer {
     }
 
   }
+
 
 }

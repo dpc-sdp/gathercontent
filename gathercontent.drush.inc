@@ -9,6 +9,7 @@ use Drupal\gathercontent\DrupalGatherContentClient;
 use Drupal\gathercontent\Entity\Mapping;
 use Drupal\gathercontent\Entity\Operation;
 use Drupal\gathercontent\Entity\OperationItem;
+use Drupal\gathercontent\Importer;
 use Drush\Log\LogLevel;
 
 /**
@@ -190,40 +191,17 @@ function drush_gathercontent_import($mapping_id = NULL, $node_update_method = 'a
     return drush_set_error('gathercontent_unknown_mapping_id', dt('Unknown mapping ID.'));
   }
 
-  $operation = Operation::create([
-    'type' => 'import',
-  ]);
-  $operation->save();
-
   $mapping = Mapping::load($mapping_id);
   $project_id = $mapping->getGathercontentProjectId();
   $template_id = $mapping->getGathercontentTemplateId();
 
   /** @var \Drupal\gathercontent\DrupalGatherContentClient $client */
   $client = \Drupal::service('gathercontent.client');
-  /** @var \Cheppers\GatherContent\DataTypes\Item[] $content */
-  $content = $client->itemsGet($project_id);
+  /** @var \Cheppers\GatherContent\DataTypes\Item[] $items */
+  $items = $client->itemsGet($project_id);
 
   $publish = drush_get_option('publish', \Drupal::config('gathercontent.import')->get('node_default_status'));
   $publish = $publish ? '1' : '0';
-
-  $operations = [];
-
-  foreach ($content as $item) {
-    if ($item->templateId === $template_id) {
-      $operations[] = [
-        'gathercontent_import_process',
-        [
-          $item->id,
-          $status_id,
-          $operation->uuid(),
-          $publish,
-          $node_update_method,
-          $parent_menu_item,
-        ],
-      ];
-    }
-  }
 
   $sql = drush_sql_get_class();
   if (!in_array('batch', $sql->listTables())) {
@@ -232,20 +210,32 @@ function drush_gathercontent_import($mapping_id = NULL, $node_update_method = 'a
     $db->createTable('batch', $bs->schemaDefinition());
   }
 
-  $batch = [
-    'title' => dt('Importing'),
-    'init_message' => dt('Starting import'),
-    'error_message' => dt('An unrecoverable error has occurred. You can find the error message below. It is advised to copy it to the clipboard for reference.'),
-    'progressive' => TRUE,
-    'operations' => $operations,
-    'finished' => 'gathercontent_drush_import_process_finished',
-  ];
-  batch_set($batch);
+  // Create and start Batch processes.
+  /** @var \Drupal\gathercontent\Importer $importer */
+  $importer = \Drupal::service('gathercontent.importer');
+  $importer->getImportOptions()
+    ->setNewStatus($status_id)
+    ->setPublish($publish)
+    ->setNodeUpdateMethod($node_update_method)
+    ->setParentMenuItem($parent_menu_item);
+
+  $isItemFromSelectedTemplate = function ($item) use ($template_id) {
+    return $item->templateId === $template_id;
+  };
+  $itemToId = function ($item) {
+    return $item->id;
+  };
+
+  $selected_templates = array_filter($items, $isItemFromSelectedTemplate);
+  $gc_ids = array_map($itemToId, $selected_templates);
+
+  $operation_uuid = $importer->batchSetImport($gc_ids, 'gathercontent_drush_import_process_finished');
   drush_backend_batch_process();
 
+  // Display results.
   $mappings = [];
   $result = \Drupal::entityQuery('gathercontent_operation_item')
-    ->condition('operation_uuid', $operation->uuid())
+    ->condition('operation_uuid', $operation_uuid)
     ->execute();
   if (!empty($result)) {
     $imported_items = OperationItem::loadMultiple($result);
