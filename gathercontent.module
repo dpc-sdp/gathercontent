@@ -186,7 +186,7 @@ function _gc_get_menu_by_gc_id(&$mlid, &$menu_name, $language = NULL) {
  *   Context of operation.
  */
 function gathercontent_import_process($gc_id, $status_id, $operation_uuid, $drupal_status, $node_update_method, $parent_menu_item = NULL, &$context = []) {
-  $importer = new \Drupal\gathercontent\Importer();
+  $importer = new \Drupal\gathercontent\Importer(\Drupal::service('gathercontent.client'));
   if (($nid = $importer->_gc_fetcher($gc_id, $operation_uuid, $drupal_status, $node_update_method, $status_id, $parent_menu_item)) !== FALSE) {
     if ($status_id != 0) {
       // Change status.
@@ -271,7 +271,7 @@ function gathercontent_import_finished($success, $results, $operations) {
  *   Context of operation.
  */
 function gathercontent_update_process($gc_id, $operation_uuid, $node_update_method, array &$context) {
-  (new \Drupal\gathercontent\Importer())->_gc_fetcher($gc_id, $operation_uuid, 0, $node_update_method);
+  (new \Drupal\gathercontent\Importer(\Drupal::service('gathercontent.client')))->_gc_fetcher($gc_id, $operation_uuid, 0, $node_update_method);
   $context['results']['uuid'] = $operation_uuid;
 }
 

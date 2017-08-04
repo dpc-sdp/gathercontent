@@ -2,12 +2,14 @@
 
 namespace Drupal\gathercontent;
 
+use Cheppers\GatherContent\GatherContentClientInterface;
 use Drupal\Component\Render\PlainTextOutput;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Language\Language;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\gathercontent\Entity\Mapping;
+use Drupal\gathercontent\Entity\Operation;
 use Drupal\gathercontent\Entity\OperationItem;
 use Drupal\gathercontent\Event\GatherContentEvents;
 use Drupal\gathercontent\Event\PostNodeSaveEvent;
@@ -16,7 +18,46 @@ use Drupal\node\Entity\Node;
 use Drupal\node\NodeInterface;
 use Drupal\taxonomy\Entity\Term;
 
+/**
+ * Class for handling import/update logic from GatherContent to Drupal.
+ */
 class Importer {
+
+  /**
+   * Drupal GatherContent Client.
+   *
+   * @var \Drupal\gathercontent\DrupalGatherContentClient
+   */
+  protected $client;
+
+  /**
+   * DI GatherContent Client.
+   */
+  public function __construct(GatherContentClientInterface $client) {
+    $this->client = $client;
+  }
+
+  /**
+   * Import every node.
+   */
+  public function importAll($gc_ids) {
+    $operation = Operation::create([
+      'type' => 'import',
+    ]);
+    $operation->save();
+
+    foreach ($gc_ids as $gc_id) {
+      $this->import($gc_id);
+    }
+  }
+
+  /**
+   * Import a single GatherContent item to Drupal.
+   */
+  public function import($gc_id) {
+    /** @var \Cheppers\GatherContent\DataTypes\Item $content */
+    $content = $this->client->itemGet($gc_id);
+  }
 
   /**
    * Function for fetching, creating and updating content from GatherContent.
