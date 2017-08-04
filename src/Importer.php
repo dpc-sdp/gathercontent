@@ -138,7 +138,7 @@ class Importer implements ContainerInjectionInterface {
   public function updateStatus(Item $item) {
     $status_id = $this->getImportOptions()->getNewStatus();
 
-    if ($status_id === NULL) {
+    if (!is_int($status_id)) {
       // User does not want to update status.
       return;
     }
