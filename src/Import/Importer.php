@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\gathercontent;
+namespace Drupal\gathercontent\Import;
 
 use Cheppers\GatherContent\DataTypes\Item;
 use Cheppers\GatherContent\GatherContentClientInterface;
@@ -11,11 +11,9 @@ use Drupal\Core\Language\Language;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\gathercontent\Entity\Mapping;
-use Drupal\gathercontent\Entity\OperationItem;
 use Drupal\gathercontent\Event\GatherContentEvents;
 use Drupal\gathercontent\Event\PostNodeSaveEvent;
 use Drupal\gathercontent\Event\PreNodeSaveEvent;
-use Drupal\node\Entity\Node;
 use Drupal\node\NodeInterface;
 use Drupal\taxonomy\Entity\Term;
 use Exception;
@@ -44,7 +42,7 @@ class Importer implements ContainerInjectionInterface {
    *
    * The ImportOption should always be set before importing an item.
    *
-   * @var \Drupal\gathercontent\ImportOptions[]
+   * @var \Drupal\gathercontent\Import\ImportOptions[]
    */
   protected $importOptionsArray = [];
 

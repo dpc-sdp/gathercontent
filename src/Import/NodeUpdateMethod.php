@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\gathercontent;
+namespace Drupal\gathercontent\Import;
 
 use Drupal\gathercontent\Entity\OperationItem;
 use Drupal\node\Entity\Node;

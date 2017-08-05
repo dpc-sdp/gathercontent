@@ -3,5 +3,5 @@ services:
     class: Drupal\gathercontent\DrupalGatherContentClient
     arguments: ['@http_client']
   gathercontent.importer:
-    class: Drupal\gathercontent\Importer
+    class: Drupal\gathercontent\Import\Importer
     arguments: ['@gathercontent.client']

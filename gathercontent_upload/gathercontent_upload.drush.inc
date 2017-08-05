@@ -14,8 +14,6 @@ use Drush\Log\LogLevel;
  * Implements hook_drush_command().
  */
 function gathercontent_upload_drush_command() {
-  module_load_include('module', 'gathercontent_upload');
-
   $commands = [];
 
   $commands['gathercontent-upload'] = [

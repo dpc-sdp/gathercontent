@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\gathercontent;
+namespace Drupal\gathercontent\Import;
 
 /**
  * A class for storing and serializing the import/update options of a node.
