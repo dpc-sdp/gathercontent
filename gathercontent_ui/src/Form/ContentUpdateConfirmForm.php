@@ -5,6 +5,7 @@ namespace Drupal\gathercontent_ui\Form;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Drupal\gathercontent\Entity\Operation;
+use Drupal\gathercontent\ImportOptions;
 use Drupal\gathercontent\NodeUpdateMethod;
 use Drupal\node\Entity\Node;
 
@@ -84,13 +85,15 @@ class ContentUpdateConfirmForm extends ContentConfirmForm {
       $nodes = Node::loadMultiple($this->nodeIds);
       $operations = [];
       foreach ($nodes as $node) {
-        $gc_id = $node->gc_id->value;
+        $update_options = new ImportOptions();
+        $update_options->setNodeUpdateMethod($form_state->getValue('node_update_method'));
+        $update_options->setOperationUuid($operation->uuid());
+
         $operations[] = [
-          'gathercontent_update_process',
+          'gathercontent_import_process',
           [
-            $gc_id,
-            $operation->uuid(),
-            $form_state->getValue('node_update_method'),
+            $node->gc_id->value,
+            $update_options,
           ],
         ];
       }
