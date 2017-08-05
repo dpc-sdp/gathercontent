@@ -11,6 +11,7 @@ use Drupal\gathercontent\Entity\Operation;
 use Drupal\gathercontent\Entity\OperationItem;
 use Drupal\gathercontent\Importer;
 use Drupal\gathercontent\ImportOptions;
+use Drupal\gathercontent\NodeUpdateMethod;
 use Drush\Log\LogLevel;
 
 /**
@@ -176,7 +177,7 @@ function drush_gathercontent_import_validate($mapping_id = NULL) {
 /**
  * Implements drush_COMMAND().
  */
-function drush_gathercontent_import($mapping_id = NULL, $node_update_method = 'always_update', $status_id = '', $parent_menu_item = NULL) {
+function drush_gathercontent_import($mapping_id = NULL, $node_update_method = NodeUpdateMethod::ALWAYS_UPDATE, $status_id = '', $parent_menu_item = NULL) {
   if ($mapping_id === NULL) {
     /** @var \Drupal\gathercontent\Entity\MappingInterface[] $gc_mappings */
     $gc_mappings = \Drupal::entityTypeManager()->getStorage('gathercontent_mapping')->loadMultiple();

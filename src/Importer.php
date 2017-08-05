@@ -145,6 +145,7 @@ class Importer implements ContainerInjectionInterface {
     $mapping_data_copy = $mapping_data;
     $first = array_shift($mapping_data_copy);
     $content_type = $mapping->getContentType();
+
     $langcode = isset($first['language']) ? $first['language'] : Language::LANGCODE_NOT_SPECIFIED;
 
     // Create a Drupal entity corresponding to GC item.
@@ -318,7 +319,7 @@ class Importer implements ContainerInjectionInterface {
       $content_type = $mapping->getContentType();
       $langcode = isset($first['language']) ? $first['language'] : Language::LANGCODE_NOT_SPECIFIED;
 
-      $entity = $this->gc_get_destination_node($gc_id, $node_update_method, $content_type, $langcode);
+      $entity = NodeUpdateMethod::getDestinationNode($gc_id, $node_update_method, $content_type, $langcode);
 
       $entity->set('gc_id', $gc_id);
       $entity->set('gc_mapping_id', $mapping->id());
@@ -418,68 +419,6 @@ class Importer implements ContainerInjectionInterface {
       $operation_item->save();
       return FALSE;
     }
-  }
-
-  /**
-   * Get Node object based on type of update.
-   *
-   * @param int $gc_id
-   *   ID of item in GatherContent.
-   * @param string $node_update_method
-   *   Name of the node update method.
-   * @param int $node_type_id
-   *   ID of the node type.
-   * @param string $langcode
-   *   Language of translation if applicable.
-   *
-   * @return \Drupal\node\NodeInterface
-   *   Return loaded node.
-   */
-  function gc_get_destination_node($gc_id, $node_update_method, $node_type_id, $langcode) {
-    switch ($node_update_method) {
-      case 'update_if_not_changed';
-        $result = \Drupal::entityQuery('node')
-          ->condition('gc_id', $gc_id)
-          ->sort('created', 'DESC')
-          ->range(0, 1)
-          ->execute();
-
-        if ($result) {
-          $node = Node::load(reset($result));
-          $query_result = \Drupal::entityQuery('gathercontent_operation_item')
-            ->condition('gc_id', $gc_id)
-            ->sort('changed', 'DESC')
-            ->range(0, 1)
-            ->execute();
-
-          $operation = OperationItem::load(reset($query_result));
-
-          if ($node->getChangedTime() === $operation->getChangedTime()) {
-            return $node;
-          }
-        }
-
-        break;
-
-      case 'always_update';
-        $result = \Drupal::entityQuery('node')
-          ->condition('gc_id', $gc_id)
-          ->sort('created', 'DESC')
-          ->range(0, 1)
-          ->execute();
-
-        if ($result) {
-          return Node::load(reset($result));
-        }
-
-        break;
-
-    }
-
-    return Node::create([
-      'type' => $node_type_id,
-      'langcode' => $langcode,
-    ]);
   }
 
   /**

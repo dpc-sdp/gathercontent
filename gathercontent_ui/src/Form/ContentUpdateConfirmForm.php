@@ -5,6 +5,7 @@ namespace Drupal\gathercontent_ui\Form;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Drupal\gathercontent\Entity\Operation;
+use Drupal\gathercontent\NodeUpdateMethod;
 use Drupal\node\Entity\Node;
 
 /**
@@ -61,9 +62,9 @@ class ContentUpdateConfirmForm extends ContentConfirmForm {
       '#title' => $this->t('Content update method'),
       '#default_value' => $import_config->get('node_update_method'),
       '#options' => [
-        'always_create' => $this->t('Always create new Content'),
-        'update_if_not_changed' => $this->t('Create new Content if it has changed since the last import'),
-        'always_update' => $this->t('Always update existing Content'),
+        NodeUpdateMethod::ALWAYS_CREATE => $this->t('Always create new Content'),
+        NodeUpdateMethod::UPDATE_IF_NOT_CHANGED => $this->t('Create new Content if it has changed since the last import'),
+        NodeUpdateMethod::ALWAYS_UPDATE => $this->t('Always update existing Content'),
       ],
     ];
 

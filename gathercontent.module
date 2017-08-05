@@ -5,13 +5,11 @@
  * Main module file for GatherContent module.
  */
 
-use Cheppers\GatherContent\DataTypes\Item;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\gathercontent\Entity\OperationItem;
 use Drupal\gathercontent\Event\GatherContentEvents;
 use Drupal\gathercontent\Event\PostImportEvent;
-use Drupal\gathercontent\Importer;
 use Drupal\gathercontent\ImportOptions;
 use Drupal\menu_link_content\Entity\MenuLinkContent;
 use Symfony\Component\HttpFoundation\RedirectResponse;
