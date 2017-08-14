@@ -14,6 +14,27 @@ use Drupal\taxonomy\Entity\Term;
 class ContentProcessor {
 
   /**
+   * Store the already imported entity references (used in recursion).
+   *
+   * @var array
+   */
+  protected $importedReferences = [];
+
+  /**
+   * ContentProcessor constructor.
+   */
+  public function __construct() {
+    $this->init();
+  }
+
+  /**
+   * Initialize member variables.
+   */
+  public function init() {
+    $this->importedReferences = [];
+  }
+
+  /**
    * Processing function for content panes.
    *
    * @param \Drupal\Core\Entity\EntityInterface $entity
@@ -31,7 +52,7 @@ class ContentProcessor {
    * @param array $reference_imported
    *   Array of reference fields which are imported.
    */
-  public function processContentPane(EntityInterface &$entity, $local_field_id, $field, $is_translatable, $language, array $files, array &$reference_imported) {
+  public function processContentPane(EntityInterface &$entity, $local_field_id, $field, $is_translatable, $language, array $files) {
     $local_id_array = explode('||', $local_field_id);
 
     if (count($local_id_array) > 1) {
@@ -45,7 +66,7 @@ class ContentProcessor {
 
       $target_field_value = $entity->get($field_name)->getValue();
 
-      if (!isset($reference_imported[$local_id_array[0]])) {
+      if (!isset($this->importedReferences[$local_id_array[0]])) {
         if (!empty($target_field_value)) {
           foreach ($target_field_value as $target) {
             $deleteEntity = $entityStorage->load($target['target_id']);
@@ -53,7 +74,7 @@ class ContentProcessor {
           }
         }
 
-        $reference_imported[$local_id_array[0]] = TRUE;
+        $this->importedReferences[$local_id_array[0]] = TRUE;
         $target_field_value = [];
       }
 
@@ -74,7 +95,7 @@ class ContentProcessor {
             if (count($local_id_array) > 1 || empty($check_field_value)) {
               $this->processContentPane($childEntity[$target['target_id']],
                 implode('||', $local_id_array), $field, $is_translatable,
-                $language, $files, $reference_imported);
+                $language, $files);
 
               $childEntity[$target['target_id']]->save();
               $to_import = FALSE;
@@ -87,7 +108,7 @@ class ContentProcessor {
             'type' => $field_target_info->getTargetBundle(),
           ]);
 
-          $this->processContentPane($childEntity, implode('||', $local_id_array), $field, $is_translatable, $language, $files, $reference_imported);
+          $this->processContentPane($childEntity, implode('||', $local_id_array), $field, $is_translatable, $language, $files);
 
           $childEntity->save();
 
@@ -102,7 +123,7 @@ class ContentProcessor {
           'type' => $field_target_info->getTargetBundle(),
         ]);
 
-        $this->processContentPane($childEntity, implode('||', $local_id_array), $field, $is_translatable, $language, $files, $reference_imported);
+        $this->processContentPane($childEntity, implode('||', $local_id_array), $field, $is_translatable, $language, $files);
 
         $childEntity->save();
 

@@ -192,12 +192,11 @@ class Importer implements ContainerInjectionInterface {
         $language = Language::LANGCODE_NOT_SPECIFIED;
       }
 
-      $reference_imported = [];
       foreach ($pane->elements as $field) {
         if (isset($mapping_data[$pane->id]['elements'][$field->id]) && !empty($mapping_data[$pane->id]['elements'][$field->id])) {
           $local_field_id = $mapping_data[$pane->id]['elements'][$field->id];
           if (isset($mapping_data[$pane->id]['type']) && ($mapping_data[$pane->id]['type'] === 'content') || !isset($mapping_data[$pane->id]['type'])) {
-            $this->contentProcessor->processContentPane($entity, $local_field_id, $field, $is_pane_translatable, $language, $files, $reference_imported);
+            $this->contentProcessor->processContentPane($entity, $local_field_id, $field, $is_pane_translatable, $language, $files);
           }
           elseif (isset($mapping_data[$pane->id]['type']) && ($mapping_data[$pane->id]['type'] === 'metatag')) {
             $this->processMetatagPane($entity, $local_field_id, $field, $mapping->getContentType(), $is_pane_translatable, $language);
@@ -300,7 +299,7 @@ class Importer implements ContainerInjectionInterface {
       }
     }
     else {
-      throw new \Exception("Metatag module not enabled or entity doesn't support
+      throw new Exception("Metatag module not enabled or entity doesn't support
     metatags while trying to map values with metatag content.");
     }
   }
