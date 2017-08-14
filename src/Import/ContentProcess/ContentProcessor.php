@@ -49,8 +49,6 @@ class ContentProcessor {
    *   Language of translation if applicable.
    * @param array $files
    *   Array of files fetched from GatherContent.
-   * @param array $reference_imported
-   *   Array of reference fields which are imported.
    */
   public function processContentPane(EntityInterface &$entity, $local_field_id, $field, $is_translatable, $language, array $files) {
     $local_id_array = explode('||', $local_field_id);
@@ -140,6 +138,14 @@ class ContentProcessor {
       if (!is_null($field_info)) {
         $is_translatable = $is_translatable && $field_info->isTranslatable();
       }
+      if ($local_field_id === 'title') {
+        $target = &$entity;
+        if ($is_translatable) {
+          $target = $entity->getTranslation($language);
+        }
+        $target->setTitle($field->value);
+        return;
+      }
 
       switch ($field->type) {
         case 'files':
@@ -190,12 +196,6 @@ class ContentProcessor {
     $target = &$entity;
     if ($is_translatable) {
       $target = $entity->getTranslation($language);
-    }
-
-    // Title is not a field, breaks everything. Short-circuit here.
-    if ($local_field_name === 'title') {
-      $target->setTitle($value);
-      return;
     }
 
     switch ($field_info->getType()) {
