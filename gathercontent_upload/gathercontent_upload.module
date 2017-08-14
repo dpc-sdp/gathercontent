@@ -68,6 +68,8 @@ function gathercontent_upload_process(NodeInterface $entity, $uuid, &$context) {
         else {
           $language = Language::LANGCODE_NOT_SPECIFIED;
         }
+
+        $exported_fields = [];
         foreach ($pane->elements as &$field) {
           if (isset($mapping_data[$pane->id]['elements'][$field->id])
             && !empty($mapping_data[$pane->id]['elements'][$field->id])
@@ -85,14 +87,32 @@ function gathercontent_upload_process(NodeInterface $entity, $uuid, &$context) {
                 $local_id = $local_id_array[$i];
                 $field_info = FieldConfig::load($local_id);
                 $current_field_name = $field_info->getName();
-                $target_field = $current_entity->get($current_field_name);
+                $target_field_value = $current_entity->get($current_field_name)->getValue();
 
-                if (isset($target_field->target_id)) {
+                if (!empty($target_field_value)) {
                   $field_target_info = FieldConfig::load($local_id_array[$i + 1]);
                   $entityStorage = $entityTypeManager
                     ->getStorage($field_target_info->getTargetEntityTypeId());
-                  $current_entity = $entityStorage->load($target_field->target_id);
                   $current_field_name = $field_target_info->getName();
+
+                  foreach ($target_field_value as $target) {
+                    $export_key = $target['target_id'] . '_' . $current_field_name;
+
+                    if (!empty($exported_fields[$export_key])) {
+                      continue;
+                    }
+
+                    $child_entity = $entityStorage->loadByProperties([
+                      'id' => $target['target_id'],
+                      'type' => $field_target_info->getTargetBundle(),
+                    ]);
+
+                    if (!empty($child_entity[$target['target_id']])) {
+                      $current_entity = $child_entity[$target['target_id']];
+                      $exported_fields[$export_key] = TRUE;
+                      break;
+                    }
+                  }
                 }
               }
 
