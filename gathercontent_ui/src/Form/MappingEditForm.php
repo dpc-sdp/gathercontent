@@ -850,7 +850,7 @@ class MappingEditForm extends EntityForm {
           $tab_type = (isset($tab['type']) ? $tab['type'] : 'content');
           if (isset($tab['elements'])) {
             foreach ($tab['elements'] as $k => $element) {
-              if (empty($element) || strpos($element, '||') > 0) {
+              if (empty($element)) {
                 continue;
               }
               if ($translatable) {
@@ -858,7 +858,10 @@ class MappingEditForm extends EntityForm {
                   ${$tab_type . '_fields'}[$tab['language']][] = $element;
                 }
                 else {
-                  $form_state->setErrorByName($tab_id, $this->t('A GatherContent field can only be mapped to a single Drupal field. So each field can only be mapped to once.'));
+                  if (!strpos($element, '||')) {
+                    $form_state->setErrorByName($tab_id,
+                      $this->t('A GatherContent field can only be mapped to a single Drupal field. So each field can only be mapped to once.'));
+                  }
                 }
               }
               else {
@@ -866,7 +869,9 @@ class MappingEditForm extends EntityForm {
                   ${$tab_type . '_fields'}[] = $element;
                 }
                 else {
-                  $form_state->setErrorByName($tab_id, $this->t('A GatherContent field can only be mapped to a single Drupal field. So each field can only be mapped to once.'));
+                  if (!strpos($element, '||')) {
+                    $form_state->setErrorByName($tab_id, $this->t('A GatherContent field can only be mapped to a single Drupal field. So each field can only be mapped to once.'));
+                  }
                 }
               }
             }

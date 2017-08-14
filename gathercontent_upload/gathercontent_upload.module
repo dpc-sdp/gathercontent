@@ -93,7 +93,6 @@ function gathercontent_upload_process(NodeInterface $entity, $uuid, &$context) {
                   $field_target_info = FieldConfig::load($local_id_array[$i + 1]);
                   $entityStorage = $entityTypeManager
                     ->getStorage($field_target_info->getTargetEntityTypeId());
-                  $current_field_name = $field_target_info->getName();
 
                   foreach ($target_field_value as $target) {
                     $export_key = $target['target_id'] . '_' . $current_field_name;
@@ -108,8 +107,11 @@ function gathercontent_upload_process(NodeInterface $entity, $uuid, &$context) {
                     ]);
 
                     if (!empty($child_entity[$target['target_id']])) {
+                      $current_field_name = $field_target_info->getName();
                       $current_entity = $child_entity[$target['target_id']];
-                      $exported_fields[$export_key] = TRUE;
+                      if ($i == ($id_count - 2)) {
+                        $exported_fields[$export_key] = TRUE;
+                      }
                       break;
                     }
                   }
