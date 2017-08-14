@@ -9,9 +9,9 @@ use Drupal\gathercontent\DrupalGatherContentClient;
 use Drupal\gathercontent\Entity\Mapping;
 use Drupal\gathercontent\Entity\Operation;
 use Drupal\gathercontent\Entity\OperationItem;
-use Drupal\gathercontent\Importer;
-use Drupal\gathercontent\ImportOptions;
-use Drupal\gathercontent\NodeUpdateMethod;
+use Drupal\gathercontent\Import\Importer;
+use Drupal\gathercontent\Import\ImportOptions;
+use Drupal\gathercontent\Import\NodeUpdateMethod;
 use Drush\Log\LogLevel;
 
 /**

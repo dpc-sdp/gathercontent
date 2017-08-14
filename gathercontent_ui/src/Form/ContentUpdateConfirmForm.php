@@ -5,8 +5,8 @@ namespace Drupal\gathercontent_ui\Form;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 use Drupal\gathercontent\Entity\Operation;
-use Drupal\gathercontent\ImportOptions;
-use Drupal\gathercontent\NodeUpdateMethod;
+use Drupal\gathercontent\Import\ImportOptions;
+use Drupal\gathercontent\Import\NodeUpdateMethod;
 use Drupal\node\Entity\Node;
 
 /**
