@@ -2,6 +2,8 @@ services:
   gathercontent.client:
     class: Drupal\gathercontent\DrupalGatherContentClient
     arguments: ['@http_client']
+  gathercontent.content_processor:
+    class: Drupal\gathercontent\Import\ContentProcess\ContentProcessor
   gathercontent.importer:
     class: Drupal\gathercontent\Import\Importer
-    arguments: ['@gathercontent.client']
+    arguments: ['@gathercontent.client', '@gathercontent.content_processor']
