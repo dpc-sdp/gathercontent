@@ -2,11 +2,14 @@
 
 namespace Drupal\gathercontent_upload\Export;
 
+use Cheppers\GatherContent\DataTypes\Element;
 use Cheppers\GatherContent\DataTypes\Item;
+use Cheppers\GatherContent\DataTypes\Tab;
 use Cheppers\GatherContent\GatherContentClientInterface;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Language\Language;
+use Drupal\Core\Language\LanguageInterface;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\gathercontent\Entity\Mapping;
 use Drupal\gathercontent_upload\Event\GatherUploadContentEvents;
@@ -65,108 +68,21 @@ class Exporter implements ContainerInjectionInterface {
   }
 
   /**
-   * Import a single GatherContent item to Drupal.
+   * Exports the changes made in Drupal contents.
    *
-   * Before calling this function make sure to set the import options for the item.
+   * @param \Cheppers\GatherContent\DataTypes\Item $gc_item
+   *   Item object.
+   * @param \Drupal\node\NodeInterface $entity
+   *   Node entity object.
    *
-   * This function is a replacement for the old _gc_fetcher function.
+   * @return int|null|string
+   *   Returns entity ID.
    *
-   * The caller (e.g. batch processes) should handle the thrown exceptions.
-   *
-   * @return int
-   *   The ID of the imported entity.
+   * @throws \Exception
    */
   public function export(Item $gc_item, NodeInterface $entity) {
-    $mapping = $this->getMapping($gc_item);
-    $mapping_data = unserialize($mapping->getData());
+    $gc_item = $this->processPanes($gc_item, $entity);
 
-    if (empty($mapping_data)) {
-      throw new Exception("Mapping data is empty.");
-    }
-
-    foreach ($gc_item->config as &$pane) {
-      $is_translatable = \Drupal::moduleHandler()->moduleExists('content_translation')
-        && \Drupal::service('content_translation.manager')
-          ->isEnabled('node', $mapping->getContentType())
-        && isset($mapping_data[$pane->id]['language'])
-        && ($mapping_data[$pane->id]['language'] != Language::LANGCODE_NOT_SPECIFIED);
-      if ($is_translatable) {
-        $language = $mapping_data[$pane->id]['language'];
-      }
-      else {
-        $language = Language::LANGCODE_NOT_SPECIFIED;
-      }
-
-      $exported_fields = [];
-      foreach ($pane->elements as &$field) {
-        if (isset($mapping_data[$pane->id]['elements'][$field->id])
-          && !empty($mapping_data[$pane->id]['elements'][$field->id])
-        ) {
-          $local_field_id = $mapping_data[$pane->id]['elements'][$field->id];
-          if ((isset($mapping_data[$pane->id]['type']) && $mapping_data[$pane->id]['type'] === 'content') || !isset($mapping_data[$pane->id]['type'])) {
-            $local_id_array = explode('||', $local_field_id);
-            $id_count = count($local_id_array);
-            $entityTypeManager = \Drupal::entityTypeManager();
-
-            $current_entity = $entity;
-            $current_field_name = FieldConfig::load($local_id_array[0])->getName();
-
-            for ($i = 0; $i < $id_count - 1; $i++) {
-              $local_id = $local_id_array[$i];
-              $field_info = FieldConfig::load($local_id);
-              $current_field_name = $field_info->getName();
-              $target_field_value = $current_entity->get($current_field_name)->getValue();
-
-              if (!empty($target_field_value)) {
-                $field_target_info = FieldConfig::load($local_id_array[$i + 1]);
-                $entityStorage = $entityTypeManager
-                  ->getStorage($field_target_info->getTargetEntityTypeId());
-                $child_field_name = $field_target_info->getName();
-
-                foreach ($target_field_value as $target) {
-                  $export_key = $target['target_id'] . '_' . $child_field_name;
-
-                  if (!empty($exported_fields[$export_key])) {
-                    continue;
-                  }
-
-                  $child_entity = $entityStorage->loadByProperties([
-                    'id' => $target['target_id'],
-                    'type' => $field_target_info->getTargetBundle(),
-                  ]);
-
-                  if (!empty($child_entity[$target['target_id']])) {
-                    $current_entity = $child_entity[$target['target_id']];
-                    $current_field_name = $child_field_name;
-
-                    if ($i == ($id_count - 2)) {
-                      $exported_fields[$export_key] = TRUE;
-                    }
-                    break;
-                  }
-                }
-              }
-            }
-
-            $this->gc_gc_process_set_fields($field, $current_entity, $is_translatable, $language, $current_field_name);
-          }
-          elseif ($mapping_data[$pane->id]['type'] === 'metatag') {
-            if (\Drupal::moduleHandler()->moduleExists('metatag') && check_metatag($entity->getType())) {
-              $metatag_fields = get_metatag_fields($entity->getType());
-              foreach ($metatag_fields as $metatag_field) {
-                if ($is_translatable) {
-                  $field->value = $entity->getTranslation($language)->{$metatag_field}->value();
-                }
-                else {
-                  $field->value = $entity->{$metatag_field}->value();
-                }
-              }
-
-            }
-          }
-        }
-      }
-    }
     $event = \Drupal::service('event_dispatcher')
       ->dispatch(GatherUploadContentEvents::PRE_NODE_UPLOAD, new PreNodeUploadEvent($entity, $gc_item->config));
 
@@ -204,9 +120,178 @@ class Exporter implements ContainerInjectionInterface {
   }
 
   /**
+   * Manages the panes and changes the Item object values.
+   *
+   * @param \Cheppers\GatherContent\DataTypes\Item $gc_item
+   *   Item object.
+   * @param \Drupal\node\NodeInterface $entity
+   *   Node entity object.
+   *
+   * @return \Cheppers\GatherContent\DataTypes\Item
+   *   Returns Item object.
+   *
+   * @throws \Exception
+   */
+  public function processPanes(Item $gc_item, NodeInterface $entity) {
+    $mapping = $this->getMapping($gc_item);
+    $mapping_data = unserialize($mapping->getData());
+
+    if (empty($mapping_data)) {
+      throw new Exception("Mapping data is empty.");
+    }
+
+    foreach ($gc_item->config as &$pane) {
+      $is_translatable = \Drupal::moduleHandler()->moduleExists('content_translation')
+        && \Drupal::service('content_translation.manager')
+          ->isEnabled('node', $mapping->getContentType())
+        && isset($mapping_data[$pane->id]['language'])
+        && ($mapping_data[$pane->id]['language'] != Language::LANGCODE_NOT_SPECIFIED);
+      if ($is_translatable) {
+        $language = $mapping_data[$pane->id]['language'];
+      }
+      else {
+        $language = Language::LANGCODE_NOT_SPECIFIED;
+      }
+
+      $pane = $this->processFields($pane, $entity, $mapping_data, $is_translatable, $language);
+    }
+
+    return $gc_item;
+  }
+
+  /**
+   * Processes field data.
+   *
+   * @param \Cheppers\GatherContent\DataTypes\Tab $pane
+   *   Pane object.
+   * @param \Drupal\node\NodeInterface $entity
+   *   Entity.
+   * @param array $mapping_data
+   *   Mapping array.
+   * @param bool $is_translatable
+   *   Translatable.
+   * @param string $language
+   *   Language.
+   *
+   * @return mixed
+   *   Returns pane.
+   */
+  public function processFields(Tab $pane, NodeInterface $entity, array $mapping_data, $is_translatable, $language) {
+    $exported_fields = [];
+    foreach ($pane->elements as &$field) {
+      if (isset($mapping_data[$pane->id]['elements'][$field->id])
+        && !empty($mapping_data[$pane->id]['elements'][$field->id])
+      ) {
+        $local_field_id = $mapping_data[$pane->id]['elements'][$field->id];
+        if ((isset($mapping_data[$pane->id]['type']) && $mapping_data[$pane->id]['type'] === 'content') || !isset($mapping_data[$pane->id]['type'])) {
+          $local_id_array = explode('||', $local_field_id);
+          $field_info = FieldConfig::load($local_id_array[0]);
+
+          $current_entity = $entity;
+          $current_field_name = $field_info->getName();
+
+          $this->processTargets($current_entity, $current_field_name, $exported_fields, $local_id_array);
+
+          $field = $this->processSetFields($field, $current_entity, $is_translatable, $language, $current_field_name, $field_info);
+        }
+        elseif ($mapping_data[$pane->id]['type'] === 'metatag') {
+          if (\Drupal::moduleHandler()->moduleExists('metatag') && check_metatag($entity->getType())) {
+            $field = $this->processMetaTagFields($field, $entity, $is_translatable, $language);
+          }
+        }
+      }
+    }
+
+    return $pane;
+  }
+
+  /**
+   * Processes the target ids for a field.
+   *
+   * @param \Drupal\Core\Entity\EntityInterface $current_entity
+   *   Entity object.
+   * @param string $current_field_name
+   *   Current field name.
+   * @param array $exported_fields
+   *   Array of exported fields, preventing duplications.
+   * @param array $local_id_array
+   *   Array of mapped embedded field id array.
+   */
+  public function processTargets(EntityInterface &$current_entity, &$current_field_name, array &$exported_fields, array $local_id_array) {
+    $id_count = count($local_id_array);
+    $entityTypeManager = \Drupal::entityTypeManager();
+
+    for ($i = 0; $i < $id_count - 1; $i++) {
+      $local_id = $local_id_array[$i];
+      $field_info = FieldConfig::load($local_id);
+      $current_field_name = $field_info->getName();
+      $target_field_value = $current_entity->get($current_field_name)->getValue();
+
+      if (!empty($target_field_value)) {
+        $field_target_info = FieldConfig::load($local_id_array[$i + 1]);
+        $entityStorage = $entityTypeManager
+          ->getStorage($field_target_info->getTargetEntityTypeId());
+        $child_field_name = $field_target_info->getName();
+
+        foreach ($target_field_value as $target) {
+          $export_key = $target['target_id'] . '_' . $child_field_name;
+
+          if (!empty($exported_fields[$export_key])) {
+            continue;
+          }
+
+          $child_entity = $entityStorage->loadByProperties([
+            'id' => $target['target_id'],
+            'type' => $field_target_info->getTargetBundle(),
+          ]);
+
+          if (!empty($child_entity[$target['target_id']])) {
+            $current_entity = $child_entity[$target['target_id']];
+            $current_field_name = $child_field_name;
+
+            if ($i == ($id_count - 2)) {
+              $exported_fields[$export_key] = TRUE;
+            }
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Processes meta fields.
+   *
+   * @param \Cheppers\GatherContent\DataTypes\Element $field
+   *   Field object.
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   Entity object.
+   * @param bool $is_translatable
+   *   Translatable bool.
+   * @param string $language
+   *   Language string.
+   *
+   * @return \Cheppers\GatherContent\DataTypes\Element
+   *   Returns field.
+   */
+  public function processMetaTagFields(Element $field, EntityInterface $entity, $is_translatable, $language) {
+    $metatag_fields = get_metatag_fields($entity->getType());
+    foreach ($metatag_fields as $metatag_field) {
+      if ($is_translatable) {
+        $field->value = $entity->getTranslation($language)->{$metatag_field}->value();
+      }
+      else {
+        $field->value = $entity->{$metatag_field}->value();
+      }
+    }
+
+    return $field;
+  }
+
+  /**
    * Set value of the field.
    *
-   * @param $field
+   * @param \Cheppers\GatherContent\DataTypes\Element $field
    *   Field object.
    * @param \Drupal\Core\Entity\EntityInterface $entity
    *   Entity object.
@@ -216,8 +301,13 @@ class Exporter implements ContainerInjectionInterface {
    *   Language string.
    * @param string $local_field_name
    *   Field Name.
+   * @param \Drupal\field\Entity\FieldConfig $field_info
+   *   Local field Info object.
+   *
+   * @return \Cheppers\GatherContent\DataTypes\Element
+   *   Returns field.
    */
-  protected function gc_gc_process_set_fields(&$field, EntityInterface $entity, $is_translatable, $language, $local_field_name) {
+  public function processSetFields(Element $field, EntityInterface $entity, $is_translatable, $language, $local_field_name, FieldConfig $field_info) {
     switch ($field->type) {
       case 'files':
         // There is currently no API for manipulating with files.
@@ -234,12 +324,47 @@ class Exporter implements ContainerInjectionInterface {
           $option_names[] = $option['name'];
         }
 
+        $selected = NULL;
+
         // Fetch local selected option.
-        if ($is_translatable) {
-          $selected = $entity->getTranslation($language)->{$local_field_name}->value;
+        if ($field_info->getType() === 'entity_reference') {
+          if ($is_translatable) {
+            $targets = $entity->getTranslation($language)->{$local_field_name}->getValue();
+          }
+          else {
+            $targets = $entity->{$local_field_name}->getValue();
+          }
+
+          $target = array_shift($targets);
+
+          $condition_array = [
+            'tid' => $target['target_id'],
+          ];
+
+          if ($is_translatable && $language !== LanguageInterface::LANGCODE_NOT_SPECIFIED) {
+            $condition_array['langcode'] = $language;
+          }
+
+          $terms = \Drupal::entityTypeManager()
+            ->getStorage('taxonomy_term')
+            ->loadByProperties($condition_array);
+
+          /** @var \Drupal\taxonomy\Entity\Term $term */
+          $term = array_shift($terms);
+          if (!empty($term)) {
+            $option_ids = $term->gathercontent_option_ids->getValue();
+            $option_id = array_pop($option_ids);
+
+            $selected = $option_id['value'];
+          }
         }
         else {
-          $selected = $entity->{$local_field_name}->value;
+          if ($is_translatable) {
+            $selected = $entity->getTranslation($language)->{$local_field_name}->value;
+          }
+          else {
+            $selected = $entity->{$local_field_name}->value;
+          }
         }
 
         if (!in_array($selected, $option_names)) {
@@ -270,12 +395,47 @@ class Exporter implements ContainerInjectionInterface {
           $option['selected'] = FALSE;
         }
 
+        $selected = [];
+
         // Fetch local selected option.
-        if ($is_translatable) {
-          $selected = $entity->getTranslation($language)->{$local_field_name}->value;
+        if ($field_info->getType() === 'entity_reference') {
+          if ($is_translatable) {
+            $targets = $entity->getTranslation($language)->{$local_field_name}->getValue();
+          }
+          else {
+            $targets = $entity->{$local_field_name}->getValue();
+          }
+
+          foreach ($targets as $target) {
+            $condition_array = [
+              'tid' => $target['target_id'],
+            ];
+
+            if ($is_translatable && $language !== LanguageInterface::LANGCODE_NOT_SPECIFIED) {
+              $condition_array['langcode'] = $language;
+            }
+
+            $terms = \Drupal::entityTypeManager()
+              ->getStorage('taxonomy_term')
+              ->loadByProperties($condition_array);
+
+            /** @var \Drupal\taxonomy\Entity\Term $term */
+            $term = array_shift($terms);
+            if (!empty($term)) {
+              $option_ids = $term->gathercontent_option_ids->getValue();
+              $option_id = array_pop($option_ids);
+
+              $selected[$option_id['value']] = TRUE;
+            }
+          }
         }
         else {
-          $selected = $entity->{$local_field_name}->value;
+          if ($is_translatable) {
+            $selected = $entity->getTranslation($language)->{$local_field_name}->value;
+          }
+          else {
+            $selected = $entity->{$local_field_name}->value;
+          }
         }
 
         // If it's checkbox, find it by remote option name,
@@ -312,6 +472,8 @@ class Exporter implements ContainerInjectionInterface {
         }
         break;
     }
+
+    return $field;
   }
 
 }
