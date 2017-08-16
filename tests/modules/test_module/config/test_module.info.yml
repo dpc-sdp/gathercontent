@@ -1,0 +1,4 @@
+name: 'GC Test'
+description: 'GC tests for import functionality without paragraphs.'
+package: 'Testing'
+type: 'module'
