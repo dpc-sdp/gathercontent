@@ -28,3 +28,14 @@ documentation.
 [composer]: https://getcomposer.org/doc/00-intro.md#system-requirements
 [tablesorter]: https://github.com/mottie/tablesorter
 [tablesorter releases]: https://github.com/Mottie/tablesorter/releases
+
+### Tests
+Your bootstrap attribute in "phpunit.xml.dist" should point to "web/core/tests/bootstrap.php".
+Add this to the xml too with your credentials:
+
+    <php>
+        <env name="SIMPLETEST_DB" value="mysql://root:mysql@127.0.0.1/gc-drupal"/>
+    </php>
+
+Standing in the phpunit.xml.dist directory, run the tests as:
+path/to/phpunit path/to/gathercontent/

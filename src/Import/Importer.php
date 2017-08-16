@@ -138,6 +138,38 @@ class Importer implements ContainerInjectionInterface {
    *   The ID of the imported entity.
    */
   public function import(Item $gc_item) {
+    list($entity, $is_translatable) = $this->createNode($gc_item);
+    \Drupal::service('event_dispatcher')
+      ->dispatch(GatherContentEvents::PRE_NODE_SAVE, new PreNodeSaveEvent($entity, $gc_item, $files));
+    $entity->save();
+
+    // Create menu link items.
+    $menu_link_defaults = menu_ui_get_menu_link_defaults($entity);
+    if (!(bool) $menu_link_defaults['id']) {
+      if ($is_translatable) {
+        $languages = $entity->getTranslationLanguages();
+        $original_link_id = NULL;
+        foreach ($languages as $langcode => $language) {
+          $localized_entity = $entity->hasTranslation($langcode) ? $entity->getTranslation($langcode) : NULL;
+          if (!is_null($localized_entity)) {
+            gc_create_menu_link($entity->id(), $localized_entity->getTitle(), $this->getImportOption($gc_item->id)->getParentMenuItem(), $langcode, $original_link_id);
+          }
+        }
+      }
+      else {
+        gc_create_menu_link($entity->id(), $entity->getTitle(), $this->getImportOption($gc_item->id)->getParentMenuItem());
+      }
+    }
+
+    \Drupal::service('event_dispatcher')
+      ->dispatch(GatherContentEvents::POST_NODE_SAVE, new PostNodeSaveEvent($entity, $gc_item, $files));
+    return $entity->id();
+  }
+
+  /**
+   * Create a Drupal node filled with the properties of the GC item.
+   */
+  public function createNode(Item $gc_item) {
     $user = \Drupal::currentUser();
     $mapping = $this->getMapping($gc_item);
     $mapping_data = unserialize($mapping->getData());
@@ -171,7 +203,7 @@ class Importer implements ContainerInjectionInterface {
     $files = $this->client->itemFilesGet($gc_item->id);
 
     $is_translatable = \Drupal::moduleHandler()
-        ->moduleExists('content_translation')
+      ->moduleExists('content_translation')
       && \Drupal::service('content_translation.manager')
         ->isEnabled('node', $mapping->getContentType());
 
@@ -209,32 +241,7 @@ class Importer implements ContainerInjectionInterface {
       $entity->setTitle($gc_item->name);
     }
 
-    \Drupal::service('event_dispatcher')
-      ->dispatch(GatherContentEvents::PRE_NODE_SAVE, new PreNodeSaveEvent($entity, $gc_item, $files));
-    $entity->save();
-
-    // Create menu link items.
-    $menu_link_defaults = menu_ui_get_menu_link_defaults($entity);
-    if (!(bool) $menu_link_defaults['id']) {
-      if ($is_translatable) {
-        $languages = $entity->getTranslationLanguages();
-        $original_link_id = NULL;
-        foreach ($languages as $langcode => $language) {
-          $localized_entity = $entity->hasTranslation($langcode) ? $entity->getTranslation($langcode) : NULL;
-          if (!is_null($localized_entity)) {
-            gc_create_menu_link($entity->id(), $localized_entity->getTitle(), $this->getImportOption($gc_item->id)->getParentMenuItem(), $langcode, $original_link_id);
-          }
-        }
-      }
-      else {
-        gc_create_menu_link($entity->id(), $entity->getTitle(), $this->getImportOption($gc_item->id)->getParentMenuItem());
-      }
-    }
-
-    \Drupal::service('event_dispatcher')
-      ->dispatch(GatherContentEvents::POST_NODE_SAVE, new PostNodeSaveEvent($entity, $gc_item, $files));
-
-    return $entity->id();
+    return [$entity, $is_translatable];
   }
 
   /**

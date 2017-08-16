@@ -161,8 +161,6 @@ function _gc_get_menu_by_gc_id(&$mlid, &$menu_name, $language = NULL) {
 function gathercontent_import_process($gc_id, ImportOptions $import_options, &$context = []) {
   /** @var \Drupal\gathercontent\Import\Importer $importer */
   $importer = \Drupal::service('gathercontent.importer');
-  // Since a batch process runs on a new page request, the importer will be empty.
-  // Therefore we must provide the data necessary for this process through setImportOption.
   $importer->setImportOption($gc_id, $import_options);
 
   $client = $importer->getClient();
