@@ -4,6 +4,7 @@ namespace Drupal\gathercontent\Import;
 
 use Cheppers\GatherContent\DataTypes\Item;
 use Cheppers\GatherContent\GatherContentClientInterface;
+use Drupal\Component\EventDispatcher\ContainerAwareEventDispatcher;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\gathercontent\Entity\Mapping;
 use Drupal\gathercontent\Event\GatherContentEvents;
@@ -11,6 +12,7 @@ use Drupal\gathercontent\Event\PostNodeSaveEvent;
 use Drupal\gathercontent\Event\PreNodeSaveEvent;
 use Drupal\gathercontent\Import\ContentProcess\ContentProcessor;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Class for handling import/update logic from GatherContent to Drupal.
@@ -31,12 +33,19 @@ class Importer implements ContainerInjectionInterface {
    */
   protected $contentProcessor;
 
+  protected $eventDispatcher;
+
   /**
-   * DI GatherContent Client.
+   * Importer.
    */
-  public function __construct(GatherContentClientInterface $client, ContentProcessor $contentProcessor) {
+  public function __construct(
+    GatherContentClientInterface $client,
+    ContentProcessor $contentProcessor,
+    EventDispatcherInterface $eventDispatcher
+  ) {
     $this->client = $client;
     $this->contentProcessor = $contentProcessor;
+    $this->eventDispatcher = $eventDispatcher;
   }
 
   /**
@@ -45,15 +54,9 @@ class Importer implements ContainerInjectionInterface {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('gathercontent.client'),
-      $container->get('gathercontent.content_processor')
+      $container->get('gathercontent.content_processor'),
+      $container->get('event_dispatcher')
     );
-  }
-
-  /**
-   * Getter GatherContentClient.
-   */
-  public function getClient() {
-    return $this->client;
   }
 
   /**
@@ -70,6 +73,13 @@ class Importer implements ContainerInjectionInterface {
   }
 
   /**
+   * Getter GatherContentClient.
+   */
+  public function getClient() {
+    return $this->client;
+  }
+
+  /**
    * Import a single GatherContent item to Drupal.
    *
    * This function is a replacement for the old _gc_fetcher function.
@@ -81,6 +91,7 @@ class Importer implements ContainerInjectionInterface {
    */
   public function import(Item $gc_item, ImportOptions $importOptions) {
     $this->updateStatus($gc_item, $importOptions->getNewStatus());
+
     $files = $this->client->itemFilesGet($gc_item->id);
     $mapping = static::getMapping($gc_item);
     $is_translatable = \Drupal::moduleHandler()
@@ -89,8 +100,12 @@ class Importer implements ContainerInjectionInterface {
         ->isEnabled('node', $mapping->getContentType());
 
     $entity = $this->contentProcessor->createNode($gc_item, $mapping, $is_translatable, $files, $importOptions);
-    \Drupal::service('event_dispatcher')
-      ->dispatch(GatherContentEvents::PRE_NODE_SAVE, new PreNodeSaveEvent($entity, $gc_item, $files));
+
+    $this->eventDispatcher->dispatch(
+      GatherContentEvents::PRE_NODE_SAVE,
+      new PreNodeSaveEvent($entity, $gc_item, $files)
+    );
+
     $entity->save();
 
     // Create menu link items.
@@ -111,8 +126,11 @@ class Importer implements ContainerInjectionInterface {
       }
     }
 
-    \Drupal::service('event_dispatcher')
-      ->dispatch(GatherContentEvents::POST_NODE_SAVE, new PostNodeSaveEvent($entity, $gc_item, $files));
+    $this->eventDispatcher->dispatch(
+      GatherContentEvents::POST_NODE_SAVE,
+      new PostNodeSaveEvent($entity, $gc_item, $files)
+    );
+
     return $entity->id();
   }
 
