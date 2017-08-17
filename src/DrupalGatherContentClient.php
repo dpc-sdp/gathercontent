@@ -125,7 +125,8 @@ class DrupalGatherContentClient extends GatherContentClient {
    *   Imported files array.
    */
   public function downloadFiles(array $files, string $directory, string $language) {
-    $httpClient = new Client();
+    /** @var \GuzzleHttp\Client $httpClient */
+    $httpClient = $this->client;
     $files = array_values($files);
     $importedFiles = [];
 

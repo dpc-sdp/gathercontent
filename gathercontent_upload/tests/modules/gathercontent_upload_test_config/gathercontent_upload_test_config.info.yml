@@ -2,7 +2,7 @@ name: 'Gathercontent Upload configuration tests'
 description: 'Support module for gathercontent upload configuration tests.'
 package: 'Testing'
 type: 'module'
-
+core: 8.x
 dependencies:
   - 'gathercontent_upload'
   - 'paragraph'

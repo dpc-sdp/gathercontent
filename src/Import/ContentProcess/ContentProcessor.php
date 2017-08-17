@@ -2,16 +2,32 @@
 
 namespace Drupal\gathercontent\Import\ContentProcess;
 
+use Cheppers\GatherContent\DataTypes\Item;
+use Cheppers\GatherContent\GatherContentClientInterface;
 use Drupal\Component\Render\PlainTextOutput;
+use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Language\Language;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\field\Entity\FieldConfig;
+use Drupal\gathercontent\Entity\Mapping;
+use Drupal\gathercontent\Import\ImportOptions;
+use Drupal\gathercontent\Import\NodeUpdateMethod;
+use Drupal\node\NodeInterface;
 use Drupal\taxonomy\Entity\Term;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * The ContentProcessor sets the necessary fields of the entity.
  */
-class ContentProcessor {
+class ContentProcessor implements ContainerInjectionInterface {
+
+  /**
+   * Drupal GC client.
+   *
+   * @var \Drupal\gathercontent\DrupalGatherContentClient
+   */
+  protected $client;
 
   /**
    * Store the already imported entity references (used in recursion).
@@ -21,10 +37,20 @@ class ContentProcessor {
   protected $importedReferences = [];
 
   /**
-   * ContentProcessor constructor.
+   * {@inheritdoc}
    */
-  public function __construct() {
+  public function __construct(GatherContentClientInterface $client) {
+    $this->client = $client;
     $this->init();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('gathercontent.client')
+    );
   }
 
   /**
@@ -32,6 +58,75 @@ class ContentProcessor {
    */
   public function init() {
     $this->importedReferences = [];
+  }
+
+  /**
+   * Create a Drupal node filled with the properties of the GC item.
+   */
+  public function createNode(Item $gc_item, Mapping $mapping, $is_translatable, array $files, ImportOptions $options) {
+    $user = \Drupal::currentUser();
+    $mapping_data = unserialize($mapping->getData());
+
+    if (empty($mapping_data)) {
+      throw new \Exception("Mapping data is empty.");
+    }
+
+    $mapping_data_copy = $mapping_data;
+    $first = array_shift($mapping_data_copy);
+    $content_type = $mapping->getContentType();
+
+    $langcode = isset($first['language']) ? $first['language'] : Language::LANGCODE_NOT_SPECIFIED;
+
+    // Create a Drupal entity corresponding to GC item.
+    $entity = NodeUpdateMethod::getDestinationNode($gc_item->id, $options->getNodeUpdateMethod(), $content_type, $langcode);
+
+    $entity->set('gc_id', $gc_item->id);
+    $entity->set('gc_mapping_id', $mapping->id());
+    $entity->setOwnerId($user->id());
+
+    if ($entity->isNew()) {
+      $entity->setPublished($options->getPublish());
+    }
+
+    if ($entity === FALSE) {
+      throw new \Exception("System error, please contact you administrator.");
+    }
+
+    foreach ($gc_item->config as $pane) {
+      $is_pane_translatable = $is_translatable && isset($mapping_data[$pane->id]['language'])
+        && ($mapping_data[$pane->id]['language'] != Language::LANGCODE_NOT_SPECIFIED);
+
+      if ($is_pane_translatable) {
+        $language = $mapping_data[$pane->id]['language'];
+        if (!$entity->hasTranslation($language)) {
+          $entity->addTranslation($language);
+          if ($entity->isNew()) {
+            $entity->getTranslation($language)->setPublished($options->getPublish());
+          }
+        }
+      }
+      else {
+        $language = Language::LANGCODE_NOT_SPECIFIED;
+      }
+
+      foreach ($pane->elements as $field) {
+        if (isset($mapping_data[$pane->id]['elements'][$field->id]) && !empty($mapping_data[$pane->id]['elements'][$field->id])) {
+          $local_field_id = $mapping_data[$pane->id]['elements'][$field->id];
+          if (isset($mapping_data[$pane->id]['type']) && ($mapping_data[$pane->id]['type'] === 'content') || !isset($mapping_data[$pane->id]['type'])) {
+            $this->processContentPane($entity, $local_field_id, $field, $is_pane_translatable, $language, $files);
+          }
+          elseif (isset($mapping_data[$pane->id]['type']) && ($mapping_data[$pane->id]['type'] === 'metatag')) {
+            $this->processMetatagPane($entity, $local_field_id, $field, $mapping->getContentType(), $is_pane_translatable, $language);
+          }
+        }
+      }
+    }
+
+    if (!$is_translatable && empty($entity->getTitle())) {
+      $entity->setTitle($gc_item->name);
+    }
+
+    return $entity;
   }
 
   /**
@@ -173,6 +268,50 @@ class ContentProcessor {
             $language, $field);
           break;
       }
+    }
+  }
+
+  /**
+   * Processing function for metatag panes.
+   *
+   * @param \Drupal\node\NodeInterface $entity
+   *   Object of node.
+   * @param string $local_field_id
+   *   ID of local Drupal field.
+   * @param object $field
+   *   Object of GatherContent field.
+   * @param string $content_type
+   *   Name of Content type, we are mapping to.
+   * @param bool $is_translatable
+   *   Indicator if node is translatable.
+   * @param string $language
+   *   Language of translation if applicable.
+   *
+   * @throws \Exception
+   *   If content save fails, exceptions is thrown.
+   */
+  public function processMetatagPane(NodeInterface &$entity, $local_field_id, $field, $content_type, $is_translatable, $language) {
+    if (\Drupal::moduleHandler()->moduleExists('metatag') && check_metatag($content_type)) {
+      $field_info = FieldConfig::load($local_field_id);
+      $local_field_name = $field_info->getName();
+      $metatag_fields = get_metatag_fields($content_type);
+
+      foreach ($metatag_fields as $metatag_field) {
+        if ($is_translatable) {
+          $current_value = unserialize($entity->getTranslation($language)->{$metatag_field}->value);
+          $current_value[$local_field_name] = $field->value;
+          $entity->getTranslation($language)->{$metatag_field}->value = serialize($current_value);
+        }
+        else {
+          $current_value = unserialize($entity->{$metatag_field}->value);
+          $current_value[$local_field_name] = $field->value;
+          $entity->{$metatag_field}->value = serialize($current_value);
+        }
+      }
+    }
+    else {
+      throw new \Exception("Metatag module not enabled or entity doesn't support
+    metatags while trying to map values with metatag content.");
     }
   }
 
@@ -425,8 +564,6 @@ class ContentProcessor {
    *   Array of remote files.
    */
   protected function processFilesField(EntityInterface &$entity, FieldConfig $field_info, $gc_field_name, $is_translatable, $language, array $files) {
-    /** @var \Drupal\gathercontent\DrupalGatherContentClient $client */
-    $client = \Drupal::service('gathercontent.client');
     $found_files = [];
     $local_field_name = $field_info->getName();
     /** @var \Drupal\field\Entity\FieldConfig $translatable_file_config */
@@ -467,7 +604,7 @@ class ContentProcessor {
       $create_dir = \Drupal::service('file_system')->realpath($uri_scheme) . '/' . $file_dir;
       file_prepare_directory($create_dir, FILE_CREATE_DIRECTORY);
 
-      $imported_files = $client->downloadFiles($files, $uri_scheme . $file_dir, $language);
+      $imported_files = $this->client->downloadFiles($files, $uri_scheme . $file_dir, $language);
 
       if (!empty($imported_files)) {
         foreach ($imported_files as $file) {

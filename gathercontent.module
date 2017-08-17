@@ -158,17 +158,15 @@ function _gc_get_menu_by_gc_id(&$mlid, &$menu_name, $language = NULL) {
 /**
  * Batch operation callback for importing items.
  */
-function gathercontent_import_process($gc_id, ImportOptions $import_options, &$context = []) {
+function gathercontent_import_process(int $gc_id, ImportOptions $import_options, &$context = []) {
   /** @var \Drupal\gathercontent\Import\Importer $importer */
   $importer = \Drupal::service('gathercontent.importer');
-  $importer->setImportOption($gc_id, $import_options);
 
   $client = $importer->getClient();
   /** @var \Cheppers\GatherContent\DataTypes\Item $item */
   $item = $client->itemGet($gc_id);
   /** @var \Cheppers\GatherContent\DataTypes\Template $template */
   $template = $client->templateGet($item->templateId);
-  $importer->updateStatus($item);
 
   $operation_item = \Drupal::entityTypeManager()
     ->getStorage('gathercontent_operation_item')
@@ -182,7 +180,7 @@ function gathercontent_import_process($gc_id, ImportOptions $import_options, &$c
     ]);
 
   try {
-    $importer->import($item);
+    $importer->import($item, $import_options);
     $operation_item->status = 'Success';
     $operation_item->save();
   }
