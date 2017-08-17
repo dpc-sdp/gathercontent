@@ -166,48 +166,11 @@ class ContentProcessorTest extends KernelTestBase {
           break;
 
         case 'choice_checkbox':
-          $termIds = array_map(function ($propertyArray) {
-            return $propertyArray['target_id'];
-          }, $field);
-          $terms = Term::loadMultiple($termIds);
-
-          foreach ($element->options as $option) {
-            $termsMatchingThisOption = array_filter($terms, function ($term) use ($option) {
-              $isSameGcOptionId = $term->get('gathercontent_option_ids')->getValue()[0]['value'] == $option['name'];
-              $isSameName = $term->get('name')->getValue()[0]['value'] == $option['label'];
-              $isCheckboxTaxonomy = $term->get('vid')->getValue()[0]['target_id'] === MockData::CHECKBOX_TAXONOMY_NAME;
-              return $isSameGcOptionId && $isSameName && $isCheckboxTaxonomy;
-            });
-            if ($option['selected']) {
-              static::assertEquals(count($termsMatchingThisOption), 1);
-            }
-            else {
-              static::assertEquals(count($termsMatchingThisOption), 0);
-            }
-          }
+          static::assertCheckboxFieldEqualsOptions($field, $element->options);
           break;
 
         case 'choice_radio':
-          // There can be no radios.
-          if (count($field) > 0) {
-            // But if there are, there must be only one.
-            static::assertEquals(count($field), 1);
-            $termId = reset($field)['target_id'];
-            static::assertTrue(is_string($termId));
-
-            $term = Term::load($termId);
-            static::assertEquals($term->get('vid')->getValue()[0]['target_id'], MockData::RADIO_TAXONOMY_NAME);
-
-            $selectedOptions = array_filter($element->options, function ($option) {
-              return $option['selected'];
-            });
-            static::assertGreaterThan(0, count($selectedOptions));
-            // If there are more options selected choose the first selected element.
-            static::assertEquals($term->get('gathercontent_option_ids')->getValue()[0]['value'], $selectedOptions[0]['name']);
-          }
-          else {
-            throw new \Exception('No radio selected');
-          }
+          static::assertRadioFieldEqualsOptions($field, $element->options);
           break;
 
         default:
@@ -215,6 +178,64 @@ class ContentProcessorTest extends KernelTestBase {
       }
 
     }
+  }
+
+  /**
+   * Assertion for checkbox elements.
+   */
+  public static function assertCheckboxFieldEqualsOptions(array $field, array $options) {
+    $termIds = array_map(function ($propertyArray) {
+      return $propertyArray['target_id'];
+    }, $field);
+    $terms = Term::loadMultiple($termIds);
+
+    foreach ($options as $option) {
+      $termsMatchingThisOption = array_filter($terms, function ($term) use ($option) {
+        $isSameGcOptionId = $term->get('gathercontent_option_ids')->getValue()[0]['value'] == $option['name'];
+        $isSameName = $term->get('name')->getValue()[0]['value'] == $option['label'];
+        $isCheckboxTaxonomy = $term->get('vid')->getValue()[0]['target_id'] === MockData::CHECKBOX_TAXONOMY_NAME;
+        return $isSameGcOptionId && $isSameName && $isCheckboxTaxonomy;
+      });
+
+      if ($option['selected']) {
+        static::assertEquals(1, count($termsMatchingThisOption));
+      }
+      else {
+        static::assertEmpty($termsMatchingThisOption);
+      }
+    }
+  }
+
+  /**
+   * Assertion for radio elements.
+   */
+  public static function assertRadioFieldEqualsOptions(array $field, array $options) {
+    $selectedOptions = array_filter($options, function ($option) {
+      return $option['selected'];
+    });
+
+    // No radios selected.
+    if (empty($field)) {
+      static::assertEmpty($selectedOptions);
+      return;
+    }
+
+    // If there are selected radios, there must only be one.
+    static::assertEquals(1, count($field));
+    $termId = reset($field)['target_id'];
+    static::assertTrue(is_string($termId));
+
+    $term = Term::load($termId);
+    static::assertEquals(MockData::RADIO_TAXONOMY_NAME, $term->get('vid')->getValue()[0]['target_id']);
+    static::assertNotEmpty($selectedOptions);
+
+    $optionsMatchingThisTerm = array_filter($selectedOptions, function ($option) use ($term) {
+      $isSameName = $term->get('name')->getValue()[0]['value'] == $option['label'];
+      $isSameGcOptionId = $term->get('gathercontent_option_ids')->getValue()[0]['value'] == $option['name'];
+      return $isSameName && $isSameGcOptionId;
+    });
+
+    static::assertEquals(1, count($optionsMatchingThisTerm));
   }
 
 }
