@@ -27,7 +27,7 @@ class MockData {
   }
 
   /**
-   * Create the default test taxonomy terms after enabling the gathercontent_option_ids field.
+   * Create the default test taxonomy terms.
    */
   public static function createTaxonomyTerms() {
     $terms = [];

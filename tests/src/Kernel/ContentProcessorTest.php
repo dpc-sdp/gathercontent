@@ -13,7 +13,7 @@ use Drupal\node\NodeInterface;
 use Drupal\taxonomy\Entity\Term;
 
 /**
- * Node creation tests.
+ * Class for testing node import.
  *
  * @group gathercontent
  */
@@ -24,8 +24,7 @@ class ContentProcessorTest extends KernelTestBase {
    */
   protected static $modules = [
     'gathercontent', 'test_module', 'node', 'text', 'field',
-    'image', 'file', 'user', 'taxonomy', 'language', 'content_translation',
-    'entity_reference_revisions',
+    'image', 'file', 'taxonomy', 'language', 'content_translation',
   ];
 
   /**
@@ -36,56 +35,21 @@ class ContentProcessorTest extends KernelTestBase {
   protected $mapping;
 
   /**
-   * The ContentProcessor object.
-   *
-   * @var \Drupal\gathercontent\Import\ContentProcess\ContentProcessor
-   */
-  protected $processor;
-
-  /**
-   * Default test terms.
-   *
-   * @var \Drupal\taxonomy\Entity\Term[]
-   */
-  protected $terms;
-
-  /**
    * {@inheritdoc}
    */
   protected function setUp() {
     parent::setUp();
-    $this->installSchema('node', 'node_access');
-    $this->installEntitySchema('node');
     $this->installConfig(['test_module']);
     $this->installEntitySchema('gathercontent_operation');
     $this->installEntitySchema('file');
     $this->installSchema('file', ['file_usage']);
     $this->installEntitySchema('taxonomy_term');
-    $this->init();
-  }
-
-  /**
-   * Initialize member variables.
-   */
-  public function init() {
     MockData::$drupalRoot = $this->getDrupalRoot();
     $this->mapping = MockData::getMapping();
-    $this->processor = static::getProcessor();
-    $this->terms = MockData::createTaxonomyTerms();
-    foreach ($this->terms as $term) {
+    $terms = MockData::createTaxonomyTerms();
+    foreach ($terms as $term) {
       $term->save();
     }
-  }
-
-  /**
-   * Get processor injected with mock object.
-   */
-  public static function getProcessor() {
-    return new ContentProcessor(
-      new MockDrupalGatherContentClient(
-        \Drupal::service('http_client')
-      )
-    );
   }
 
   /**
@@ -175,8 +139,19 @@ class ContentProcessorTest extends KernelTestBase {
       && \Drupal::service('content_translation.manager')
         ->isEnabled('node', $this->mapping->getContentType());
 
-    $node = $this->processor->createNode($gcItem, $importOptions, $this->mapping, $files, $is_translatable);
+    $node = static::getProcessor()->createNode($gcItem, $importOptions, $this->mapping, $files, $is_translatable);
     static::assertNodeEqualsGcItem($node, $gcItem, $this->mapping, $files);
+  }
+
+  /**
+   * Get processor injected with mock object.
+   */
+  public static function getProcessor() {
+    return new ContentProcessor(
+      new MockDrupalGatherContentClient(
+        \Drupal::service('http_client')
+      )
+    );
   }
 
   /**
