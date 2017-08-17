@@ -12,7 +12,7 @@ class ImportOptions {
    *
    * @var string
    *
-   * @see \Drupal\gathercontent\NodeUpdateMethod
+   * @see \Drupal\gathercontent\Import\NodeUpdateMethod
    */
   public $nodeUpdateMethod = NodeUpdateMethod::ALWAYS_UPDATE;
 

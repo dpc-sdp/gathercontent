@@ -4,7 +4,7 @@ namespace Drupal\gathercontent\Form;
 
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\gathercontent\NodeUpdateMethod;
+use Drupal\gathercontent\Import\NodeUpdateMethod;
 
 /**
  * Class ImportConfigForm.
