@@ -23,7 +23,7 @@ class ContentProcessorTest extends KernelTestBase {
    * {@inheritdoc}
    */
   protected static $modules = [
-    'gathercontent', 'test_module', 'node', 'text', 'field',
+    'gathercontent', 'test_module', 'node', 'text', 'field', 'user',
     'image', 'file', 'taxonomy', 'language', 'content_translation',
   ];
 
