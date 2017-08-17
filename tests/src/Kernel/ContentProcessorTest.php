@@ -5,7 +5,6 @@ namespace Drupal\Tests\gathercontent\Kernel;
 use Cheppers\GatherContent\DataTypes\File;
 use Cheppers\GatherContent\DataTypes\Item;
 use Cheppers\GatherContent\DataTypes\Tab;
-use Drupal\Core\Extension\ModuleInstaller;
 use Drupal\gathercontent\Entity\Mapping;
 use Drupal\gathercontent\Entity\Operation;
 use Drupal\gathercontent\Import\ContentProcess\ContentProcessor;
@@ -14,7 +13,6 @@ use Drupal\gathercontent\Import\NodeUpdateMethod;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\node\NodeInterface;
 use Drupal\taxonomy\Entity\Term;
-use org\bovigo\vfs\vfsStreamWrapperAlreadyRegisteredTestCase;
 
 /**
  * Node creation tests.
@@ -76,12 +74,13 @@ class ContentProcessorTest extends KernelTestBase {
    */
   protected function setUp() {
     parent::setUp();
+    $this->installSchema('node', 'node_access');
+    $this->installEntitySchema('node');
     $this->installConfig(['test_module']);
     $this->installEntitySchema('gathercontent_operation');
     $this->installEntitySchema('file');
     $this->installSchema('file', ['file_usage']);
     $this->installEntitySchema('taxonomy_term');
-    \Drupal::service('module_installer')->install(['gathercontent'], TRUE);
     $this->init();
   }
 
@@ -95,16 +94,6 @@ class ContentProcessorTest extends KernelTestBase {
     foreach ($this->terms as $term) {
       $term->save();
     }
-
-    $taxonomy = \Drupal::entityTypeManager()
-      ->getStorage('taxonomy_term')
-      ->loadByProperties(['gathercontent_option_ids' => 'op1502871154842']);
-    $taxonomyAll = \Drupal::entityTypeManager()
-      ->getStorage('taxonomy_term')
-      ->loadMultiple(NULL);
-
-    var_dump($taxonomy);
-    var_dump(reset($taxonomyAll));
   }
 
   /**
@@ -131,43 +120,45 @@ class ContentProcessorTest extends KernelTestBase {
    * Create the default test taxonomy terms after enabling the gathercontent_option_ids field.
    */
   public static function createTaxonomyTerms() {
-    $choice1 = Term::create([
+    $terms = [];
+
+    $terms[] = Term::create([
       'vid' => 'checkbox_test_taxonomy',
-      'name' => 'First choice',
+      'name' => 'First checkbox',
       'gathercontent_option_ids' => 'op1502871154842',
     ]);
 
-    $choice2 = Term::create([
+    $terms[] = Term::create([
       'vid' => 'checkbox_test_taxonomy',
-      'name' => 'Second choice',
+      'name' => 'Second checkbox',
       'gathercontent_option_ids' => 'op1502871154843',
     ]);
 
-    $choice3 = Term::create([
+    $terms[] = Term::create([
       'vid' => 'checkbox_test_taxonomy',
-      'name' => 'Third choice',
+      'name' => 'Third checkbox',
       'gathercontent_option_ids' => 'op1502871154844',
     ]);
 
-    $radio1 = Term::create([
+    $terms[] = Term::create([
       'vid' => 'radio_test_taxonomy',
       'name' => 'First radio',
       'gathercontent_option_ids' => 'op1502871172350',
     ]);
 
-    $radio2 = Term::create([
+    $terms[] = Term::create([
       'vid' => 'radio_test_taxonomy',
-      'name' => 'First radio',
+      'name' => 'Second radio',
       'gathercontent_option_ids' => 'op1502871172351',
     ]);
 
-    $radio3 = Term::create([
+    $terms[] = Term::create([
       'vid' => 'radio_test_taxonomy',
-      'name' => 'First radio',
+      'name' => 'Third radio',
       'gathercontent_option_ids' => 'op1502871172352',
     ]);
 
-    return [$choice1, $choice2, $choice3, $radio1, $radio2, $radio3];
+    return $terms;
   }
 
   /**
@@ -201,6 +192,13 @@ class ContentProcessorTest extends KernelTestBase {
 
           case 'choice_checkbox':
             $element->options[0]['selected'] = TRUE;
+            break;
+
+          case 'choice_radio':
+            // Always pick the first one if more is selected.
+            $element->options[0]['selected'] = TRUE;
+            $element->options[1]['selected'] = TRUE;
+            $element->options[2]['selected'] = TRUE;
             break;
         }
       }
@@ -299,11 +297,17 @@ class ContentProcessorTest extends KernelTestBase {
           break;
 
         case 'choice_checkbox':
-          var_dump($element);
+          $termId = reset($field)['target_id'];
+          $term = Term::load($termId);
+          static::assertEquals($term->get('gathercontent_option_ids')->getValue()[0]['value'], $element->options[0]['name']);
           break;
 
         case 'choice_radio':
-          // TODO.
+          static::assertEquals(count($field), 1);
+          $termId = reset($field)['target_id'];
+          static::assertTrue(is_string($termId));
+          $term = Term::load($termId);
+          static::assertEquals($term->get('gathercontent_option_ids')->getValue()[0]['value'], $element->options[0]['name']);
           break;
 
         default:

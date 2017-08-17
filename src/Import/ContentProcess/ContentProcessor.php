@@ -544,6 +544,7 @@ class ContentProcessor implements ContainerInjectionInterface {
           }
         }
       }
+      break;
     }
   }
 
