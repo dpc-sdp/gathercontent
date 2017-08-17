@@ -188,11 +188,19 @@ class Exporter implements ContainerInjectionInterface {
           $field_info = FieldConfig::load($local_id_array[0]);
 
           $current_entity = $entity;
-          $current_field_name = $field_info->getName();
+
+          $type = '';
+          if ($local_id_array[0] === 'title') {
+            $current_field_name = $local_id_array[0];
+          }
+          else {
+            $current_field_name = $field_info->getName();
+            $type = $field_info->getType();
+          }
 
           $this->processTargets($current_entity, $current_field_name, $exported_fields, $local_id_array);
 
-          $field = $this->processSetFields($field, $current_entity, $is_translatable, $language, $current_field_name, $field_info);
+          $field = $this->processSetFields($field, $current_entity, $is_translatable, $language, $current_field_name, $type);
         }
         elseif ($mapping_data[$pane->id]['type'] === 'metatag') {
           if (\Drupal::moduleHandler()->moduleExists('metatag') && check_metatag($entity->getType())) {
@@ -301,13 +309,13 @@ class Exporter implements ContainerInjectionInterface {
    *   Language string.
    * @param string $local_field_name
    *   Field Name.
-   * @param \Drupal\field\Entity\FieldConfig $field_info
-   *   Local field Info object.
+   * @param string $type
+   *   Local field Info type string.
    *
    * @return \Cheppers\GatherContent\DataTypes\Element
    *   Returns field.
    */
-  public function processSetFields(Element $field, EntityInterface $entity, $is_translatable, $language, $local_field_name, FieldConfig $field_info) {
+  public function processSetFields(Element $field, EntityInterface $entity, $is_translatable, $language, $local_field_name, $type) {
     switch ($field->type) {
       case 'files':
         // There is currently no API for manipulating with files.
@@ -327,7 +335,7 @@ class Exporter implements ContainerInjectionInterface {
         $selected = NULL;
 
         // Fetch local selected option.
-        if ($field_info->getType() === 'entity_reference') {
+        if ($type === 'entity_reference') {
           if ($is_translatable) {
             $targets = $entity->getTranslation($language)->{$local_field_name}->getValue();
           }
@@ -398,7 +406,7 @@ class Exporter implements ContainerInjectionInterface {
         $selected = [];
 
         // Fetch local selected option.
-        if ($field_info->getType() === 'entity_reference') {
+        if ($type === 'entity_reference') {
           if ($is_translatable) {
             $targets = $entity->getTranslation($language)->{$local_field_name}->getValue();
           }
