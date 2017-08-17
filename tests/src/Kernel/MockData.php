@@ -16,13 +16,15 @@ class MockData {
   const CHECKBOX_TAXONOMY_NAME = 'checkbox_test_taxonomy';
   const RADIO_TAXONOMY_NAME = 'radio_test_taxonomy';
 
-  const TEST_VALUES = [
-    'choice_radio' => [],
-    'choice_checkbox' => [],
-    'files' => '',
-    'text' => 'test text',
-    'section' => 'test section',
-  ];
+  public static $drupalRoot = '';
+
+  /**
+   * Utility function.
+   */
+  public static function getUniqueInt() {
+    static $counter = 1;
+    return $counter++;
+  }
 
   /**
    * Create the default test taxonomy terms after enabling the gathercontent_option_ids field.
@@ -72,13 +74,13 @@ class MockData {
   /**
    * Creates a GC Item corresponding to a mapping.
    */
-  public static function createItem(Mapping $mapping) {
+  public static function createItem(Mapping $mapping, array $selectedCheckboxes, array $selectedRadioboxes) {
     $template = unserialize($mapping->getTemplate())->data;
     $tabs = $template->config;
 
     $item = new Item();
-    $item->name = 'test item';
-    $item->id = 1;
+    $item->id = static::getUniqueInt();
+    $item->name = 'test item name ' . $item->id;
     $item->projectId = $template->project_id;
     $item->templateId = $template->template_id;
 
@@ -87,27 +89,27 @@ class MockData {
       foreach ($newTab->elements as $element) {
         switch ($element->type) {
           case 'text':
-            $element->setValue(static::TEST_VALUES['text']);
+            $element->setValue('test text value ' . static::getUniqueInt());
             break;
 
           case 'files':
-            // Files are handled elsewhere.
+            // Files are not stored here.
             break;
 
           case 'section':
-            $element->subtitle = static::TEST_VALUES['section'];
+            $element->subtitle = 'test section subtitle ' . static::getUniqueInt();
             break;
 
           case 'choice_checkbox':
-            $element->options[0]['selected'] = TRUE;
-            $element->options[2]['selected'] = TRUE;
+            foreach ($element->options as $i => $option) {
+              $element->options[$i]['selected'] = $selectedCheckboxes[$i];
+            }
             break;
 
           case 'choice_radio':
-            // Always pick the first one if more is selected.
-            $element->options[0]['selected'] = TRUE;
-            $element->options[1]['selected'] = TRUE;
-            $element->options[2]['selected'] = TRUE;
+            foreach ($element->options as $i => $option) {
+              $element->options[$i]['selected'] = $selectedRadioboxes[$i];
+            }
             break;
         }
       }
@@ -121,18 +123,28 @@ class MockData {
   /**
    * Mock File response.
    */
-  public static function createFile($drupalRoot) {
+  public static function createFile() {
+    static $currentFileId = 1;
     $file = new File();
-    $file->id = 1;
+    $file->id = $currentFileId++;
     $file->userId = 1;
     $file->itemId = 1;
     $file->field = 'el1502871120855';
-    $file->url = $drupalRoot . '/' . drupal_get_path('module', 'test_module') . '/images/test.jpg';
+    $file->url = static::$drupalRoot . '/' . drupal_get_path('module', 'test_module') . '/images/test.jpg';
     $file->fileName = 'test.jpg';
     $file->size = 0;
     $file->createdAt = NULL;
     $file->updatedAt = NULL;
     return $file;
+  }
+
+  /**
+   * After installing the test configs read the mapping.
+   */
+  public static function getMapping() {
+    $mapping_id = \Drupal::entityQuery('gathercontent_mapping')->execute();
+    $mapping_id = reset($mapping_id);
+    return Mapping::load($mapping_id);
   }
 
 }

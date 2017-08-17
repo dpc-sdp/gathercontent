@@ -99,7 +99,7 @@ class Importer implements ContainerInjectionInterface {
       && \Drupal::service('content_translation.manager')
         ->isEnabled('node', $mapping->getContentType());
 
-    $entity = $this->contentProcessor->createNode($gc_item, $mapping, $is_translatable, $files, $importOptions);
+    $entity = $this->contentProcessor->createNode($gc_item, $importOptions, $mapping, $files, $is_translatable);
 
     $this->eventDispatcher->dispatch(
       GatherContentEvents::PRE_NODE_SAVE,

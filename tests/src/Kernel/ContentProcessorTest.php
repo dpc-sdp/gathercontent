@@ -23,7 +23,6 @@ class ContentProcessorTest extends KernelTestBase {
    * {@inheritdoc}
    */
   protected static $modules = [
-    'system',
     'gathercontent',
     'test_module',
     'node',
@@ -78,21 +77,13 @@ class ContentProcessorTest extends KernelTestBase {
    * Initialize member variables.
    */
   public function init() {
-    $this->mapping = static::getMapping();
+    MockData::$drupalRoot = $this->getDrupalRoot();
+    $this->mapping = MockData::getMapping();
     $this->processor = static::getProcessor();
     $this->terms = MockData::createTaxonomyTerms();
     foreach ($this->terms as $term) {
       $term->save();
     }
-  }
-
-  /**
-   * After installing the test configs read the mapping.
-   */
-  public static function getMapping() {
-    $mapping_id = \Drupal::entityQuery('gathercontent_mapping')->execute();
-    $mapping_id = reset($mapping_id);
-    return Mapping::load($mapping_id);
   }
 
   /**
@@ -107,30 +98,93 @@ class ContentProcessorTest extends KernelTestBase {
   }
 
   /**
-   * Test if entities are created correctly based on GC Items.
+   * Data provider for createNodeTest.
    */
   public function testCreateNode() {
-    $gc_item = MockData::createItem($this->mapping);
-    $options = new ImportOptions(NodeUpdateMethod::ALWAYS_CREATE);
+    $item = MockData::createItem(
+      $this->mapping,
+      [TRUE, FALSE, TRUE],
+      [TRUE, FALSE, FALSE]
+    );
+    $importOptions = new ImportOptions(NodeUpdateMethod::ALWAYS_CREATE);
+
+    $cases = [
+      'no checkboxes, no radioboxes' => [
+        MockData::createItem(
+          $this->mapping,
+          [FALSE, FALSE, FALSE],
+          [FALSE, FALSE, FALSE]
+        ),
+        $importOptions,
+        [],
+      ],
+      'no checkboxes, 1 radiobox' => [
+        MockData::createItem(
+          $this->mapping,
+          [FALSE, FALSE, FALSE],
+          [TRUE, FALSE, FALSE]
+        ),
+        $importOptions,
+        [],
+      ],
+      'no checkboxes, 3 radioboxes' => [
+        MockData::createItem(
+          $this->mapping,
+          [FALSE, FALSE, FALSE],
+          [TRUE, TRUE, TRUE]
+        ),
+        $importOptions,
+        [],
+      ],
+      'all checkboxes, no radioboxes' => [
+        MockData::createItem(
+          $this->mapping,
+          [TRUE, TRUE, TRUE],
+          [FALSE, FALSE, FALSE]
+        ),
+        $importOptions,
+        [],
+      ],
+      '1 file' => [
+        $item, $importOptions, [
+          MockData::createFile(),
+        ],
+      ],
+      '3 files' => [
+        $item, $importOptions, [
+          MockData::createFile(), MockData::createFile(), MockData::createFile(),
+        ],
+      ],
+    ];
+
+    foreach ($cases as $caseName => $params) {
+      call_user_func_array([$this, 'createNodeTest'], $params);
+    }
+  }
+
+  /**
+   * Test if entities are created correctly based on GC Items.
+   */
+  public function createNodeTest(Item $gcItem, ImportOptions $importOptions, array $files) {
     $operation = Operation::create([
       'type' => 'import',
     ]);
-    $options->setOperationUuid($operation->uuid());
+    $importOptions->setOperationUuid($operation->uuid());
+
     $is_translatable = \Drupal::moduleHandler()
       ->moduleExists('content_translation')
       && \Drupal::service('content_translation.manager')
         ->isEnabled('node', $this->mapping->getContentType());
-    $node = $this->processor->createNode($gc_item, $this->mapping, $is_translatable, [
-      MockData::createFile($this->getDrupalRoot()),
-    ], $options);
-    $this->assertNodeEqualsGcItem($node, $gc_item);
+
+    $node = $this->processor->createNode($gcItem, $importOptions, $this->mapping, $files, $is_translatable);
+    static::assertNodeEqualsGcItem($node, $gcItem, $this->mapping, $files);
   }
 
   /**
    * Checks whether a node and a GC item contains the same data.
    */
-  public function assertNodeEqualsGcItem(NodeInterface $node, Item $gc_item) {
-    $tabs = unserialize($this->mapping->getData());
+  public static function assertNodeEqualsGcItem(NodeInterface $node, Item $gc_item, Mapping $mapping, array $files) {
+    $tabs = unserialize($mapping->getData());
     $itemMapping = reset($tabs)['elements'];
 
     static::assertEquals($node->getTitle(), $gc_item->name);
@@ -146,23 +200,16 @@ class ContentProcessorTest extends KernelTestBase {
 
       switch ($element->type) {
         case 'text':
-          $nodeValue = reset($field)['value'];
-          $gcItemValue = $element->value;
-          static::assertEquals($nodeValue, $gcItemValue);
+          static::assertEquals($element->value, reset($field)['value']);
           break;
 
         case 'section':
-          $nodeValue = reset($field)['value'];
-          $gcItemValue = '<h3>' . $element->title . '</h3>' . $element->subtitle;
-          static::assertEquals($nodeValue, $gcItemValue);
+          $section = '<h3>' . $element->title . '</h3>' . $element->subtitle;
+          static::assertEquals($section, reset($field)['value']);
           break;
 
         case 'files':
-          $testImageIds = \Drupal::entityQuery('file')
-            ->condition('gc_id', 1)
-            ->condition('filename', 'test.jpg')
-            ->execute();
-          static::assertEquals(count($testImageIds), 1);
+          static::assertFileFieldEqualsResponseFiles($field, $files);
           break;
 
         case 'choice_checkbox':
@@ -176,8 +223,30 @@ class ContentProcessorTest extends KernelTestBase {
         default:
           throw new \Exception("Unexpected element type: {$element->type}");
       }
-
     }
+  }
+
+  /**
+   * Assertion for file elements.
+   */
+  public static function assertFileFieldEqualsResponseFiles(array $field, array $files) {
+    // No files attached to GC item.
+    if (empty($files)) {
+      static::assertEmpty($field);
+      return;
+    }
+
+    // Always insert the latest file gotten from API.
+    // There must only be one image in the field.
+    static::assertEquals(1, count($field));
+    /** @var \Drupal\file\Entity\File $fileField */
+    $fileField = reset($field)['target_id'];
+    /** @var \Cheppers\GatherContent\DataTypes\File $fileResponse */
+    $fileResponse = end($files);
+
+    static::assertEquals($fileResponse->url, $fileField->get('uri')->getValue()[0]['value']);
+    static::assertEquals($fileResponse->id, $fileField->get('gc_id')->getValue()[0]['value']);
+    static::assertEquals($fileResponse->fileName, $fileField->get('filename')->getValue()[0]['value']);
   }
 
   /**

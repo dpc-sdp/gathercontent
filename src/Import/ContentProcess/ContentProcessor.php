@@ -63,7 +63,7 @@ class ContentProcessor implements ContainerInjectionInterface {
   /**
    * Create a Drupal node filled with the properties of the GC item.
    */
-  public function createNode(Item $gc_item, Mapping $mapping, $is_translatable, array $files, ImportOptions $options) {
+  public function createNode(Item $gc_item, ImportOptions $options, Mapping $mapping, array $files, $is_translatable) {
     $user = \Drupal::currentUser();
     $mapping_data = unserialize($mapping->getData());
 
