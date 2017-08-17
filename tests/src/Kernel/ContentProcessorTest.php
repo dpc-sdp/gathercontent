@@ -23,17 +23,8 @@ class ContentProcessorTest extends KernelTestBase {
    * {@inheritdoc}
    */
   protected static $modules = [
-    'gathercontent',
-    'test_module',
-    'node',
-    'text',
-    'field',
-    'image',
-    'file',
-    'user',
-    'taxonomy',
-    'language',
-    'content_translation',
+    'gathercontent', 'test_module', 'node', 'text', 'field',
+    'image', 'file', 'user', 'taxonomy', 'language', 'content_translation',
     'entity_reference_revisions',
   ];
 
@@ -99,6 +90,12 @@ class ContentProcessorTest extends KernelTestBase {
 
   /**
    * Data provider for createNodeTest.
+   *
+   * Unfortunately real data providers get called before any other method.
+   *
+   * I couldn't find a better way to generate test cases
+   * based on the bootstrapped Drupal installation (done in setUp)
+   * than creating my own "data provider" like test function.
    */
   public function testCreateNode() {
     $item = MockData::createItem(
@@ -147,12 +144,14 @@ class ContentProcessorTest extends KernelTestBase {
       ],
       '1 file' => [
         $item, $importOptions, [
-          MockData::createFile(),
+          MockData::createFile($item->id),
         ],
       ],
       '3 files' => [
         $item, $importOptions, [
-          MockData::createFile(), MockData::createFile(), MockData::createFile(),
+          MockData::createFile($item->id),
+          MockData::createFile($item->id),
+          MockData::createFile($item->id),
         ],
       ],
     ];
@@ -183,15 +182,15 @@ class ContentProcessorTest extends KernelTestBase {
   /**
    * Checks whether a node and a GC item contains the same data.
    */
-  public static function assertNodeEqualsGcItem(NodeInterface $node, Item $gc_item, Mapping $mapping, array $files) {
+  public static function assertNodeEqualsGcItem(NodeInterface $node, Item $gcItem, Mapping $mapping, array $files) {
     $tabs = unserialize($mapping->getData());
     $itemMapping = reset($tabs)['elements'];
 
-    static::assertEquals($node->getTitle(), $gc_item->name);
+    static::assertEquals($node->getTitle(), $gcItem->name);
 
     $fields = $node->toArray();
     /** @var \Cheppers\GatherContent\DataTypes\Element[] $elements */
-    $elements = reset($gc_item->config)->elements;
+    $elements = reset($gcItem->config)->elements;
 
     foreach ($itemMapping as $gcId => $fieldId) {
       $fieldId = explode('.', $fieldId)[2];

@@ -123,16 +123,15 @@ class MockData {
   /**
    * Mock File response.
    */
-  public static function createFile() {
-    static $currentFileId = 1;
+  public static function createFile($itemId) {
     $file = new File();
-    $file->id = $currentFileId++;
-    $file->userId = 1;
-    $file->itemId = 1;
+    $file->id = static::getUniqueInt();
+    $file->userId = static::getUniqueInt();
+    $file->itemId = $itemId;
     $file->field = 'el1502871120855';
     $file->url = static::$drupalRoot . '/' . drupal_get_path('module', 'test_module') . '/images/test.jpg';
     $file->fileName = 'test.jpg';
-    $file->size = 0;
+    $file->size = 60892;
     $file->createdAt = NULL;
     $file->updatedAt = NULL;
     return $file;
