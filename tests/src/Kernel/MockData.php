@@ -82,7 +82,7 @@ class MockData {
     $item->id = static::getUniqueInt();
     $item->name = 'test item name ' . $item->id;
     $item->projectId = $template->project_id;
-    $item->templateId = $template->template_id;
+    $item->templateId = $template->id;
 
     foreach ($tabs as $tab) {
       $newTab = new Tab(json_decode(json_encode($tab), TRUE));

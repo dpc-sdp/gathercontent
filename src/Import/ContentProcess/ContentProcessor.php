@@ -11,8 +11,10 @@ use Drupal\Core\Language\Language;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\gathercontent\Entity\Mapping;
+use Drupal\gathercontent\Import\Importer;
 use Drupal\gathercontent\Import\ImportOptions;
 use Drupal\gathercontent\Import\NodeUpdateMethod;
+use Drupal\gathercontent\MappingLoader;
 use Drupal\node\NodeInterface;
 use Drupal\taxonomy\Entity\Term;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -63,7 +65,10 @@ class ContentProcessor implements ContainerInjectionInterface {
   /**
    * Create a Drupal node filled with the properties of the GC item.
    */
-  public function createNode(Item $gc_item, ImportOptions $options, Mapping $mapping, array $files, $is_translatable) {
+  public function createNode(Item $gc_item, ImportOptions $options, array $files) {
+    $mapping = MappingLoader::load($gc_item);
+    $content_type = $mapping->getContentType();
+    $is_translatable = Importer::isContentTypeTranslatable($content_type);
     $user = \Drupal::currentUser();
     $mapping_data = unserialize($mapping->getData());
 
@@ -73,7 +78,6 @@ class ContentProcessor implements ContainerInjectionInterface {
 
     $mapping_data_copy = $mapping_data;
     $first = array_shift($mapping_data_copy);
-    $content_type = $mapping->getContentType();
 
     $langcode = isset($first['language']) ? $first['language'] : Language::LANGCODE_NOT_SPECIFIED;
 

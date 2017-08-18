@@ -7,4 +7,4 @@ services:
     arguments: ['@gathercontent.client']
   gathercontent.importer:
     class: Drupal\gathercontent\Import\Importer
-    arguments: ['@gathercontent.client', '@gathercontent.content_processor']
+    arguments: ['@gathercontent.client', '@gathercontent.content_processor', '@event_dispatcher']

@@ -46,6 +46,8 @@ class ContentProcessorTest extends KernelTestBase {
     $this->installEntitySchema('taxonomy_term');
     MockData::$drupalRoot = $this->getDrupalRoot();
     $this->mapping = MockData::getMapping();
+
+    /** @var \Drupal\taxonomy\Entity\Term[] $terms */
     $terms = MockData::createTaxonomyTerms();
     foreach ($terms as $term) {
       $term->save();
@@ -133,13 +135,7 @@ class ContentProcessorTest extends KernelTestBase {
       'type' => 'import',
     ]);
     $importOptions->setOperationUuid($operation->uuid());
-
-    $is_translatable = \Drupal::moduleHandler()
-      ->moduleExists('content_translation')
-      && \Drupal::service('content_translation.manager')
-        ->isEnabled('node', $this->mapping->getContentType());
-
-    $node = static::getProcessor()->createNode($gcItem, $importOptions, $this->mapping, $files, $is_translatable);
+    $node = static::getProcessor()->createNode($gcItem, $importOptions, $files);
     static::assertNodeEqualsGcItem($node, $gcItem, $this->mapping, $files);
   }
 

@@ -11,6 +11,7 @@ use Drupal\gathercontent\Event\GatherContentEvents;
 use Drupal\gathercontent\Event\PostNodeSaveEvent;
 use Drupal\gathercontent\Event\PreNodeSaveEvent;
 use Drupal\gathercontent\Import\ContentProcess\ContentProcessor;
+use Drupal\gathercontent\MappingLoader;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
@@ -91,15 +92,10 @@ class Importer implements ContainerInjectionInterface {
    */
   public function import(Item $gc_item, ImportOptions $importOptions) {
     $this->updateStatus($gc_item, $importOptions->getNewStatus());
-
     $files = $this->client->itemFilesGet($gc_item->id);
-    $mapping = static::getMapping($gc_item);
-    $is_translatable = \Drupal::moduleHandler()
-      ->moduleExists('content_translation')
-      && \Drupal::service('content_translation.manager')
-        ->isEnabled('node', $mapping->getContentType());
-
-    $entity = $this->contentProcessor->createNode($gc_item, $importOptions, $mapping, $files, $is_translatable);
+    $mapping = MappingLoader::load($gc_item);
+    $is_translatable = static::isContentTypeTranslatable($mapping->getContentType());
+    $entity = $this->contentProcessor->createNode($gc_item, $importOptions, $files);
 
     $this->eventDispatcher->dispatch(
       GatherContentEvents::PRE_NODE_SAVE,
@@ -155,26 +151,13 @@ class Importer implements ContainerInjectionInterface {
   }
 
   /**
-   * Return the mapping associated with the given Item.
+   * Decide whether a content type is translatable.
    */
-  public static function getMapping(Item $gc_item) {
-    $mapping_id = \Drupal::entityQuery('gathercontent_mapping')
-      ->condition('gathercontent_project_id', $gc_item->projectId)
-      ->condition('gathercontent_template_id', $gc_item->templateId)
-      ->execute();
-
-    if (empty($mapping_id)) {
-      throw new \Exception("Operation failed: Template not mapped.");
-    }
-
-    $mapping_id = reset($mapping_id);
-    $mapping = Mapping::load($mapping_id);
-
-    if ($mapping === NULL) {
-      throw new \Exception("No mapping found with id: $mapping_id");
-    }
-
-    return $mapping;
+  public static function isContentTypeTranslatable($contentType) {
+    return \Drupal::moduleHandler()
+      ->moduleExists('content_translation')
+      && \Drupal::service('content_translation.manager')
+        ->isEnabled('node', $contentType);
   }
 
 }
