@@ -2,7 +2,9 @@
 
 namespace Drupal\Tests\gathercontent\Kernel;
 
+use Cheppers\GatherContent\DataTypes\Element;
 use Cheppers\GatherContent\DataTypes\Item;
+use Drupal\file\Entity\File;
 use Drupal\gathercontent\Entity\Mapping;
 use Drupal\gathercontent\Entity\Operation;
 use Drupal\gathercontent\Import\ContentProcess\ContentProcessor;
@@ -10,6 +12,7 @@ use Drupal\gathercontent\Import\ImportOptions;
 use Drupal\gathercontent\Import\NodeUpdateMethod;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\node\NodeInterface;
+use Drupal\paragraphs\Entity\Paragraph;
 use Drupal\taxonomy\Entity\Term;
 
 /**
@@ -25,6 +28,7 @@ class ContentProcessorTest extends KernelTestBase {
   protected static $modules = [
     'gathercontent', 'test_module', 'node', 'text', 'field', 'user',
     'image', 'file', 'taxonomy', 'language', 'content_translation',
+    'paragraphs', 'entity_reference_revisions', 'system',
   ];
 
   /**
@@ -44,6 +48,8 @@ class ContentProcessorTest extends KernelTestBase {
     $this->installEntitySchema('file');
     $this->installSchema('file', ['file_usage']);
     $this->installEntitySchema('taxonomy_term');
+    $this->installEntitySchema('paragraph');
+    $this->installEntitySchema('user');
     MockData::$drupalRoot = $this->getDrupalRoot();
     $this->mapping = MockData::getMapping();
 
@@ -109,20 +115,18 @@ class ContentProcessorTest extends KernelTestBase {
         [],
       ],
       '1 file' => [
-        $item, $importOptions, [
-          MockData::createFile($item->id),
-        ],
+        $item, $importOptions, MockData::createFile($item),
       ],
       '3 files' => [
-        $item, $importOptions, [
-          MockData::createFile($item->id),
-          MockData::createFile($item->id),
-          MockData::createFile($item->id),
-        ],
+        $item, $importOptions,
+        MockData::createFile($item) +
+        MockData::createFile($item) +
+        MockData::createFile($item),
       ],
     ];
 
     foreach ($cases as $caseName => $params) {
+      print $caseName . PHP_EOL;
       call_user_func_array([$this, 'createNodeTest'], $params);
     }
   }
@@ -164,35 +168,70 @@ class ContentProcessorTest extends KernelTestBase {
     $elements = reset($gcItem->config)->elements;
 
     foreach ($itemMapping as $gcId => $fieldId) {
-      $fieldId = explode('.', $fieldId)[2];
-      $element = $elements[$gcId];
-      $field = $fields[$fieldId];
-
-      switch ($element->type) {
-        case 'text':
-          static::assertEquals($element->value, reset($field)['value']);
-          break;
-
-        case 'section':
-          $section = '<h3>' . $element->title . '</h3>' . $element->subtitle;
-          static::assertEquals($section, reset($field)['value']);
-          break;
-
-        case 'files':
-          static::assertFileFieldEqualsResponseFiles($field, $files);
-          break;
-
-        case 'choice_checkbox':
-          static::assertCheckboxFieldEqualsOptions($field, $element->options);
-          break;
-
-        case 'choice_radio':
-          static::assertRadioFieldEqualsOptions($field, $element->options);
-          break;
-
-        default:
-          throw new \Exception("Unexpected element type: {$element->type}");
+      $ids = explode('||', $fieldId);
+      $filesMatchingThisElement = array_filter($files, function ($file) use ($gcId) {
+        return $file->field == $gcId;
+      });
+      if (count($ids) > 1) {
+        // Paragraph.
+        $field = static::loadFieldFromNode($node, $ids);
+        static::assertFieldEqualsElement($field, $elements[$gcId], $filesMatchingThisElement);
       }
+      else {
+        // Basic fields.
+        $fieldName = explode('.', $fieldId)[2];
+        static::assertFieldEqualsElement($fields[$fieldName], $elements[$gcId], $filesMatchingThisElement);
+      }
+    }
+  }
+
+  /**
+   * Read field from id like "node.mytype.myfiled||paragraph.myptype.mypfield".
+   */
+  public static function loadFieldFromNode(NodeInterface $node, array $ids) {
+    if (count($ids) == 1) {
+      throw new \InvalidArgumentException('"$ids" is not a nested id');
+    }
+
+    $currentEntity = $node;
+    for ($i = 0; $i < count($ids) - 1; $i++) {
+      $currentFieldName = explode('.', $ids[$i])[2];
+      $targetField = reset($currentEntity->get($currentFieldName)->getValue());
+      $currentEntity = Paragraph::load($targetField['target_id']);
+    }
+
+    $lastFieldName = explode('.', end($ids))[2];
+    return $currentEntity->toArray()[$lastFieldName];
+  }
+
+  /**
+   * Assertion for Drupal field and GC element.
+   */
+  public static function assertFieldEqualsElement(array $field, Element $element, array $files) {
+    switch ($element->type) {
+      case 'text':
+        static::assertEquals($element->value, reset($field)['value']);
+        break;
+
+      case 'section':
+        $section = '<h3>' . $element->title . '</h3>' . $element->subtitle;
+        static::assertEquals($section, reset($field)['value']);
+        break;
+
+      case 'files':
+        static::assertFileFieldEqualsResponseFiles($field, $files);
+        break;
+
+      case 'choice_checkbox':
+        static::assertCheckboxFieldEqualsOptions($field, $element->options);
+        break;
+
+      case 'choice_radio':
+        static::assertRadioFieldEqualsOptions($field, $element->options);
+        break;
+
+      default:
+        throw new \Exception("Unexpected element type: {$element->type}");
     }
   }
 
@@ -209,8 +248,9 @@ class ContentProcessorTest extends KernelTestBase {
     // Always insert the latest file gotten from API.
     // There must only be one image in the field.
     static::assertEquals(1, count($field));
-    /** @var \Drupal\file\Entity\File $fileField */
-    $fileField = reset($field)['target_id'];
+    $fileId = reset($field)['target_id'];
+    $fileField = File::load($fileId);
+    static::assertNotNull($fileField);
     /** @var \Cheppers\GatherContent\DataTypes\File $fileResponse */
     $fileResponse = end($files);
 

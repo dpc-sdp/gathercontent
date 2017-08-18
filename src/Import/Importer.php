@@ -95,6 +95,7 @@ class Importer implements ContainerInjectionInterface {
     $files = $this->client->itemFilesGet($gc_item->id);
     $mapping = MappingLoader::load($gc_item);
     $is_translatable = static::isContentTypeTranslatable($mapping->getContentType());
+
     $entity = $this->contentProcessor->createNode($gc_item, $importOptions, $files);
 
     $this->eventDispatcher->dispatch(

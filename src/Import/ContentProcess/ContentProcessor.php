@@ -69,16 +69,13 @@ class ContentProcessor implements ContainerInjectionInterface {
     $mapping = MappingLoader::load($gc_item);
     $content_type = $mapping->getContentType();
     $is_translatable = Importer::isContentTypeTranslatable($content_type);
-    $user = \Drupal::currentUser();
     $mapping_data = unserialize($mapping->getData());
 
     if (empty($mapping_data)) {
       throw new \Exception("Mapping data is empty.");
     }
 
-    $mapping_data_copy = $mapping_data;
-    $first = array_shift($mapping_data_copy);
-
+    $first = reset($mapping_data);
     $langcode = isset($first['language']) ? $first['language'] : Language::LANGCODE_NOT_SPECIFIED;
 
     // Create a Drupal entity corresponding to GC item.
@@ -86,7 +83,7 @@ class ContentProcessor implements ContainerInjectionInterface {
 
     $entity->set('gc_id', $gc_item->id);
     $entity->set('gc_mapping_id', $mapping->id());
-    $entity->setOwnerId($user->id());
+    $entity->setOwnerId(\Drupal::currentUser()->id());
 
     if ($entity->isNew()) {
       $entity->setPublished($options->getPublish());

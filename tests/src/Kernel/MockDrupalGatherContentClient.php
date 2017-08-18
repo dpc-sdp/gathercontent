@@ -25,7 +25,7 @@ class MockDrupalGatherContentClient extends DrupalGatherContentClient {
         'filesize' => $file->size,
       ]);
       $importedFile->save();
-      $importedFiles[] = $importedFile;
+      $importedFiles[] = $importedFile->id();
     }
     return $importedFiles;
   }

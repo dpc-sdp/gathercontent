@@ -2,6 +2,7 @@
 
 namespace Drupal\Tests\gathercontent\Kernel;
 
+use Cheppers\GatherContent\DataTypes\ElementFiles;
 use Cheppers\GatherContent\DataTypes\File;
 use Cheppers\GatherContent\DataTypes\Item;
 use Cheppers\GatherContent\DataTypes\Tab;
@@ -119,22 +120,31 @@ class MockData {
     return $item;
   }
 
-
   /**
-   * Mock File response.
+   * Create a file for every file element in item.
    */
-  public static function createFile($itemId) {
-    $file = new File();
-    $file->id = static::getUniqueInt();
-    $file->userId = static::getUniqueInt();
-    $file->itemId = $itemId;
-    $file->field = 'el1502871120855';
-    $file->url = static::$drupalRoot . '/' . drupal_get_path('module', 'test_module') . '/images/test.jpg';
-    $file->fileName = 'test.jpg';
-    $file->size = 60892;
-    $file->createdAt = NULL;
-    $file->updatedAt = NULL;
-    return $file;
+  public static function createFile(Item $item) {
+    $fileElements = array_filter(reset($item->config)->elements, function ($element) {
+      return $element instanceof ElementFiles;
+    });
+    $files = [];
+
+    foreach ($fileElements as $element) {
+      $file = new File();
+      $file->id = static::getUniqueInt();
+      $file->userId = static::getUniqueInt();
+      $file->itemId = $item->id;
+      $file->field = $element->id;
+      $file->url = static::$drupalRoot . '/' . drupal_get_path('module', 'test_module') . '/images/test.jpg';
+      $file->fileName = 'test.jpg';
+      $file->size = 60892;
+      $file->type = 'field';
+      $file->createdAt = '2017-08-18 15:48:10';
+      $file->updatedAt = '2017-08-18 15:48:10';
+      $files[$file->id] = $file;
+    }
+
+    return $files;
   }
 
   /**

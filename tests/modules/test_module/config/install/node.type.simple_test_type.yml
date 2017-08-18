@@ -1,6 +1,5 @@
 langcode: en
 status: true
-dependencies: {  }
 name: 'simple test type'
 type: simple_test_type
 description: ''
