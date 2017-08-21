@@ -6,7 +6,9 @@
  */
 
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
+use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
+use Drupal\gathercontent\Entity\Mapping;
 
 /**
  * Implements hook_install().
@@ -81,4 +83,46 @@ function gathercontent_update_8303() {
   $entity_manager->onFieldStorageDefinitionCreate($definition);
   $definition = $entity_manager->getFieldStorageDefinitions('gathercontent_operation_item')['changed'];
   $entity_manager->onFieldStorageDefinitionCreate($definition);
+}
+
+/**
+ * Convert previous version mapping type to the new one.
+ */
+function gathercontent_update_8401() {
+  $mapping_ids = \Drupal::entityQuery('gathercontent_mapping')->execute();
+
+  if (empty($mapping_ids)) {
+    throw new Exception("Operation failed: Template not mapped.");
+  }
+
+  foreach ($mapping_ids as $mapping_id) {
+    $mapping = Mapping::load($mapping_id);
+    $mapping_data = unserialize($mapping->getData());
+
+    if (!empty($mapping_data)) {
+      foreach ($mapping_data as &$pane) {
+        if (!empty($pane['elements']) && (!isset($pane['type']) || $pane['type'] !== 'metatag')) {
+          foreach ($pane['elements'] as &$field) {
+            if ($field !== 'title') {
+              $config = FieldConfig::loadByName('node',
+                $mapping->getContentType(), $field);
+
+              if ($config) {
+                $id = $config->id();
+
+                if (!empty($id)) {
+                  $field = $id;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      $mapping->setData(serialize($mapping_data));
+      $mapping->setUpdatedDrupal(time());
+      $mapping->save();
+    }
+  }
+
 }
