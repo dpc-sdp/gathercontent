@@ -2,7 +2,9 @@
 
 namespace Drupal\Tests\gathercontent_upload\Kernel;
 
+use Cheppers\GatherContent\DataTypes\Element;
 use Cheppers\GatherContent\DataTypes\Item;
+use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\file\Entity\File;
 use Drupal\node\NodeInterface;
 use Drupal\paragraphs\Entity\Paragraph;
@@ -77,21 +79,8 @@ class GatherContentUploadTest extends GatherContentUploadTestBase {
             break;
 
           case 'el1501678793027':
-            $selected = NULL;
-            foreach ($field->options as $option) {
-              if ($option['selected']) {
-                $selected = $option['name'];
-              }
-            }
-
             $radio = $entity->get('field_radio');
-            $targets = $radio->getValue();
-            $target = array_shift($targets);
-
-            $term = Term::load($target['target_id']);
-            $radio_value = $term->get('gathercontent_option_ids')->getValue()[0]['value'];
-
-            $this->assertEquals($radio_value, $selected);
+            $this->assertSelection($field, $radio);
             break;
 
           case 'el1500994248864':
@@ -101,68 +90,27 @@ class GatherContentUploadTest extends GatherContentUploadTestBase {
 
           case 'el1501598415730':
             $image = $entity->get('field_image');
-            $targets = $image->getValue();
-            $target = array_shift($targets);
-
-            $img = File::load($target['target_id']);
-            $image_url = $img->url();
-
-            $this->assertNotEquals($image_url, $field->url);
+            $this->assertImage($field, $image);
             break;
 
           case 'el1500994276297':
-            $selected = NULL;
-            foreach ($field->options as $option) {
-              if ($option['selected']) {
-                $selected = $option['name'];
-              }
-            }
-
             $checkbox = $entity->get('field_tags_alt');
-            $targets = $checkbox->getValue();
-            $target = array_shift($targets);
-
-            $term = Term::load($target['target_id']);
-            $checkbox_value = $term->get('gathercontent_option_ids')->getValue()[0]['value'];
-
-            $this->assertEquals($checkbox_value, $selected);
+            $this->assertSelection($field, $checkbox);
             break;
 
           case 'el1501666239392':
             $paragraph = $entity->get('field_para');
-            $targets = $paragraph->getValue();
-            $target = array_shift($targets);
-
-            $para = Paragraph::load($target['target_id']);
-            $value = $para->get('field_text')->getValue()[0]['value'];
-
-            $this->assertEquals($value, $field->getValue());
+            $this->assertParagraphText($field, $paragraph);
             break;
 
           case 'el1501666248919':
             $paragraph = $entity->get('field_para');
-            $targets = $paragraph->getValue();
-            $target = array_shift($targets);
-
-            $para = Paragraph::load($target['target_id']);
-            $para_targets = $para->get('field_image')->getValue();
-            $para_target = array_shift($para_targets);
-
-            $img = File::load($para_target['target_id']);
-            $image_url = $img->url();
-
-            $this->assertNotEquals($image_url, $field->url);
+            $this->assertParagraphImage($field, $paragraph);
             break;
 
           case 'el1501772184393':
             $paragraph = $entity->get('field_para');
-            $targets = $paragraph->getValue();
-            $target = array_pop($targets);
-
-            $para = Paragraph::load($target['target_id']);
-            $value = $para->get('field_text')->getValue()[0]['value'];
-
-            $this->assertEquals($value, $field->getValue());
+            $this->assertParagraphText($field, $paragraph, TRUE);
             break;
         }
       }
@@ -204,86 +152,32 @@ class GatherContentUploadTest extends GatherContentUploadTestBase {
 
           case 'el1503046930689':
             $image = $entity->getTranslation('en')->get('field_image');
-            $targets = $image->getValue();
-            $target = array_shift($targets);
-
-            $img = File::load($target['target_id']);
-            $image_url = $img->url();
-
-            $this->assertNotEquals($image_url, $field->url);
+            $this->assertImage($field, $image);
             break;
 
           case 'el1503046753703':
-            $selected = NULL;
-            foreach ($field->options as $option) {
-              if ($option['selected']) {
-                $selected = $option['name'];
-              }
-            }
-
             $radio = $entity->getTranslation('en')->get('field_radio');
-            $targets = $radio->getValue();
-            $target = array_shift($targets);
-
-            $term = Term::load($target['target_id']);
-            $radio_value = $term->get('gathercontent_option_ids')->getValue()[0]['value'];
-
-            $this->assertEquals($radio_value, $selected);
+            $this->assertSelection($field, $radio);
             break;
 
           case 'el1503046763382':
-            $selected = NULL;
-            foreach ($field->options as $option) {
-              if ($option['selected']) {
-                $selected = $option['name'];
-              }
-            }
-
             $checkbox = $entity->getTranslation('en')->get('field_tags');
-            $targets = $checkbox->getValue();
-            $target = array_shift($targets);
-
-            $term = Term::load($target['target_id']);
-            $checkbox_value = $term->get('gathercontent_option_ids')->getValue()[0]['value'];
-
-            $this->assertEquals($checkbox_value, $selected);
+            $this->assertSelection($field, $checkbox);
             break;
 
           case 'el1503046796344':
             $paragraph = $entity->getTranslation('en')->get('field_para');
-            $targets = $paragraph->getValue();
-            $target = array_shift($targets);
-
-            $para = Paragraph::load($target['target_id']);
-            $value = $para->get('field_text')->getValue()[0]['value'];
-
-            $this->assertEquals($value, $field->getValue());
+            $this->assertParagraphText($field, $paragraph);
             break;
 
           case 'el1503046889180':
             $paragraph = $entity->getTranslation('en')->get('field_para');
-            $targets = $paragraph->getValue();
-            $target = array_shift($targets);
-
-            $para = Paragraph::load($target['target_id']);
-            $para_targets = $para->get('field_image')->getValue();
-            $para_target = array_shift($para_targets);
-
-            $img = File::load($para_target['target_id']);
-            $image_url = $img->url();
-
-            $this->assertNotEquals($image_url, $field->url);
+            $this->assertParagraphImage($field, $paragraph);
             break;
 
           case 'el1503046917174':
             $paragraph = $entity->getTranslation('en')->get('field_para');
-            $targets = $paragraph->getValue();
-            $target = array_pop($targets);
-
-            $para = Paragraph::load($target['target_id']);
-            $value = $para->get('field_text')->getValue()[0]['value'];
-
-            $this->assertEquals($value, $field->getValue());
+            $this->assertParagraphText($field, $paragraph, TRUE);
             break;
 
           case 'el1503050151209':
@@ -302,86 +196,32 @@ class GatherContentUploadTest extends GatherContentUploadTestBase {
 
           case 'el1503046938796':
             $image = $entity->getTranslation('hu')->get('field_image');
-            $targets = $image->getValue();
-            $target = array_shift($targets);
-
-            $img = File::load($target['target_id']);
-            $image_url = $img->url();
-
-            $this->assertNotEquals($image_url, $field->url);
+            $this->assertImage($field, $image);
             break;
 
           case 'el1503046938797':
-            $selected = NULL;
-            foreach ($field->options as $option) {
-              if ($option['selected']) {
-                $selected = $option['name'];
-              }
-            }
-
             $radio = $entity->getTranslation('hu')->get('field_radio');
-            $targets = $radio->getValue();
-            $target = array_shift($targets);
-
-            $term = Term::load($target['target_id']);
-            $radio_value = $term->get('gathercontent_option_ids')->getValue()[0]['value'];
-
-            $this->assertEquals($radio_value, $selected);
+            $this->assertSelection($field, $radio);
             break;
 
           case 'el1503046938798':
-            $selected = NULL;
-            foreach ($field->options as $option) {
-              if ($option['selected']) {
-                $selected = $option['name'];
-              }
-            }
-
             $checkbox = $entity->getTranslation('hu')->get('field_tags');
-            $targets = $checkbox->getValue();
-            $target = array_shift($targets);
-
-            $term = Term::load($target['target_id']);
-            $checkbox_value = $term->get('gathercontent_option_ids')->getValue()[0]['value'];
-
-            $this->assertEquals($checkbox_value, $selected);
+            $this->assertSelection($field, $checkbox);
             break;
 
           case 'el1503046938799':
             $paragraph = $entity->getTranslation('hu')->get('field_para');
-            $targets = $paragraph->getValue();
-            $target = array_shift($targets);
-
-            $para = Paragraph::load($target['target_id']);
-            $value = $para->getTranslation('hu')->get('field_text')->getValue()[0]['value'];
-
-            $this->assertEquals($value, $field->getValue());
+            $this->assertParagraphText($field, $paragraph, FALSE, TRUE);
             break;
 
           case 'el1503046938800':
             $paragraph = $entity->getTranslation('hu')->get('field_para');
-            $targets = $paragraph->getValue();
-            $target = array_shift($targets);
-
-            $para = Paragraph::load($target['target_id']);
-            $para_targets = $para->getTranslation('hu')->get('field_image')->getValue();
-            $para_target = array_shift($para_targets);
-
-            $img = File::load($para_target['target_id']);
-            $image_url = $img->url();
-
-            $this->assertNotEquals($image_url, $field->url);
+            $this->assertParagraphImage($field, $paragraph, TRUE);
             break;
 
           case 'el1503046938801':
             $paragraph = $entity->getTranslation('hu')->get('field_para');
-            $targets = $paragraph->getValue();
-            $target = array_pop($targets);
-
-            $para = Paragraph::load($target['target_id']);
-            $value = $para->getTranslation('hu')->get('field_text')->getValue()[0]['value'];
-
-            $this->assertEquals($value, $field->getValue());
+            $this->assertParagraphText($field, $paragraph, TRUE, TRUE);
             break;
 
           case 'el1503050171534':
@@ -485,6 +325,105 @@ class GatherContentUploadTest extends GatherContentUploadTestBase {
         }
       }
     }
+  }
+
+  /**
+   * Check radio and checkbox selection value.
+   *
+   * @param \Cheppers\GatherContent\DataTypes\Element $field
+   *   GatherContent Element.
+   * @param \Drupal\Core\Field\FieldItemListInterface $itemList
+   *   Item list.
+   */
+  public function assertSelection(Element $field, FieldItemListInterface $itemList) {
+    $selected = NULL;
+    foreach ($field->options as $option) {
+      if ($option['selected']) {
+        $selected = $option['name'];
+      }
+    }
+
+    $targets = $itemList->getValue();
+    $target = array_shift($targets);
+
+    $term = Term::load($target['target_id']);
+    $checkbox_value = $term->get('gathercontent_option_ids')->getValue()[0]['value'];
+
+    $this->assertEquals($checkbox_value, $selected);
+  }
+
+  /**
+   * Check image value.
+   *
+   * @param \Cheppers\GatherContent\DataTypes\Element $field
+   *   GatherContent Element.
+   * @param \Drupal\Core\Field\FieldItemListInterface $itemList
+   *   Item list.
+   */
+  public function assertImage(Element $field, FieldItemListInterface $itemList) {
+    $targets = $itemList->getValue();
+    $target = array_shift($targets);
+
+    $img = File::load($target['target_id']);
+    $image_url = $img->url();
+
+    $this->assertNotEquals($image_url, $field->url);
+  }
+
+  /**
+   * Check paragraph text value.
+   *
+   * @param \Cheppers\GatherContent\DataTypes\Element $field
+   *   GatherContent Element.
+   * @param \Drupal\Core\Field\FieldItemListInterface $itemList
+   *   Item list.
+   * @param bool $isPop
+   *   Use array_pop or not.
+   * @param bool $translated
+   *   Is the content translated.
+   */
+  public function assertParagraphText(Element $field, FieldItemListInterface $itemList, $isPop = FALSE, $translated = FALSE) {
+    $targets = $itemList->getValue();
+    if ($isPop) {
+      $target = array_pop($targets);
+    }
+    else {
+      $target = array_shift($targets);
+    }
+
+    $para = Paragraph::load($target['target_id']);
+    if ($translated) {
+      $value = $para->getTranslation('hu')->get('field_text')->getValue()[0]['value'];
+    }
+    else {
+      $value = $para->get('field_text')->getValue()[0]['value'];
+    }
+
+    $this->assertEquals($value, $field->getValue());
+  }
+
+  /**
+   * Check paragraph image value.
+   *
+   * @param \Cheppers\GatherContent\DataTypes\Element $field
+   *   GatherContent Element.
+   * @param \Drupal\Core\Field\FieldItemListInterface $itemList
+   *   Item list.
+   * @param bool $translated
+   *   Is the content translated.
+   */
+  public function assertParagraphImage(Element $field, FieldItemListInterface $itemList, $translated = FALSE) {
+    $targets = $itemList->getValue();
+    $target = array_shift($targets);
+
+    $para = Paragraph::load($target['target_id']);
+    if ($translated) {
+      $image = $para->getTranslation('hu')->get('field_image');
+    }
+    else {
+      $image = $para->get('field_image');
+    }
+    $this->assertImage($field, $image);
   }
 
 }

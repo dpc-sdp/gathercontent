@@ -137,130 +137,42 @@ class GatherContentUploadTestBase extends EntityKernelTestBase {
           'label' => 'Tab label',
           'hidden' => FALSE,
           'elements' => [
-            [
-              'name' => 'el1501675275975',
-              'type' => 'text',
-              'label' => 'Title',
-              'required' => FALSE,
-              'microcopy' => '',
-              'limit_type' => 'words',
-              'limit' => 0,
-              'plain_text' => TRUE,
-              'value' => 'Title gc item',
-            ],
-            [
-              'name' => 'el1501679176743',
-              'type' => 'section',
-              'title' => 'Guido',
-              'subtitle' => 'Guido gc item',
-            ],
-            [
-              'name' => 'el1501678793027',
-              'type' => 'choice_radio',
-              'label' => 'Radiogaga',
-              'required' => FALSE,
-              'microcopy' => '',
-              'options' => [
-                [
-                  'name' => 'op1501678793028',
-                  'label' => 'First choice',
-                  'selected' => FALSE,
-                ],
-                [
-                  'name' => 'op1501678793029',
-                  'label' => 'Second choice',
-                  'selected' => TRUE,
-                ],
-                [
-                  'name' => 'op1501678793030',
-                  'label' => 'Third choice',
-                  'selected' => FALSE,
-                ],
+            $this->getPlainText('el1501675275975', 'Title', 'Title gc item'),
+            $this->getSection('el1501679176743', 'Guido', 'Guido gc item'),
+            $this->getRadio('el1501678793027', 'Radiogaga', [
+              [
+                'name' => 'op1501678793028',
+                'label' => 'First choice',
+                'selected' => FALSE,
               ],
-              'other_option' => FALSE,
-            ],
-            [
-              'name' => 'el1500994248864',
-              'type' => 'text',
-              'label' => 'Body',
-              'required' => FALSE,
-              'microcopy' => '',
-              'limit_type' => 'words',
-              'limit' => 0,
-              'plain_text' => FALSE,
-              'value' => 'Body gc item',
-            ],
-            [
-              'name' => 'el1501598415730',
-              'type' => 'files',
-              'label' => 'Image',
-              'required' => FALSE,
-              'microcopy' => '',
-              'user_id' => 1,
-              'item_id' => 1,
-              'field' => 'el1501598415730',
-              'url' => 'http://test.ts/example-image.jpg',
-              'filename' => 'Test image gc item',
-              'size' => '100',
-              'created_at' => date('Y-m-d H:i:s', rand(0, time())),
-              'updated_at' => date('Y-m-d H:i:s', rand(0, time())),
-            ],
-            [
-              'name' => 'el1500994276297',
-              'type' => 'choice_checkbox',
-              'label' => 'Tags',
-              'required' => FALSE,
-              'microcopy' => '',
-              'options' => [
-                [
-                  'name' => 'op1500994449663',
-                  'label' => 'Choice1',
-                  'selected' => FALSE,
-                ],
-                [
-                  'name' => 'op1500994483697',
-                  'label' => 'Choice2',
-                  'selected' => FALSE,
-                ],
+              [
+                'name' => 'op1501678793029',
+                'label' => 'Second choice',
+                'selected' => TRUE,
               ],
-            ],
-            [
-              'name' => 'el1501666239392',
-              'type' => 'text',
-              'label' => 'Para text',
-              'required' => FALSE,
-              'microcopy' => '',
-              'limit_type' => 'words',
-              'limit' => 0,
-              'plain_text' => FALSE,
-              'value' => 'Para text gc item',
-            ],
-            [
-              'name' => 'el1501666248919',
-              'type' => 'files',
-              'label' => 'Para image',
-              'required' => FALSE,
-              'microcopy' => '',
-              'user_id' => 1,
-              'item_id' => 1,
-              'field' => 'el1501666248919',
-              'url' => 'http://test.ts/example-image.jpg',
-              'filename' => 'Test para image gc item',
-              'size' => '100',
-              'created_at' => date('Y-m-d H:i:s', rand(0, time())),
-              'updated_at' => date('Y-m-d H:i:s', rand(0, time())),
-            ],
-            [
-              'name' => 'el1501772184393',
-              'type' => 'text',
-              'label' => 'Para 2 text',
-              'required' => FALSE,
-              'microcopy' => '',
-              'limit_type' => 'words',
-              'limit' => 0,
-              'plain_text' => FALSE,
-              'value' => 'Para 2 text gc item',
-            ],
+              [
+                'name' => 'op1501678793030',
+                'label' => 'Third choice',
+                'selected' => FALSE,
+              ],
+            ]),
+            $this->getRichText('el1500994248864', 'Body', 'Body gc item'),
+            $this->getImage('el1501598415730', 'Image', 'http://test.ts/example-image.jpg'),
+            $this->getCheckbox('el1500994276297', 'Tags', [
+              [
+                'name' => 'op1500994449663',
+                'label' => 'Choice1',
+                'selected' => FALSE,
+              ],
+              [
+                'name' => 'op1500994483697',
+                'label' => 'Choice2',
+                'selected' => FALSE,
+              ],
+            ]),
+            $this->getRichText('el1501666239392', 'Para text', 'Para text gc item'),
+            $this->getImage('el1501666248919', 'Para image', 'http://test.ts/example-image.jpg'),
+            $this->getRichText('el1501772184393', 'Para 2 text', 'Para 2 text gc item'),
           ],
         ],
       ],
@@ -398,130 +310,42 @@ class GatherContentUploadTestBase extends EntityKernelTestBase {
           'label' => 'EN',
           'hidden' => FALSE,
           'elements' => [
-            [
-              'name' => 'el1502959595615',
-              'type' => 'text',
-              'label' => 'Title',
-              'required' => FALSE,
-              'microcopy' => '',
-              'limit_type' => 'words',
-              'limit' => 0,
-              'plain_text' => TRUE,
-              'value' => 'Title gc item',
-            ],
-            [
-              'name' => 'el1502959226216',
-              'type' => 'text',
-              'label' => 'Body',
-              'required' => FALSE,
-              'microcopy' => '',
-              'limit_type' => 'words',
-              'limit' => 0,
-              'plain_text' => FALSE,
-              'value' => 'Body gc item',
-            ],
-            [
-              'name' => 'el1503046930689',
-              'type' => 'files',
-              'label' => 'Image',
-              'required' => FALSE,
-              'microcopy' => '',
-              'user_id' => 1,
-              'item_id' => 1,
-              'field' => 'el1501598415730',
-              'url' => 'http://test.ts/example-image.jpg',
-              'filename' => 'Test image gc item',
-              'size' => '100',
-              'created_at' => date('Y-m-d H:i:s', rand(0, time())),
-              'updated_at' => date('Y-m-d H:i:s', rand(0, time())),
-            ],
-            [
-              'name' => 'el1503046753703',
-              'type' => 'choice_radio',
-              'label' => 'Radiogaga',
-              'required' => FALSE,
-              'microcopy' => '',
-              'options' => [
-                [
-                  'name' => 'op1503046753704',
-                  'label' => 'First choice',
-                  'selected' => FALSE,
-                ],
-                [
-                  'name' => 'op1503046753705',
-                  'label' => 'Second choice',
-                  'selected' => TRUE,
-                ],
-                [
-                  'name' => 'op1503046753706',
-                  'label' => 'Third choice',
-                  'selected' => FALSE,
-                ],
+            $this->getPlainText('el1502959595615', 'Title', 'Title gc item'),
+            $this->getRichText('el1502959226216', 'Body', 'Body gc item'),
+            $this->getImage('el1503046930689', 'Image', 'http://test.ts/example-image.jpg'),
+            $this->getRadio('el1503046753703', 'Radiogaga', [
+              [
+                'name' => 'op1503046753704',
+                'label' => 'First choice',
+                'selected' => FALSE,
               ],
-              'other_option' => FALSE,
-            ],
-            [
-              'name' => 'el1503046763382',
-              'type' => 'choice_checkbox',
-              'label' => 'Tags',
-              'required' => FALSE,
-              'microcopy' => '',
-              'options' => [
-                [
-                  'name' => 'op1503046763383',
-                  'label' => 'Choice1',
-                  'selected' => FALSE,
-                ],
-                [
-                  'name' => 'op1503046763384',
-                  'label' => 'Choice2',
-                  'selected' => FALSE,
-                ],
+              [
+                'name' => 'op1503046753705',
+                'label' => 'Second choice',
+                'selected' => TRUE,
               ],
-            ],
-            [
-              'name' => 'el1503046796344',
-              'type' => 'text',
-              'label' => 'Para text',
-              'required' => FALSE,
-              'microcopy' => '',
-              'limit_type' => 'words',
-              'limit' => 0,
-              'plain_text' => FALSE,
-              'value' => 'Para text gc item',
-            ],
-            [
-              'name' => 'el1503046889180',
-              'type' => 'files',
-              'label' => 'Para image',
-              'required' => FALSE,
-              'microcopy' => '',
-              'user_id' => 1,
-              'item_id' => 1,
-              'field' => 'el1501666248919',
-              'url' => 'http://test.ts/example-image.jpg',
-              'filename' => 'Test para image gc item',
-              'size' => '100',
-              'created_at' => date('Y-m-d H:i:s', rand(0, time())),
-              'updated_at' => date('Y-m-d H:i:s', rand(0, time())),
-            ],
-            [
-              'name' => 'el1503046917174',
-              'type' => 'text',
-              'label' => 'Para 2 text',
-              'required' => FALSE,
-              'microcopy' => '',
-              'limit_type' => 'words',
-              'limit' => 0,
-              'plain_text' => FALSE,
-              'value' => 'Para 2 text gc item',
-            ],
-            [
-              'name' => 'el1503050151209',
-              'type' => 'section',
-              'title' => 'Guido',
-              'subtitle' => 'Guido gc item',
-            ],
+              [
+                'name' => 'op1503046753706',
+                'label' => 'Third choice',
+                'selected' => FALSE,
+              ],
+            ]),
+            $this->getCheckbox('el1503046763382', 'Tags', [
+              [
+                'name' => 'op1503046763383',
+                'label' => 'Choice1',
+                'selected' => FALSE,
+              ],
+              [
+                'name' => 'op1503046763384',
+                'label' => 'Choice2',
+                'selected' => FALSE,
+              ],
+            ]),
+            $this->getRichText('el1503046796344', 'Para text', 'Para text gc item'),
+            $this->getImage('el1503046889180', 'Para image', 'http://test.ts/example-image.jpg'),
+            $this->getRichText('el1503046917174', 'Para 2 text', 'Para 2 text gc item'),
+            $this->getSection('el1503050151209', 'Guido', 'Guido gc item'),
           ],
         ],
         [
@@ -529,130 +353,42 @@ class GatherContentUploadTestBase extends EntityKernelTestBase {
           'label' => 'HU',
           'hidden' => FALSE,
           'elements' => [
-            [
-              'name' => 'el1503046938794',
-              'type' => 'text',
-              'label' => 'Title',
-              'required' => FALSE,
-              'microcopy' => '',
-              'limit_type' => 'words',
-              'limit' => 0,
-              'plain_text' => TRUE,
-              'value' => 'Title gc item HU',
-            ],
-            [
-              'name' => 'el1503046938795',
-              'type' => 'text',
-              'label' => 'Body',
-              'required' => FALSE,
-              'microcopy' => '',
-              'limit_type' => 'words',
-              'limit' => 0,
-              'plain_text' => FALSE,
-              'value' => 'Body gc item HU',
-            ],
-            [
-              'name' => 'el1503046938796',
-              'type' => 'files',
-              'label' => 'Image',
-              'required' => FALSE,
-              'microcopy' => '',
-              'user_id' => 1,
-              'item_id' => 1,
-              'field' => 'el1501598415730',
-              'url' => 'http://test.ts/example-image.jpg',
-              'filename' => 'Test image gc item',
-              'size' => '100',
-              'created_at' => date('Y-m-d H:i:s', rand(0, time())),
-              'updated_at' => date('Y-m-d H:i:s', rand(0, time())),
-            ],
-            [
-              'name' => 'el1503046938797',
-              'type' => 'choice_radio',
-              'label' => 'Radiogaga',
-              'required' => FALSE,
-              'microcopy' => '',
-              'options' => [
-                [
-                  'name' => 'op15030467537046960',
-                  'label' => 'First choice',
-                  'selected' => TRUE,
-                ],
-                [
-                  'name' => 'op15030467537057882',
-                  'label' => 'Second choice',
-                  'selected' => FALSE,
-                ],
-                [
-                  'name' => 'op15030467537069199',
-                  'label' => 'Third choice',
-                  'selected' => FALSE,
-                ],
+            $this->getPlainText('el1503046938794', 'Title', 'Title gc item HU'),
+            $this->getRichText('el1503046938795', 'Body', 'Body gc item HU'),
+            $this->getImage('el1503046938796', 'Image', 'http://test.ts/example-image.jpg'),
+            $this->getRadio('el1503046938797', 'Radiogaga', [
+              [
+                'name' => 'op15030467537046960',
+                'label' => 'First choice',
+                'selected' => TRUE,
               ],
-              'other_option' => FALSE,
-            ],
-            [
-              'name' => 'el1503046938798',
-              'type' => 'choice_checkbox',
-              'label' => 'Tags',
-              'required' => FALSE,
-              'microcopy' => '',
-              'options' => [
-                [
-                  'name' => 'op1503046763383887',
-                  'label' => 'Choice1',
-                  'selected' => FALSE,
-                ],
-                [
-                  'name' => 'op1503046763384321',
-                  'label' => 'Choice2',
-                  'selected' => FALSE,
-                ],
+              [
+                'name' => 'op15030467537057882',
+                'label' => 'Second choice',
+                'selected' => FALSE,
               ],
-            ],
-            [
-              'name' => 'el1503046938799',
-              'type' => 'text',
-              'label' => 'Para text',
-              'required' => FALSE,
-              'microcopy' => '',
-              'limit_type' => 'words',
-              'limit' => 0,
-              'plain_text' => FALSE,
-              'value' => 'Para text gc item',
-            ],
-            [
-              'name' => 'el1503046938800',
-              'type' => 'files',
-              'label' => 'Para image',
-              'required' => FALSE,
-              'microcopy' => '',
-              'user_id' => 1,
-              'item_id' => 1,
-              'field' => 'el1501666248919',
-              'url' => 'http://test.ts/example-image.jpg',
-              'filename' => 'Test para image gc item',
-              'size' => '100',
-              'created_at' => date('Y-m-d H:i:s', rand(0, time())),
-              'updated_at' => date('Y-m-d H:i:s', rand(0, time())),
-            ],
-            [
-              'name' => 'el1503046938801',
-              'type' => 'text',
-              'label' => 'Para 2 text',
-              'required' => FALSE,
-              'microcopy' => '',
-              'limit_type' => 'words',
-              'limit' => 0,
-              'plain_text' => FALSE,
-              'value' => 'Para 2 text gc item',
-            ],
-            [
-              'name' => 'el1503050171534',
-              'type' => 'section',
-              'title' => 'Guido',
-              'subtitle' => 'Guido gc item',
-            ],
+              [
+                'name' => 'op15030467537069199',
+                'label' => 'Third choice',
+                'selected' => FALSE,
+              ],
+            ]),
+            $this->getCheckbox('el1503046938798', 'Tags', [
+              [
+                'name' => 'op1503046763383887',
+                'label' => 'Choice1',
+                'selected' => FALSE,
+              ],
+              [
+                'name' => 'op1503046763384321',
+                'label' => 'Choice2',
+                'selected' => FALSE,
+              ],
+            ]),
+            $this->getRichText('el1503046938799', 'Para text', 'Para text gc item'),
+            $this->getImage('el1503046938800', 'Para image', 'http://test.ts/example-image.jpg'),
+            $this->getRichText('el1503046938801', 'Para 2 text', 'Para 2 text gc item'),
+            $this->getSection('el1503050171534', 'Guido', 'Guido gc item'),
           ],
         ],
       ],
@@ -695,28 +431,8 @@ class GatherContentUploadTestBase extends EntityKernelTestBase {
           'label' => 'Content',
           'hidden' => FALSE,
           'elements' => [
-            [
-              'name' => 'el1503045026098',
-              'type' => 'text',
-              'label' => 'Title',
-              'required' => FALSE,
-              'microcopy' => '',
-              'limit_type' => 'words',
-              'limit' => 0,
-              'plain_text' => TRUE,
-              'value' => 'Title gc item',
-            ],
-            [
-              'name' => 'el1503045033295',
-              'type' => 'text',
-              'label' => 'Body',
-              'required' => FALSE,
-              'microcopy' => '',
-              'limit_type' => 'words',
-              'limit' => 0,
-              'plain_text' => FALSE,
-              'value' => 'Body gc item',
-            ],
+            $this->getPlainText('el1503045026098', 'Title', 'Title gc item'),
+            $this->getRichText('el1503045033295', 'Body', 'Body gc item'),
           ],
         ],
         [
@@ -724,28 +440,8 @@ class GatherContentUploadTestBase extends EntityKernelTestBase {
           'label' => 'Meta',
           'hidden' => FALSE,
           'elements' => [
-            [
-              'name' => 'el1503045047082',
-              'type' => 'text',
-              'label' => 'Title',
-              'required' => FALSE,
-              'microcopy' => '',
-              'limit_type' => 'words',
-              'limit' => 0,
-              'plain_text' => TRUE,
-              'value' => 'Title gc item meta',
-            ],
-            [
-              'name' => 'el1503045054663',
-              'type' => 'text',
-              'label' => 'Description',
-              'required' => FALSE,
-              'microcopy' => '',
-              'limit_type' => 'words',
-              'limit' => 0,
-              'plain_text' => FALSE,
-              'value' => 'Description gc item meta',
-            ],
+            $this->getPlainText('el1503045047082', 'Title', 'Title gc item meta'),
+            $this->getRichText('el1503045054663', 'Description', 'Description gc item meta'),
           ],
         ],
       ],
@@ -788,28 +484,8 @@ class GatherContentUploadTestBase extends EntityKernelTestBase {
           'label' => 'Content',
           'hidden' => FALSE,
           'elements' => [
-            [
-              'name' => 'el1502978044104',
-              'type' => 'text',
-              'label' => 'Title',
-              'required' => FALSE,
-              'microcopy' => '',
-              'limit_type' => 'words',
-              'limit' => 0,
-              'plain_text' => TRUE,
-              'value' => 'Title gc item',
-            ],
-            [
-              'name' => 'el1475138048898',
-              'type' => 'text',
-              'label' => 'Body',
-              'required' => FALSE,
-              'microcopy' => '',
-              'limit_type' => 'words',
-              'limit' => 0,
-              'plain_text' => FALSE,
-              'value' => 'Body gc item',
-            ],
+            $this->getPlainText('el1502978044104', 'Title', 'Title gc item'),
+            $this->getRichText('el1475138048898', 'Body', 'Body gc item'),
           ],
         ],
         [
@@ -817,32 +493,189 @@ class GatherContentUploadTestBase extends EntityKernelTestBase {
           'label' => 'Meta',
           'hidden' => FALSE,
           'elements' => [
-            [
-              'name' => 'el1475138068185',
-              'type' => 'text',
-              'label' => 'Title',
-              'required' => FALSE,
-              'microcopy' => '',
-              'limit_type' => 'words',
-              'limit' => 0,
-              'plain_text' => TRUE,
-              'value' => 'Title gc item meta',
-            ],
-            [
-              'name' => 'el1475138069769',
-              'type' => 'text',
-              'label' => 'Description',
-              'required' => FALSE,
-              'microcopy' => '',
-              'limit_type' => 'words',
-              'limit' => 0,
-              'plain_text' => FALSE,
-              'value' => 'Description gc item meta',
-            ],
+            $this->getPlainText('el1475138068185', 'Title', 'Title gc item meta'),
+            $this->getRichText('el1475138069769', 'Description', 'Description gc item meta'),
           ],
         ],
       ],
     ]);
+  }
+
+  /**
+   * Returns plain text field array.
+   *
+   * @param string $name
+   *   Name string.
+   * @param string $label
+   *   Label string.
+   * @param string $value
+   *   Value string.
+   *
+   * @return array
+   *   Plain text item array.
+   */
+  public function getPlainText($name, $label, $value) {
+    return $this->getText($name, $label, $value, TRUE);
+  }
+
+  /**
+   * Returns rich text field array.
+   *
+   * @param string $name
+   *   Name string.
+   * @param string $label
+   *   Label string.
+   * @param string $value
+   *   Value string.
+   *
+   * @return array
+   *   Rich text item array.
+   */
+  public function getRichText($name, $label, $value) {
+    return $this->getText($name, $label, $value, FALSE);
+  }
+
+  /**
+   * Returns field array.
+   *
+   * @param string $name
+   *   Name string.
+   * @param string $label
+   *   Label string.
+   * @param string $value
+   *   Value string.
+   * @param bool $isPlainText
+   *   If TRUE then the field must be plain text.
+   *
+   * @return array
+   *   Return item array.
+   */
+  public function getText($name, $label, $value, $isPlainText) {
+    return [
+      'name' => $name,
+      'type' => 'text',
+      'label' => $label,
+      'required' => FALSE,
+      'microcopy' => '',
+      'limit_type' => 'words',
+      'limit' => 0,
+      'plain_text' => $isPlainText,
+      'value' => $value,
+    ];
+  }
+
+  /**
+   * Returns section array.
+   *
+   * @param string $name
+   *   Name string.
+   * @param string $title
+   *   Title string.
+   * @param string $subtitle
+   *   Subtitle string.
+   *
+   * @return array
+   *   Return item array.
+   */
+  public function getSection($name, $title, $subtitle) {
+    return [
+      'name' => $name,
+      'type' => 'section',
+      'title' => $title,
+      'subtitle' => $subtitle,
+    ];
+  }
+
+  /**
+   * Returns radio array.
+   *
+   * @param string $name
+   *   Name string.
+   * @param string $label
+   *   Label string.
+   * @param array $option
+   *   Option array.
+   *
+   * @return array
+   *   Return item array.
+   */
+  public function getRadio($name, $label, array $option) {
+    return $this->getSelection($name, $label, $option, 'choice_radio');
+  }
+
+  /**
+   * Returns checkbox array.
+   *
+   * @param string $name
+   *   Name string.
+   * @param string $label
+   *   Label string.
+   * @param array $option
+   *   Option array.
+   *
+   * @return array
+   *   Return item array.
+   */
+  public function getCheckbox($name, $label, array $option) {
+    return $this->getSelection($name, $label, $option, 'choice_checkbox');
+  }
+
+  /**
+   * Returns selection (radio/checkbox) array.
+   *
+   * @param string $name
+   *   Name string.
+   * @param string $label
+   *   Label string.
+   * @param array $option
+   *   Option array.
+   * @param string $type
+   *   Type string.
+   *
+   * @return array
+   *   Return item array.
+   */
+  public function getSelection($name, $label, array $option, $type) {
+    return [
+      'name' => $name,
+      'type' => $type,
+      'label' => $label,
+      'required' => FALSE,
+      'microcopy' => '',
+      'options' => $option,
+      'other_option' => FALSE,
+    ];
+  }
+
+  /**
+   * Returns image array.
+   *
+   * @param string $name
+   *   Name string.
+   * @param string $label
+   *   Label string.
+   * @param string $value
+   *   Value string.
+   *
+   * @return array
+   *   Return item array.
+   */
+  public function getImage($name, $label, $value) {
+    return [
+      'name' => $name,
+      'type' => 'files',
+      'label' => $label,
+      'required' => FALSE,
+      'microcopy' => '',
+      'user_id' => 1,
+      'item_id' => 1,
+      'field' => $name,
+      'url' => $value,
+      'filename' => 'Test image gc item',
+      'size' => '100',
+      'created_at' => date('Y-m-d H:i:s', rand(0, time())),
+      'updated_at' => date('Y-m-d H:i:s', rand(0, time())),
+    ];
   }
 
 }
