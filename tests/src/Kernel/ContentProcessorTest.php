@@ -5,11 +5,11 @@ namespace Drupal\Tests\gathercontent\Kernel;
 use Cheppers\GatherContent\DataTypes\Element;
 use Cheppers\GatherContent\DataTypes\Item;
 use Drupal\file\Entity\File;
-use Drupal\gathercontent\Entity\Mapping;
 use Drupal\gathercontent\Entity\Operation;
 use Drupal\gathercontent\Import\ContentProcess\ContentProcessor;
 use Drupal\gathercontent\Import\ImportOptions;
 use Drupal\gathercontent\Import\NodeUpdateMethod;
+use Drupal\gathercontent\MappingLoader;
 use Drupal\KernelTests\KernelTestBase;
 use Drupal\node\NodeInterface;
 use Drupal\paragraphs\Entity\Paragraph;
@@ -26,33 +26,25 @@ class ContentProcessorTest extends KernelTestBase {
    * {@inheritdoc}
    */
   protected static $modules = [
-    'gathercontent', 'test_module', 'node', 'text', 'field', 'user',
-    'image', 'file', 'taxonomy', 'language', 'content_translation',
-    'paragraphs', 'entity_reference_revisions', 'system',
+    'node', 'text', 'field', 'user', 'image', 'file', 'taxonomy', 'language', 'content_translation',
+    'paragraphs', 'entity_reference_revisions', 'system', 'gathercontent', 'test_module',
   ];
-
-  /**
-   * The mapping bundled with the test module.
-   *
-   * @var \Drupal\gathercontent\Entity\Mapping
-   */
-  protected $mapping;
 
   /**
    * {@inheritdoc}
    */
   protected function setUp() {
     parent::setUp();
-    $this->installConfig(['test_module']);
+    $this->installSchema('node', 'node_access');
+    $this->installEntitySchema('node');
     $this->installEntitySchema('gathercontent_operation');
     $this->installEntitySchema('file');
     $this->installSchema('file', ['file_usage']);
     $this->installEntitySchema('taxonomy_term');
     $this->installEntitySchema('paragraph');
     $this->installEntitySchema('user');
+    $this->installConfig(['test_module']);
     MockData::$drupalRoot = $this->getDrupalRoot();
-    $this->mapping = MockData::getMapping();
-
     /** @var \Drupal\taxonomy\Entity\Term[] $terms */
     $terms = MockData::createTaxonomyTerms();
     foreach ($terms as $term) {
@@ -70,8 +62,9 @@ class ContentProcessorTest extends KernelTestBase {
    * than creating my own "data provider" like test function.
    */
   public function testCreateNode() {
+    $mapping = MockData::getMapping();
     $item = MockData::createItem(
-      $this->mapping,
+      $mapping,
       [TRUE, FALSE, TRUE],
       [TRUE, FALSE, FALSE]
     );
@@ -80,7 +73,7 @@ class ContentProcessorTest extends KernelTestBase {
     $cases = [
       'no checkboxes, no radioboxes' => [
         MockData::createItem(
-          $this->mapping,
+          $mapping,
           [FALSE, FALSE, FALSE],
           [FALSE, FALSE, FALSE]
         ),
@@ -89,7 +82,7 @@ class ContentProcessorTest extends KernelTestBase {
       ],
       'no checkboxes, 1 radiobox' => [
         MockData::createItem(
-          $this->mapping,
+          $mapping,
           [FALSE, FALSE, FALSE],
           [TRUE, FALSE, FALSE]
         ),
@@ -98,7 +91,7 @@ class ContentProcessorTest extends KernelTestBase {
       ],
       'no checkboxes, 3 radioboxes' => [
         MockData::createItem(
-          $this->mapping,
+          $mapping,
           [FALSE, FALSE, FALSE],
           [TRUE, TRUE, TRUE]
         ),
@@ -107,7 +100,7 @@ class ContentProcessorTest extends KernelTestBase {
       ],
       'all checkboxes, no radioboxes' => [
         MockData::createItem(
-          $this->mapping,
+          $mapping,
           [TRUE, TRUE, TRUE],
           [FALSE, FALSE, FALSE]
         ),
@@ -127,20 +120,20 @@ class ContentProcessorTest extends KernelTestBase {
 
     foreach ($cases as $caseName => $params) {
       print $caseName . PHP_EOL;
-      call_user_func_array([$this, 'createNodeTest'], $params);
+      call_user_func_array([static::class, 'createNodeTest'], $params);
     }
   }
 
   /**
    * Test if entities are created correctly based on GC Items.
    */
-  public function createNodeTest(Item $gcItem, ImportOptions $importOptions, array $files) {
+  public static function createNodeTest(Item $gcItem, ImportOptions $importOptions, array $files) {
     $operation = Operation::create([
       'type' => 'import',
     ]);
     $importOptions->setOperationUuid($operation->uuid());
     $node = static::getProcessor()->createNode($gcItem, $importOptions, $files);
-    static::assertNodeEqualsGcItem($node, $gcItem, $this->mapping, $files);
+    static::assertNodeEqualsGcItem($node, $gcItem, $files);
   }
 
   /**
@@ -157,7 +150,8 @@ class ContentProcessorTest extends KernelTestBase {
   /**
    * Checks whether a node and a GC item contains the same data.
    */
-  public static function assertNodeEqualsGcItem(NodeInterface $node, Item $gcItem, Mapping $mapping, array $files) {
+  public static function assertNodeEqualsGcItem(NodeInterface $node, Item $gcItem, array $files) {
+    $mapping = MappingLoader::load($gcItem);
     $tabs = unserialize($mapping->getData());
     $itemMapping = reset($tabs)['elements'];
 

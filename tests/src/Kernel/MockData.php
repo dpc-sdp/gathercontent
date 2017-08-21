@@ -8,6 +8,7 @@ use Cheppers\GatherContent\DataTypes\Item;
 use Cheppers\GatherContent\DataTypes\Tab;
 use Drupal\gathercontent\Entity\Mapping;
 use Drupal\taxonomy\Entity\Term;
+use org\bovigo\vfs\vfsStreamWrapperAlreadyRegisteredTestCase;
 
 /**
  * A class for getting static test data.
@@ -85,20 +86,23 @@ class MockData {
     $item->projectId = $template->project_id;
     $item->templateId = $template->id;
 
-    foreach ($tabs as $tab) {
+    // 0 => main tab, 1 => translated tab.
+    $TRANSLATED_TAB = 1;
+
+    foreach ($tabs as $i => $tab) {
       $newTab = new Tab(json_decode(json_encode($tab), TRUE));
       foreach ($newTab->elements as $element) {
         switch ($element->type) {
           case 'text':
-            $element->setValue('test text value ' . static::getUniqueInt());
+            $element->setValue(static::getTestText('text', $i === $TRANSLATED_TAB));
             break;
 
           case 'files':
-            // Files are not stored here.
+            // Files are not stored here, only file field definitions.
             break;
 
           case 'section':
-            $element->subtitle = 'test section subtitle ' . static::getUniqueInt();
+            $element->subtitle = static::getTestText('section subtitle', $i === $TRANSLATED_TAB);
             break;
 
           case 'choice_checkbox':
@@ -118,6 +122,13 @@ class MockData {
     }
 
     return $item;
+  }
+
+  /**
+   * Get test text.
+   */
+  public static function getTestText(string $text, bool $isTranslated) {
+    return "test $text " . static::getUniqueInt() . ($isTranslated ? ' translated' : '');
   }
 
   /**
