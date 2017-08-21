@@ -2,6 +2,8 @@
 
 namespace Drupal\gathercontent_ui\Form;
 
+use Cheppers\GatherContent\DataTypes\Element;
+use Cheppers\GatherContent\DataTypes\ElementText;
 use Cheppers\GatherContent\DataTypes\Template;
 use Cheppers\GatherContent\GatherContentClientInterface;
 use Drupal\Core\Entity\EntityForm;
@@ -570,7 +572,7 @@ class MappingEditForm extends EntityForm {
    *
    * Use for filtering only equivalent fields.
    *
-   * @param object $gc_field
+   * @param \Cheppers\GatherContent\DataTypes\Element $gc_field
    *   Type of field in GatherContent.
    * @param string $content_type
    *   Name of Drupal content type.
@@ -578,11 +580,12 @@ class MappingEditForm extends EntityForm {
    * @return array
    *   Associative array with equivalent fields.
    */
-  protected function filterFields($gc_field, $content_type) {
+  protected function filterFields(Element $gc_field, $content_type) {
     $fields = $this->filterFieldsRecursively($gc_field, $content_type);
 
-    if ($gc_field->type === 'text'
-      && $gc_field->plainText
+    if ($gc_field->type === 'text' &&
+      $gc_field instanceof ElementText &&
+      $gc_field->plainText
     ) {
       $fields['title'] = 'Title';
     }
