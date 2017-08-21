@@ -190,21 +190,23 @@ class Exporter implements ContainerInjectionInterface {
           $current_entity = $entity;
 
           $type = '';
+          $bundle = '';
           if ($local_id_array[0] === 'title') {
             $current_field_name = $local_id_array[0];
           }
           else {
             $current_field_name = $field_info->getName();
             $type = $field_info->getType();
+            $bundle = $field_info->getTargetBundle();
           }
 
-          $this->processTargets($current_entity, $current_field_name, $exported_fields, $local_id_array);
+          $this->processTargets($current_entity, $current_field_name, $type, $bundle, $exported_fields, $local_id_array, $is_translatable, $language);
 
-          $field = $this->processSetFields($field, $current_entity, $is_translatable, $language, $current_field_name, $type);
+          $field = $this->processSetFields($field, $current_entity, $is_translatable, $language, $current_field_name, $type, $bundle);
         }
         elseif ($mapping_data[$pane->id]['type'] === 'metatag') {
           if (\Drupal::moduleHandler()->moduleExists('metatag') && check_metatag($entity->getType())) {
-            $field = $this->processMetaTagFields($field, $entity, $is_translatable, $language);
+            $field = $this->processMetaTagFields($field, $entity, $local_field_id, $is_translatable, $language);
           }
         }
       }
@@ -220,12 +222,20 @@ class Exporter implements ContainerInjectionInterface {
    *   Entity object.
    * @param string $current_field_name
    *   Current field name.
+   * @param string $type
+   *   Current type name.
+   * @param string $bundle
+   *   Current bundle name.
    * @param array $exported_fields
    *   Array of exported fields, preventing duplications.
    * @param array $local_id_array
    *   Array of mapped embedded field id array.
+   * @param bool $is_translatable
+   *   Translatable.
+   * @param string $language
+   *   Language.
    */
-  public function processTargets(EntityInterface &$current_entity, &$current_field_name, array &$exported_fields, array $local_id_array) {
+  public function processTargets(EntityInterface &$current_entity, &$current_field_name, &$type, &$bundle, array &$exported_fields, array $local_id_array, $is_translatable, $language) {
     $id_count = count($local_id_array);
     $entityTypeManager = \Drupal::entityTypeManager();
 
@@ -233,13 +243,23 @@ class Exporter implements ContainerInjectionInterface {
       $local_id = $local_id_array[$i];
       $field_info = FieldConfig::load($local_id);
       $current_field_name = $field_info->getName();
-      $target_field_value = $current_entity->get($current_field_name)->getValue();
+      $type = $field_info->getType();
+      $bundle = $field_info->getTargetBundle();
+
+      if ($is_translatable) {
+        $target_field_value = $current_entity->getTranslation($language)->get($current_field_name)->getValue();
+      }
+      else {
+        $target_field_value = $current_entity->get($current_field_name)->getValue();
+      }
 
       if (!empty($target_field_value)) {
         $field_target_info = FieldConfig::load($local_id_array[$i + 1]);
         $entityStorage = $entityTypeManager
           ->getStorage($field_target_info->getTargetEntityTypeId());
         $child_field_name = $field_target_info->getName();
+        $child_type = $field_info->getType();
+        $child_bundle = $field_info->getTargetBundle();
 
         foreach ($target_field_value as $target) {
           $export_key = $target['target_id'] . '_' . $child_field_name;
@@ -256,6 +276,8 @@ class Exporter implements ContainerInjectionInterface {
           if (!empty($child_entity[$target['target_id']])) {
             $current_entity = $child_entity[$target['target_id']];
             $current_field_name = $child_field_name;
+            $type = $child_type;
+            $bundle = $child_bundle;
 
             if ($i == ($id_count - 2)) {
               $exported_fields[$export_key] = TRUE;
@@ -274,6 +296,8 @@ class Exporter implements ContainerInjectionInterface {
    *   Field object.
    * @param \Drupal\Core\Entity\EntityInterface $entity
    *   Entity object.
+   * @param string $local_field_name
+   *   Field name.
    * @param bool $is_translatable
    *   Translatable bool.
    * @param string $language
@@ -282,15 +306,18 @@ class Exporter implements ContainerInjectionInterface {
    * @return \Cheppers\GatherContent\DataTypes\Element
    *   Returns field.
    */
-  public function processMetaTagFields(Element $field, EntityInterface $entity, $is_translatable, $language) {
+  public function processMetaTagFields(Element $field, EntityInterface $entity, $local_field_name, $is_translatable, $language) {
     $metatag_fields = get_metatag_fields($entity->getType());
+
     foreach ($metatag_fields as $metatag_field) {
       if ($is_translatable) {
-        $field->value = $entity->getTranslation($language)->{$metatag_field}->value();
+        $current_value = unserialize($entity->getTranslation($language)->{$metatag_field}->value);
       }
       else {
-        $field->value = $entity->{$metatag_field}->value();
+        $current_value = unserialize($entity->{$metatag_field}->value);
       }
+
+      $field->value = $current_value[$local_field_name];
     }
 
     return $field;
@@ -311,11 +338,13 @@ class Exporter implements ContainerInjectionInterface {
    *   Field Name.
    * @param string $type
    *   Local field Info type string.
+   * @param string $bundle
+   *   Local field Info bundle string.
    *
    * @return \Cheppers\GatherContent\DataTypes\Element
    *   Returns field.
    */
-  public function processSetFields(Element $field, EntityInterface $entity, $is_translatable, $language, $local_field_name, $type) {
+  public function processSetFields(Element $field, EntityInterface $entity, $is_translatable, $language, $local_field_name, $type, $bundle) {
     switch ($field->type) {
       case 'files':
         // There is currently no API for manipulating with files.
@@ -349,7 +378,12 @@ class Exporter implements ContainerInjectionInterface {
             'tid' => $target['target_id'],
           ];
 
-          if ($is_translatable && $language !== LanguageInterface::LANGCODE_NOT_SPECIFIED) {
+          if (
+            $is_translatable &&
+            \Drupal::service('content_translation.manager')
+              ->isEnabled('taxonomy_term', $bundle) &&
+            $language !== LanguageInterface::LANGCODE_NOT_SPECIFIED
+          ) {
             $condition_array['langcode'] = $language;
           }
 
@@ -419,7 +453,12 @@ class Exporter implements ContainerInjectionInterface {
               'tid' => $target['target_id'],
             ];
 
-            if ($is_translatable && $language !== LanguageInterface::LANGCODE_NOT_SPECIFIED) {
+            if (
+              $is_translatable &&
+              \Drupal::service('content_translation.manager')
+                ->isEnabled('taxonomy_term', $bundle) &&
+              $language !== LanguageInterface::LANGCODE_NOT_SPECIFIED
+            ) {
               $condition_array['langcode'] = $language;
             }
 

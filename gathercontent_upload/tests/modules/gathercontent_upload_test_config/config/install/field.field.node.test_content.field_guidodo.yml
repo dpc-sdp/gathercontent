@@ -2,15 +2,15 @@ langcode: en
 status: true
 dependencies:
   config:
-    - field.storage.paragraph.field_text
-    - paragraphs.paragraphs_type.para
+    - field.storage.node.field_guidodo
+    - node.type.test_content
   module:
     - text
-id: paragraph.para.field_text
-field_name: field_text
-entity_type: paragraph
-bundle: para
-label: Text
+id: node.test_content.field_guidodo
+field_name: field_guidodo
+entity_type: node
+bundle: test_content
+label: Guidodo
 description: ''
 required: false
 translatable: true
