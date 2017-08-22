@@ -4,6 +4,7 @@ namespace Drupal\Tests\gathercontent\Kernel;
 
 use Cheppers\GatherContent\DataTypes\Element;
 use Cheppers\GatherContent\DataTypes\Item;
+use Drupal\Core\Language\LanguageInterface;
 use Drupal\file\Entity\File;
 use Drupal\gathercontent\Entity\Operation;
 use Drupal\gathercontent\Import\ContentProcess\ContentProcessor;
@@ -11,6 +12,7 @@ use Drupal\gathercontent\Import\ImportOptions;
 use Drupal\gathercontent\Import\NodeUpdateMethod;
 use Drupal\gathercontent\MappingLoader;
 use Drupal\KernelTests\KernelTestBase;
+use Drupal\node\Entity\Node;
 use Drupal\node\NodeInterface;
 use Drupal\paragraphs\Entity\Paragraph;
 use Drupal\taxonomy\Entity\Term;
@@ -133,6 +135,7 @@ class ContentProcessorTest extends KernelTestBase {
     ]);
     $importOptions->setOperationUuid($operation->uuid());
     $node = static::getProcessor()->createNode($gcItem, $importOptions, $files);
+    $node->save();
     static::assertNodeEqualsGcItem($node, $gcItem, $files);
   }
 
@@ -151,10 +154,13 @@ class ContentProcessorTest extends KernelTestBase {
    * Checks whether a node and a GC item contains the same data.
    */
   public static function assertNodeEqualsGcItem(NodeInterface $node, Item $gcItem, array $files) {
+    /** @var \Drupal\gathercontent\Entity\Mapping $mapping */
     $mapping = MappingLoader::load($gcItem);
     $tabs = unserialize($mapping->getData());
     $itemMapping = reset($tabs)['elements'];
 
+    $translation = $node->getTranslation('hu');
+    static::assertTranslatedEquals($node->getTitle(), $translation->getTitle());
     static::assertEquals($node->getTitle(), $gcItem->name);
 
     $fields = $node->toArray();
@@ -177,6 +183,13 @@ class ContentProcessorTest extends KernelTestBase {
         static::assertFieldEqualsElement($fields[$fieldName], $elements[$gcId], $filesMatchingThisElement);
       }
     }
+  }
+
+  /**
+   * Function for asserting that a translated value matches the original one.
+   */
+  public static function assertTranslatedEquals(string $original, string $translated) {
+    static::assertEquals($translated, $original . ' translated');
   }
 
   /**

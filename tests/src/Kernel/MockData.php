@@ -8,7 +8,6 @@ use Cheppers\GatherContent\DataTypes\Item;
 use Cheppers\GatherContent\DataTypes\Tab;
 use Drupal\gathercontent\Entity\Mapping;
 use Drupal\taxonomy\Entity\Term;
-use org\bovigo\vfs\vfsStreamWrapperAlreadyRegisteredTestCase;
 
 /**
  * A class for getting static test data.
@@ -77,6 +76,9 @@ class MockData {
    * Creates a GC Item corresponding to a mapping.
    */
   public static function createItem(Mapping $mapping, array $selectedCheckboxes, array $selectedRadioboxes) {
+    $mappingData = unserialize($mapping->getData());
+    $mainTabElements = reset($mappingData)['elements'];
+    $mainTabId = key($mappingData);
     $template = unserialize($mapping->getTemplate())->data;
     $tabs = $template->config;
 
@@ -94,7 +96,22 @@ class MockData {
       foreach ($newTab->elements as $element) {
         switch ($element->type) {
           case 'text':
-            $element->setValue(static::getTestText('text', $i === $TRANSLATED_TAB));
+            // If title.
+            if ($element->plainText) {
+              $element->setValue($item->name . ($i === $TRANSLATED_TAB ? ' translated' : ''));
+            }
+            else {
+              // If translation.
+              if ($i === $TRANSLATED_TAB) {
+                // Get the original element value and append 'translated' to it.
+                $fieldId = $mappingData[$newTab->id]['elements'][$element->id];
+                $mainElementId = array_search($fieldId, $mainTabElements);
+                $element->setValue($item->config[$mainTabId]->elements[$mainElementId]->getValue() . ' translated');
+              }
+              else {
+                $element->setValue('test text ' . static::getUniqueInt());
+              }
+            }
             break;
 
           case 'files':
@@ -102,7 +119,15 @@ class MockData {
             break;
 
           case 'section':
-            $element->subtitle = static::getTestText('section subtitle', $i === $TRANSLATED_TAB);
+            // If translation.
+            if ($i === $TRANSLATED_TAB) {
+              $fieldId = $mappingData[$newTab->id]['elements'][$element->id];
+              $mainElementId = array_search($fieldId, $mainTabElements);
+              $element->subtitle = $item->config[$mainTabId]->elements[$mainElementId]->subtitle . ' translated';
+            }
+            else {
+              $element->subtitle = 'test section subtitle ' . static::getUniqueInt();
+            }
             break;
 
           case 'choice_checkbox':
@@ -122,13 +147,6 @@ class MockData {
     }
 
     return $item;
-  }
-
-  /**
-   * Get test text.
-   */
-  public static function getTestText(string $text, bool $isTranslated) {
-    return "test $text " . static::getUniqueInt() . ($isTranslated ? ' translated' : '');
   }
 
   /**
