@@ -134,7 +134,7 @@ class ContentProcessorTest extends KernelTestBase {
     $importOptions->setOperationUuid($operation->uuid());
     $node = static::getProcessor()->createNode($gcItem, $importOptions, $files);
     $node->save();
-    static::assertNodeEqualsGcItem($node, $gcItem, $files);
+    static::assertNodeEqualsGcItem($node->getTranslation('en'), $gcItem, $files);
   }
 
   /**
@@ -155,30 +155,51 @@ class ContentProcessorTest extends KernelTestBase {
     /** @var \Drupal\gathercontent\Entity\Mapping $mapping */
     $mapping = MappingLoader::load($gcItem);
     $tabs = unserialize($mapping->getData());
-    $itemMapping = reset($tabs)['elements'];
-
-    $translation = $node->getTranslation('hu');
-    static::assertTranslatedEquals($node->getTitle(), $translation->getTitle());
-    static::assertEquals($node->getTitle(), $gcItem->name);
 
     $fields = $node->toArray();
-    /** @var \Cheppers\GatherContent\DataTypes\Element[] $elements */
-    $elements = reset($gcItem->config)->elements;
+    $translation = $node->getTranslation('hu');
+    $translatedFields = $translation->toArray();
 
-    foreach ($itemMapping as $gcId => $fieldId) {
-      $ids = explode('||', $fieldId);
-      $filesMatchingThisElement = array_filter($files, function ($file) use ($gcId) {
-        return $file->field == $gcId;
-      });
-      if (count($ids) > 1) {
-        // Paragraph.
-        $field = static::loadFieldFromNode($node, $ids);
-        static::assertFieldEqualsElement($field, $elements[$gcId], $filesMatchingThisElement);
-      }
-      else {
-        // Basic fields.
-        $fieldName = explode('.', $fieldId)[2];
-        static::assertFieldEqualsElement($fields[$fieldName], $elements[$gcId], $filesMatchingThisElement);
+    $TRANSLATED_TAB = 'tab1503302417527';
+
+    foreach ($tabs as $tabId => $tab) {
+      /** @var \Cheppers\GatherContent\DataTypes\Element[] $elements */
+      $elements = $gcItem->config[$tabId]->elements;
+      $itemMapping = $tab['elements'];
+
+      foreach ($itemMapping as $gcId => $fieldId) {
+        $ids = explode('||', $fieldId);
+        $filesMatchingThisElement = array_filter($files, function ($file) use ($gcId) {
+          return $file->field == $gcId;
+        });
+        if (count($ids) > 1) {
+          // Paragraph.
+          if ($tabId === $TRANSLATED_TAB) {
+            $field = static::loadFieldFromNode($translation, $ids, $tab['language']);
+            static::assertFieldEqualsElement($field, $elements[$gcId], $filesMatchingThisElement);
+          }
+          else {
+            $field = static::loadFieldFromNode($node, $ids, $tab['language']);
+            static::assertFieldEqualsElement($field, $elements[$gcId], $filesMatchingThisElement);
+          }
+        }
+        else {
+          if ($fieldId === 'title') {
+            static::assertTranslatedEquals($node->getTitle(), $translation->getTitle());
+            static::assertEquals($node->getTitle(), $gcItem->name);
+          }
+          else {
+            // Basic fields.
+            if ($tabId === $TRANSLATED_TAB) {
+              $fieldName = explode('.', $fieldId)[2];
+              static::assertFieldEqualsElement($translatedFields[$fieldName], $elements[$gcId], $filesMatchingThisElement);
+            }
+            else {
+              $fieldName = explode('.', $fieldId)[2];
+              static::assertFieldEqualsElement($fields[$fieldName], $elements[$gcId], $filesMatchingThisElement);
+            }
+          }
+        }
       }
     }
   }
@@ -193,7 +214,7 @@ class ContentProcessorTest extends KernelTestBase {
   /**
    * Read field from id like "node.mytype.myfiled||paragraph.myptype.mypfield".
    */
-  public static function loadFieldFromNode(NodeInterface $node, array $ids) {
+  public static function loadFieldFromNode(NodeInterface $node, array $ids, string $language) {
     if (count($ids) == 1) {
       throw new \InvalidArgumentException('"$ids" is not a nested id');
     }
@@ -206,6 +227,7 @@ class ContentProcessorTest extends KernelTestBase {
     }
 
     $lastFieldName = explode('.', end($ids))[2];
+    $currentEntity = $currentEntity->getTranslation($language);
     return $currentEntity->toArray()[$lastFieldName];
   }
 
