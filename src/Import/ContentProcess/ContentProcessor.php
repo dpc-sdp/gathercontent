@@ -173,9 +173,8 @@ class ContentProcessor implements ContainerInjectionInterface {
       }
 
       array_shift($local_id_array);
+      $to_import = TRUE;
       if (!empty($target_field_value)) {
-        $to_import = TRUE;
-
         foreach ($target_field_value as $target) {
           $childEntity = $entityStorage->loadByProperties([
             'id' => $target['target_id'],
@@ -184,7 +183,22 @@ class ContentProcessor implements ContainerInjectionInterface {
 
           if (!empty($childEntity[$target['target_id']])) {
             $check_field_name = $field_target_info->getName();
-            $check_field_value = $childEntity[$target['target_id']]->get($check_field_name)->getValue();
+            $check_field_value = $childEntity[$target['target_id']]
+              ->get($check_field_name)
+              ->getValue();
+
+            if ($is_translatable) {
+              if (!$childEntity[$target['target_id']]->hasTranslation($language)) {
+                $childEntity[$target['target_id']]->addTranslation($language);
+              }
+
+              if ($childEntity[$target['target_id']]->hasTranslation($language)) {
+                $check_field_value = $childEntity[$target['target_id']]
+                  ->getTranslation($language)
+                  ->get($check_field_name)
+                  ->getValue();
+              }
+            }
 
             if (count($local_id_array) > 1 || empty($check_field_value)) {
               $this->processContentPane($childEntity[$target['target_id']],
@@ -196,23 +210,9 @@ class ContentProcessor implements ContainerInjectionInterface {
             }
           }
         }
-
-        if ($to_import) {
-          $childEntity = $entityStorage->create([
-            'type' => $field_target_info->getTargetBundle(),
-          ]);
-
-          $this->processContentPane($childEntity, implode('||', $local_id_array), $field, $is_translatable, $language, $files);
-
-          $childEntity->save();
-
-          $target_field_value[] = [
-            'target_id' => $childEntity->id(),
-            'target_revision_id' => $childEntity->getRevisionId(),
-          ];
-        }
       }
-      else {
+
+      if ($to_import) {
         $childEntity = $entityStorage->create([
           'type' => $field_target_info->getTargetBundle(),
         ]);
