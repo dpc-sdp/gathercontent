@@ -4,7 +4,6 @@ namespace Drupal\Tests\gathercontent\Kernel;
 
 use Cheppers\GatherContent\DataTypes\Element;
 use Cheppers\GatherContent\DataTypes\Item;
-use Drupal\Core\Language\LanguageInterface;
 use Drupal\file\Entity\File;
 use Drupal\gathercontent\Entity\Operation;
 use Drupal\gathercontent\Import\ContentProcess\ContentProcessor;
@@ -12,7 +11,6 @@ use Drupal\gathercontent\Import\ImportOptions;
 use Drupal\gathercontent\Import\NodeUpdateMethod;
 use Drupal\gathercontent\MappingLoader;
 use Drupal\KernelTests\KernelTestBase;
-use Drupal\node\Entity\Node;
 use Drupal\node\NodeInterface;
 use Drupal\paragraphs\Entity\Paragraph;
 use Drupal\taxonomy\Entity\Term;
