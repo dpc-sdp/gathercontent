@@ -158,13 +158,19 @@ class ContentProcessor implements ContainerInjectionInterface {
       $entityStorage = $entityTypeManager
         ->getStorage($field_target_info->getTargetEntityTypeId());
 
-      $target_field_value = $entity->get($field_name)->getValue();
+      $target_field_value = $entity
+        ->getTranslation(Language::LANGCODE_DEFAULT)
+        ->get($field_name)
+        ->getValue();
 
       if (!isset($this->importedReferences[$local_id_array[0]])) {
         if (!empty($target_field_value)) {
           foreach ($target_field_value as $target) {
             $deleteEntity = $entityStorage->load($target['target_id']);
-            $deleteEntity->delete();
+
+            if ($deleteEntity) {
+              $deleteEntity->delete();
+            }
           }
         }
 
@@ -227,7 +233,9 @@ class ContentProcessor implements ContainerInjectionInterface {
         ];
       }
 
-      $entity->set($field_name, $target_field_value);
+      $entity
+        ->getTranslation(Language::LANGCODE_DEFAULT)
+        ->set($field_name, $target_field_value);
     }
     else {
       $field_info = FieldConfig::load($local_field_id);

@@ -689,7 +689,10 @@ class MappingEditForm extends EntityForm {
 
           case 'choice_radio':
           case 'choice_checkbox':
-            if ($instance->getSetting('handler') !== 'default:taxonomy_term') {
+            if (
+              $instance->getType() !== 'entity_reference_revisions' &&
+              $instance->getSetting('handler') !== 'default:taxonomy_term'
+            ) {
               continue 2;
             }
             break;
@@ -963,7 +966,10 @@ class MappingEditForm extends EntityForm {
                   foreach ($gc_field->options as $option) {
                     $local_options[$option['name']] = $option['label'];
                   }
-                  $field_info = FieldConfig::load($local_field_id);
+
+                  $local_id_array = explode('||', $local_field_id);
+                  $field_info = FieldConfig::load($local_id_array[count($local_id_array) - 1]);
+
                   if ($field_info->getType() === 'entity_reference') {
                     if ($this->erImportType === 'automatic') {
                       $this->automaticTermsGenerator($field_info, $local_options, isset($this->mappingData[$fieldset->id]['language']) ? $this->mappingData[$fieldset->id]['language'] : LanguageInterface::LANGCODE_NOT_SPECIFIED);
@@ -990,7 +996,10 @@ class MappingEditForm extends EntityForm {
                       $local_options[$option['name']] = $option['label'];
                     }
                   }
-                  $field_info = FieldConfig::load($local_field_id);
+
+                  $local_id_array = explode('||', $local_field_id);
+                  $field_info = FieldConfig::load($local_id_array[count($local_id_array) - 1]);
+
                   if ($field_info->getType() === 'entity_reference') {
                     if ($this->erImportType === 'automatic') {
                       $this->automaticTermsGenerator($field_info, $local_options, isset($this->mappingData[$fieldset->id]['language']) ? $this->mappingData[$fieldset->id]['language'] : LanguageInterface::LANGCODE_NOT_SPECIFIED);
