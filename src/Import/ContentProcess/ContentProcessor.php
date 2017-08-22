@@ -277,7 +277,7 @@ class ContentProcessor implements ContainerInjectionInterface {
    *
    * @param \Drupal\node\NodeInterface $entity
    *   Object of node.
-   * @param string $local_field_id
+   * @param string $local_field_name
    *   ID of local Drupal field.
    * @param object $field
    *   Object of GatherContent field.
@@ -291,10 +291,8 @@ class ContentProcessor implements ContainerInjectionInterface {
    * @throws \Exception
    *   If content save fails, exceptions is thrown.
    */
-  public function processMetatagPane(NodeInterface &$entity, $local_field_id, $field, $content_type, $is_translatable, $language) {
+  public function processMetatagPane(NodeInterface &$entity, $local_field_name, $field, $content_type, $is_translatable, $language) {
     if (\Drupal::moduleHandler()->moduleExists('metatag') && check_metatag($content_type)) {
-      $field_info = FieldConfig::load($local_field_id);
-      $local_field_name = $field_info->getName();
       $metatag_fields = get_metatag_fields($content_type);
 
       foreach ($metatag_fields as $metatag_field) {
