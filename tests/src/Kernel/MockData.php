@@ -6,6 +6,7 @@ use Cheppers\GatherContent\DataTypes\ElementFiles;
 use Cheppers\GatherContent\DataTypes\File;
 use Cheppers\GatherContent\DataTypes\Item;
 use Cheppers\GatherContent\DataTypes\Tab;
+use Drupal\Core\Language\LanguageInterface;
 use Drupal\gathercontent\Entity\Mapping;
 use Drupal\taxonomy\Entity\Term;
 
@@ -16,6 +17,11 @@ class MockData {
 
   const CHECKBOX_TAXONOMY_NAME = 'checkbox_test_taxonomy';
   const RADIO_TAXONOMY_NAME = 'radio_test_taxonomy';
+
+  const METATAG_FIELD = 'field_metatag_test';
+
+  const TRANSLATED_TAB = 'tab1503302417527';
+  const METATAG_TAB = 'tab1503403907382';
 
   public static $drupalRoot = '';
 
@@ -88,21 +94,24 @@ class MockData {
     $item->projectId = $template->project_id;
     $item->templateId = $template->id;
 
-    // 0 => main tab, 1 => translated tab.
-    $TRANSLATED_TAB = 1;
-
     foreach ($tabs as $i => $tab) {
       $newTab = new Tab(json_decode(json_encode($tab), TRUE));
       foreach ($newTab->elements as $element) {
         switch ($element->type) {
           case 'text':
-            // If title.
             if ($element->plainText) {
-              $element->setValue($item->name . ($i === $TRANSLATED_TAB ? ' translated' : ''));
+              if ($newTab->id === MockData::METATAG_TAB) {
+                // Metatag.
+                $element->setValue($element->label . ' ' . static::getUniqueInt());
+              }
+              else {
+                // Title.
+                $element->setValue($item->name . ($newTab->id === MockData::TRANSLATED_TAB ? ' translated' : ''));
+              }
             }
             else {
               // If translation.
-              if ($i === $TRANSLATED_TAB) {
+              if ($newTab->id === MockData::TRANSLATED_TAB) {
                 // Get the original element value and append 'translated' to it.
                 $fieldId = $mappingData[$newTab->id]['elements'][$element->id];
                 $mainElementId = array_search($fieldId, $mainTabElements);
@@ -120,7 +129,7 @@ class MockData {
 
           case 'section':
             // If translation.
-            if ($i === $TRANSLATED_TAB) {
+            if ($newTab->id === MockData::TRANSLATED_TAB) {
               $fieldId = $mappingData[$newTab->id]['elements'][$element->id];
               $mainElementId = array_search($fieldId, $mainTabElements);
               $element->subtitle = $item->config[$mainTabId]->elements[$mainElementId]->subtitle . ' translated';

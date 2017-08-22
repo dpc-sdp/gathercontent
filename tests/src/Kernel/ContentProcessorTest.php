@@ -14,6 +14,7 @@ use Drupal\KernelTests\KernelTestBase;
 use Drupal\node\NodeInterface;
 use Drupal\paragraphs\Entity\Paragraph;
 use Drupal\taxonomy\Entity\Term;
+use org\bovigo\vfs\vfsStreamWrapperAlreadyRegisteredTestCase;
 
 /**
  * Class for testing node import.
@@ -26,8 +27,9 @@ class ContentProcessorTest extends KernelTestBase {
    * {@inheritdoc}
    */
   protected static $modules = [
-    'node', 'text', 'field', 'user', 'image', 'file', 'taxonomy', 'language', 'content_translation',
-    'paragraphs', 'entity_reference_revisions', 'system', 'gathercontent', 'test_module',
+    'node', 'text', 'field', 'user', 'image', 'file', 'taxonomy', 'language',
+    'content_translation', 'paragraphs', 'entity_reference_revisions', 'system',
+    'gathercontent', 'test_module', 'metatag',
   ];
 
   /**
@@ -155,12 +157,12 @@ class ContentProcessorTest extends KernelTestBase {
     /** @var \Drupal\gathercontent\Entity\Mapping $mapping */
     $mapping = MappingLoader::load($gcItem);
     $tabs = unserialize($mapping->getData());
+    $metatagTab = $tabs[MockData::METATAG_TAB]['elements'];
+    unset($tabs[MockData::METATAG_TAB]);
 
     $fields = $node->toArray();
     $translation = $node->getTranslation('hu');
     $translatedFields = $translation->toArray();
-
-    $TRANSLATED_TAB = 'tab1503302417527';
 
     foreach ($tabs as $tabId => $tab) {
       /** @var \Cheppers\GatherContent\DataTypes\Element[] $elements */
@@ -174,7 +176,7 @@ class ContentProcessorTest extends KernelTestBase {
         });
         if (count($ids) > 1) {
           // Paragraph.
-          if ($tabId === $TRANSLATED_TAB) {
+          if ($tabId === MockData::TRANSLATED_TAB) {
             $field = static::loadFieldFromNode($translation, $ids, $tab['language']);
             static::assertFieldEqualsElement($field, $elements[$gcId], $filesMatchingThisElement);
           }
@@ -190,7 +192,7 @@ class ContentProcessorTest extends KernelTestBase {
           }
           else {
             // Basic fields.
-            if ($tabId === $TRANSLATED_TAB) {
+            if ($tabId === MockData::TRANSLATED_TAB) {
               $fieldName = explode('.', $fieldId)[2];
               static::assertFieldEqualsElement($translatedFields[$fieldName], $elements[$gcId], $filesMatchingThisElement);
             }
@@ -201,6 +203,13 @@ class ContentProcessorTest extends KernelTestBase {
           }
         }
       }
+    }
+
+    // Metatag assertion.
+    $insertedMetatags = unserialize(reset($fields[MockData::METATAG_FIELD])['value']);
+    $metatagElements = $gcItem->config[MockData::METATAG_TAB]->elements;
+    foreach ($metatagTab as $gcId => $fieldName) {
+      static::assertEquals($metatagElements[$gcId]->value, $insertedMetatags[$fieldName]);
     }
   }
 
