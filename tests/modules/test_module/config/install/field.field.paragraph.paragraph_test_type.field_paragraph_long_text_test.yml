@@ -13,7 +13,7 @@ bundle: paragraph_test_type
 label: 'paragraph long text test'
 description: ''
 required: false
-translatable: false
+translatable: true
 default_value: {  }
 default_value_callback: ''
 settings: {  }
