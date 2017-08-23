@@ -42,37 +42,37 @@ class MockData {
     $terms[] = Term::create([
       'vid' => 'checkbox_test_taxonomy',
       'name' => 'First checkbox',
-      'gathercontent_option_ids' => 'op1502871154842',
+      'gathercontent_option_ids' => ['op1502871154842', 'op15028711548427481'],
     ]);
 
     $terms[] = Term::create([
       'vid' => 'checkbox_test_taxonomy',
       'name' => 'Second checkbox',
-      'gathercontent_option_ids' => 'op1502871154843',
+      'gathercontent_option_ids' => ['op1502871154843', 'op15028711548435101'],
     ]);
 
     $terms[] = Term::create([
       'vid' => 'checkbox_test_taxonomy',
       'name' => 'Third checkbox',
-      'gathercontent_option_ids' => 'op1502871154844',
+      'gathercontent_option_ids' => ['op1502871154844', 'op15028711548447560'],
     ]);
 
     $terms[] = Term::create([
       'vid' => 'radio_test_taxonomy',
       'name' => 'First radio',
-      'gathercontent_option_ids' => 'op1502871172350',
+      'gathercontent_option_ids' => ['op1502871172350', 'op15028711723507803'],
     ]);
 
     $terms[] = Term::create([
       'vid' => 'radio_test_taxonomy',
       'name' => 'Second radio',
-      'gathercontent_option_ids' => 'op1502871172351',
+      'gathercontent_option_ids' => ['op1502871172351', 'op1502871172351707'],
     ]);
 
     $terms[] = Term::create([
       'vid' => 'radio_test_taxonomy',
       'name' => 'Third radio',
-      'gathercontent_option_ids' => 'op1502871172352',
+      'gathercontent_option_ids' => ['op1502871172352', 'op15028711723524246'],
     ]);
 
     return $terms;

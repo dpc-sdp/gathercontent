@@ -14,7 +14,6 @@ use Drupal\KernelTests\KernelTestBase;
 use Drupal\node\NodeInterface;
 use Drupal\paragraphs\Entity\Paragraph;
 use Drupal\taxonomy\Entity\Term;
-use org\bovigo\vfs\vfsStreamWrapperAlreadyRegisteredTestCase;
 
 /**
  * Class for testing node import.
@@ -122,7 +121,7 @@ class ContentProcessorTest extends KernelTestBase {
 
     foreach ($cases as $caseName => $params) {
       print $caseName . PHP_EOL;
-      call_user_func_array([static::class, 'createNodeTest'], $params);
+      call_user_func_array([static::class, 'createNodeTest'], $params);;
     }
   }
 
@@ -299,17 +298,23 @@ class ContentProcessorTest extends KernelTestBase {
    * Assertion for checkbox elements.
    */
   public static function assertCheckboxFieldEqualsOptions(array $field, array $options) {
-    $termIds = array_map(function ($propertyArray) {
-      return $propertyArray['target_id'];
+    $termIds = array_map(function ($fieldTerm) {
+      return $fieldTerm['target_id'];
     }, $field);
     $terms = Term::loadMultiple($termIds);
 
     foreach ($options as $option) {
       $termsMatchingThisOption = array_filter($terms, function ($term) use ($option) {
-        $isSameGcOptionId = $term->get('gathercontent_option_ids')->getValue()[0]['value'] == $option['name'];
+        $termOptionIdsMatchingThisOption = array_filter(
+          $term->get('gathercontent_option_ids')->getValue(),
+          function ($optionId) use ($option) {
+            return $optionId['value'] === $option['name'];
+          }
+        );
+        $isSameOptionId = 1 === count($termOptionIdsMatchingThisOption);
         $isSameName = $term->get('name')->getValue()[0]['value'] == $option['label'];
         $isCheckboxTaxonomy = $term->get('vid')->getValue()[0]['target_id'] === MockData::CHECKBOX_TAXONOMY_NAME;
-        return $isSameGcOptionId && $isSameName && $isCheckboxTaxonomy;
+        return $isSameOptionId && $isSameName && $isCheckboxTaxonomy;
       });
 
       if ($option['selected']) {
@@ -331,7 +336,11 @@ class ContentProcessorTest extends KernelTestBase {
 
     // No radios selected.
     if (empty($field)) {
-      static::assertEmpty($selectedOptions);
+      static::assertEmpty(
+        $selectedOptions,
+        "No taxonomy term inserted in node.\nExpected radio item:\n" .
+        print_r($selectedOptions, TRUE)
+      );
       return;
     }
 
@@ -346,8 +355,14 @@ class ContentProcessorTest extends KernelTestBase {
 
     $optionsMatchingThisTerm = array_filter($selectedOptions, function ($option) use ($term) {
       $isSameName = $term->get('name')->getValue()[0]['value'] == $option['label'];
-      $isSameGcOptionId = $term->get('gathercontent_option_ids')->getValue()[0]['value'] == $option['name'];
-      return $isSameName && $isSameGcOptionId;
+      $termOptionIdsMatchingThisOption = array_filter(
+        $term->get('gathercontent_option_ids')->getValue(),
+        function ($optionId) use ($option) {
+          return $optionId['value'] === $option['name'];
+        }
+      );
+      $isSameOptionId = 1 === count($termOptionIdsMatchingThisOption);
+      return $isSameName && $isSameOptionId;
     });
 
     static::assertEquals(1, count($optionsMatchingThisTerm));
