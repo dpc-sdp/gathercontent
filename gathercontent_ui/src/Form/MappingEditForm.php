@@ -13,7 +13,6 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
-use Drupal\paragraphs\Entity\Paragraph;
 use Drupal\taxonomy\Entity\Term;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -70,6 +69,13 @@ class MappingEditForm extends EntityForm {
    * @var array
    */
   protected $entityReferenceFields;
+
+  /**
+   * Array of entity reference fields in mapping.
+   *
+   * @var array
+   */
+  protected $entityReferenceFieldsOptions;
 
   /**
    * Type of import for entity reference fields.
@@ -178,7 +184,6 @@ class MappingEditForm extends EntityForm {
       if (!$this->new) {
         $this->mappingData = unserialize($mapping->getData());
         $this->contentType = $mapping->getContentType();
-        $form['#attached']['drupalSettings']['gathercontent'] = $this->getAllEntityReferenceFields();
 
         $form['gathercontent']['content_type'] = [
           '#type' => 'item',
@@ -295,6 +300,7 @@ class MappingEditForm extends EntityForm {
 <strong>Semi-automatic</strong> - taxonomy terms will be imported into predefined vocabulary in the first language and we will offer you possibility to select their translations from other languages. For single language mapping this option will execute same action as 'Automatic' importField should not be set as translatable for correct functionality.<br>
 <strong>Manual</strong> - you can map existing taxonomy terms from predefined vocabulary to translations in all languages."),
         ];
+        $form['#attached']['drupalSettings']['gathercontent'] = $this->entityReferenceFieldsOptions;
       }
       else {
         $form['gathercontent']['content_type'] = [
@@ -438,7 +444,8 @@ class MappingEditForm extends EntityForm {
       }
 
       foreach ($this->entityReferenceFields as $field => $gcMapping) {
-        $field_config = FieldConfig::loadByName('node', $this->contentType, $field);
+        $field_id_array = explode('||', $field);
+        $field_config = FieldConfig::load($field_id_array[count($field_id_array) - 1]);
 
         $options = [];
         $header = [];
@@ -457,8 +464,8 @@ class MappingEditForm extends EntityForm {
                     $header['terms'] = $this->t('Terms');
                   }
                   foreach ($element->options as $option) {
-                    if (!isset($option->value)) {
-                      $options[$lang][$option->name] = $option->label;
+                    if (!isset($option['value'])) {
+                      $options[$lang][$option['name']] = $option['label'];
                     }
                   }
                 }
@@ -740,6 +747,25 @@ class MappingEditForm extends EntityForm {
           }
 
           $fields[$key] = ((!empty($bundle_label)) ? $bundle_label . ' - ' : '') . $instance->getLabel();
+
+          if ($instance->getType() === 'entity_reference' && $instance->getSetting('handler') === 'default:taxonomy_term') {
+            foreach ($this->mappingData as $tabName => $tab) {
+              $gcField = array_search($key, $tab['elements']);
+              if (empty($gcField)) {
+                continue;
+              }
+              if (isset($tab['language'])) {
+                $this->entityReferenceFields[$key][$tab['language']]['name'] = $gcField;
+                $this->entityReferenceFields[$key][$tab['language']]['tab'] = $tabName;
+              }
+              else {
+                $this->entityReferenceFields[$key][LanguageInterface::LANGCODE_NOT_SPECIFIED]['name'] = $gcField;
+                $this->entityReferenceFields[$key][LanguageInterface::LANGCODE_NOT_SPECIFIED]['tab'] = $tabName;
+              }
+            }
+
+            $this->entityReferenceFieldsOptions[] = $key;
+          }
         }
       }
     }
@@ -781,7 +807,7 @@ class MappingEditForm extends EntityForm {
    */
   public function getMappingTable(array &$form, FormStateInterface $form_state) {
     $this->contentType = $form_state->getValue('content_type');
-    $fields = $this->getAllEntityReferenceFields();
+    $fields = $this->entityReferenceFieldsOptions;
     $form['mapping']['#attached']['drupalSettings']['gathercontent'] = (empty($fields) ? NULL : $fields);
     $form_state->setRebuild(TRUE);
     return $form['mapping'];
@@ -930,7 +956,6 @@ class MappingEditForm extends EntityForm {
         }
 
         $this->erImportType = $form_state->getValue('er_mapping_type');
-        $this->getEntityReferenceFields();
 
         if (empty($this->entityReferenceFields) || $this->erImportType === 'automatic') {
           $this->skip = TRUE;
@@ -1065,51 +1090,6 @@ class MappingEditForm extends EntityForm {
         $form_state->setRedirect('entity.gathercontent_mapping.collection');
       }
     }
-  }
-
-  /**
-   * Get list of entity reference fields with mapping to GatherContent.
-   */
-  public function getEntityReferenceFields() {
-    $this->entityReferenceFields = [];
-    /** @var \Drupal\Core\Field\FieldDefinitionInterface[] $instances */
-    $instances = \Drupal::service('entity_field.manager')
-      ->getFieldDefinitions('node', $this->contentType);
-    foreach ($instances as $instance) {
-      if ($instance->getType() === 'entity_reference' && $instance->getSetting('handler') === 'default:taxonomy_term') {
-        foreach ($this->mappingData as $tabName => $tab) {
-          $gcField = array_search($instance->getName(), $tab['elements']);
-          if (empty($gcField)) {
-            continue 2;
-          }
-          if (isset($tab['language'])) {
-            $this->entityReferenceFields[$instance->getName()][$tab['language']]['name'] = $gcField;
-            $this->entityReferenceFields[$instance->getName()][$tab['language']]['tab'] = $tabName;
-          }
-          else {
-            $this->entityReferenceFields[$instance->getName()][LanguageInterface::LANGCODE_NOT_SPECIFIED]['name'] = $gcField;
-            $this->entityReferenceFields[$instance->getName()][LanguageInterface::LANGCODE_NOT_SPECIFIED]['tab'] = $tabName;
-          }
-        }
-      }
-    }
-  }
-
-  /**
-   * Get list of entity reference fields with mapping to GatherContent.
-   */
-  public function getAllEntityReferenceFields() {
-    $entityReferenceFields = [];
-    /** @var \Drupal\Core\Field\FieldDefinitionInterface[] $instances */
-    $instances = \Drupal::service('entity_field.manager')
-      ->getFieldDefinitions('node', $this->contentType);
-    foreach ($instances as $instance) {
-      if ($instance->getType() === 'entity_reference' && $instance->getSetting('handler') === 'default:taxonomy_term') {
-        $entityReferenceFields[] = $instance->id();
-      }
-    }
-
-    return $entityReferenceFields;
   }
 
   /**
