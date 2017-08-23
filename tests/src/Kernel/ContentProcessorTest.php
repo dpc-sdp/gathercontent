@@ -205,7 +205,7 @@ class ContentProcessorTest extends KernelTestBase {
       }
     }
 
-    // Metatag assertion.
+    // Metatags.
     $insertedMetatags = unserialize(reset($fields[MockData::METATAG_FIELD])['value']);
     $metatagElements = $gcItem->config[MockData::METATAG_TAB]->elements;
     foreach ($metatagTab as $gcId => $fieldName) {

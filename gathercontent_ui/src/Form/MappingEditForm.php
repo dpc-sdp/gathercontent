@@ -734,8 +734,9 @@ class MappingEditForm extends EntityForm {
           $key = $instance->id();
 
           if (!empty($nested_ids)) {
-            $nested_ids[] = $instance->id();
-            $key = implode('||', $nested_ids);
+            $new_nested_ids = $nested_ids;
+            $new_nested_ids[] = $instance->id();
+            $key = implode('||', $new_nested_ids);
           }
 
           $fields[$key] = ((!empty($bundle_label)) ? $bundle_label . ' - ' : '') . $instance->getLabel();
