@@ -1131,9 +1131,12 @@ class MappingEditForm extends EntityForm {
           if ($term->label() !== $localOption) {
             $term->setName($localOption);
           }
-          if (!in_array($id, $term->get('gathercontent_option_ids')
-            ->getValue())
-          ) {
+          $values = $term->get('gathercontent_option_ids')->getValue();
+          $mappedValues = array_map(function ($array) {
+            return $array['value'];
+          }, $values);
+
+          if (!in_array($id, $mappedValues)) {
             $term->gathercontent_option_ids->appendItem($id);
           }
         }
@@ -1141,8 +1144,12 @@ class MappingEditForm extends EntityForm {
           if ($term->getTranslation($langcode)->label() !== $localOption) {
             $term->getTranslation($langcode)->setName($localOption);
           }
-          if (!in_array($id, $term->getTranslation($langcode)->gathercontent_option_ids->getValue())
-          ) {
+          $values = $term->getTranslation($langcode)->get('gathercontent_option_ids')->getValue();
+          $mappedValues = array_map(function ($array) {
+            return $array['value'];
+          }, $values);
+
+          if (!in_array($id, $mappedValues)) {
             $term->getTranslation($langcode)->gathercontent_option_ids->appendItem($id);
           }
         }
