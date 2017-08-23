@@ -16,7 +16,13 @@ use Drupal\paragraphs\Entity\Paragraph;
 use Drupal\taxonomy\Entity\Term;
 
 /**
- * Class for testing node import.
+ * Class for testing core node import functionality.
+ *
+ * - basic fields import.
+ * - paragraph fields import.
+ * - entity translation import.
+ * - metatag import.
+ * - paragraph taxonomy term import.
  *
  * @group gathercontent
  */
