@@ -17,7 +17,7 @@ class MockDrupalGatherContentClient extends DrupalGatherContentClient {
     $importedFiles = [];
     foreach ($files as $file) {
       $importedFile = File::create([
-        'filename' => $file->name,
+        'filename' => $file->fileName,
         'uri' => $file->url,
         'status' => 1,
         'gc_id' => $file->id,
