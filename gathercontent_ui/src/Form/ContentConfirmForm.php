@@ -138,7 +138,7 @@ class ContentConfirmForm extends ConfirmFormBase {
       }
     }
 
-    $nodes = Node::loadMultiple($this->nodeIds ?? []);
+    $nodes = Node::loadMultiple(isset($this->nodeIds) ? $this->nodeIds : []);
     $selected_projects = [];
 
     foreach ($created_mapping_ids as $mapping) {
