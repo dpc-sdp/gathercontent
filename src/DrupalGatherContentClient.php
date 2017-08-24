@@ -34,7 +34,7 @@ class DrupalGatherContentClient extends GatherContentClient {
    *
    * If none given, retrieve the first account by default.
    */
-  public static function getAccountId(string $account_name = NULL) {
+  public static function getAccountId($account_name = NULL) {
     $account = \Drupal::config('gathercontent.settings')
       ->get('gathercontent_account');
     $account = unserialize($account);
@@ -60,7 +60,7 @@ class DrupalGatherContentClient extends GatherContentClient {
   /**
    * Retrieve all the active projects.
    */
-  public function getActiveProjects(int $account_id) {
+  public function getActiveProjects($account_id) {
     $projects = $this->projectsGet($account_id);
 
     foreach ($projects as $id => $project) {
@@ -81,7 +81,7 @@ class DrupalGatherContentClient extends GatherContentClient {
    * @return array
    *   Return array.
    */
-  public function getTemplatesOptionArray(int $project_id) {
+  public function getTemplatesOptionArray($project_id) {
     $formatted = [];
     $templates = $this->templatesGet($project_id);
 
@@ -101,7 +101,7 @@ class DrupalGatherContentClient extends GatherContentClient {
    * @return \Psr\Http\Message\StreamInterface
    *   Response body.
    */
-  public function getBody(bool $json_decoded = FALSE) {
+  public function getBody($json_decoded = FALSE) {
     $body = $this->getResponse()->getBody();
 
     if ($json_decoded) {
@@ -124,7 +124,7 @@ class DrupalGatherContentClient extends GatherContentClient {
    * @return array
    *   Imported files array.
    */
-  public function downloadFiles(array $files, string $directory, string $language) {
+  public function downloadFiles(array $files, $directory, $language) {
     /** @var \GuzzleHttp\Client $httpClient */
     $httpClient = $this->client;
     $files = array_values($files);

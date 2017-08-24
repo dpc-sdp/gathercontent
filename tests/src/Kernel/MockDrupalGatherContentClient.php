@@ -13,7 +13,7 @@ class MockDrupalGatherContentClient extends DrupalGatherContentClient {
   /**
    * Mock download.
    */
-  public function downloadFiles(array $files, string $directory, string $language) {
+  public function downloadFiles(array $files, $directory, $language) {
     $importedFiles = [];
     foreach ($files as $file) {
       $importedFile = File::create([

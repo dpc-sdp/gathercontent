@@ -158,7 +158,7 @@ function _gc_get_menu_by_gc_id(&$mlid, &$menu_name, $language = NULL) {
 /**
  * Batch operation callback for importing items.
  */
-function gathercontent_import_process(int $gc_id, ImportOptions $import_options, &$context = []) {
+function gathercontent_import_process($gc_id, ImportOptions $import_options, &$context = []) {
   /** @var \Drupal\gathercontent\Import\Importer $importer */
   $importer = \Drupal::service('gathercontent.importer');
 

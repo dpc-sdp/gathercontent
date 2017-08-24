@@ -221,14 +221,14 @@ class ContentProcessorTest extends KernelTestBase {
   /**
    * Function for asserting that a translated value matches the original one.
    */
-  public static function assertTranslatedEquals(string $original, string $translated) {
+  public static function assertTranslatedEquals($original, $translated) {
     static::assertEquals($translated, $original . ' translated');
   }
 
   /**
    * Read field from id like "node.mytype.myfiled||paragraph.myptype.mypfield".
    */
-  public static function loadFieldFromNode(NodeInterface $node, array $ids, string $language) {
+  public static function loadFieldFromNode(NodeInterface $node, array $ids, $language) {
     if (count($ids) == 1) {
       throw new \InvalidArgumentException('"$ids" is not a nested id');
     }
