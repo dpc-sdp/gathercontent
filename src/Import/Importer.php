@@ -95,6 +95,7 @@ class Importer implements ContainerInjectionInterface {
     $files = $this->client->itemFilesGet($gc_item->id);
     $mapping = MappingLoader::load($gc_item);
     $is_translatable = static::isContentTypeTranslatable($mapping->getContentType());
+    $is_menu_translatable = static::isMenuTranslatable();
 
     $entity = $this->contentProcessor->createNode($gc_item, $importOptions, $files);
 
@@ -108,7 +109,7 @@ class Importer implements ContainerInjectionInterface {
     // Create menu link items.
     $menu_link_defaults = menu_ui_get_menu_link_defaults($entity);
     if (!(bool) $menu_link_defaults['id']) {
-      if ($is_translatable) {
+      if ($is_translatable && $is_menu_translatable) {
         $languages = $entity->getTranslationLanguages();
         $original_link_id = NULL;
         foreach ($languages as $langcode => $language) {
@@ -159,6 +160,16 @@ class Importer implements ContainerInjectionInterface {
       ->moduleExists('content_translation')
       && \Drupal::service('content_translation.manager')
         ->isEnabled('node', $contentType);
+  }
+
+  /**
+   * Decide whether a content type is translatable.
+   */
+  public static function isMenuTranslatable() {
+    return \Drupal::moduleHandler()
+      ->moduleExists('content_translation')
+      && \Drupal::service('content_translation.manager')
+        ->isEnabled('menu_link_content');
   }
 
 }
