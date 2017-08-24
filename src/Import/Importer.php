@@ -105,6 +105,7 @@ class Importer implements ContainerInjectionInterface {
     );
 
     $entity->save();
+    $entity = $entity->getTranslation(reset($entity->getTranslationLanguages())->getId());
 
     // Create menu link items.
     $menu_link_defaults = menu_ui_get_menu_link_defaults($entity);
@@ -163,7 +164,7 @@ class Importer implements ContainerInjectionInterface {
   }
 
   /**
-   * Decide whether a content type is translatable.
+   * Decide whether a menu is translatable.
    */
   public static function isMenuTranslatable() {
     return \Drupal::moduleHandler()
