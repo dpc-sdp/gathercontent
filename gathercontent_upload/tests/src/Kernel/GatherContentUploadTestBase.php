@@ -157,7 +157,7 @@ class GatherContentUploadTestBase extends EntityKernelTestBase {
               ],
             ]),
             $this->getRichText('el1500994248864', 'Body', 'Body gc item'),
-            $this->getImage('el1501598415730', 'Image', 'http://test.ts/example-image.jpg'),
+            $this->getImage('el1501598415730', 'Image'),
             $this->getCheckbox('el1500994276297', 'Tags', [
               [
                 'name' => 'op1500994449663',
@@ -171,7 +171,7 @@ class GatherContentUploadTestBase extends EntityKernelTestBase {
               ],
             ]),
             $this->getRichText('el1501666239392', 'Para text', 'Para text gc item'),
-            $this->getImage('el1501666248919', 'Para image', 'http://test.ts/example-image.jpg'),
+            $this->getImage('el1501666248919', 'Para image'),
             $this->getRichText('el1501772184393', 'Para 2 text', 'Para 2 text gc item'),
           ],
         ],
@@ -312,7 +312,7 @@ class GatherContentUploadTestBase extends EntityKernelTestBase {
           'elements' => [
             $this->getPlainText('el1502959595615', 'Title', 'Title gc item'),
             $this->getRichText('el1502959226216', 'Body', 'Body gc item'),
-            $this->getImage('el1503046930689', 'Image', 'http://test.ts/example-image.jpg'),
+            $this->getImage('el1503046930689', 'Image'),
             $this->getRadio('el1503046753703', 'Radiogaga', [
               [
                 'name' => 'op1503046753704',
@@ -343,7 +343,7 @@ class GatherContentUploadTestBase extends EntityKernelTestBase {
               ],
             ]),
             $this->getRichText('el1503046796344', 'Para text', 'Para text gc item'),
-            $this->getImage('el1503046889180', 'Para image', 'http://test.ts/example-image.jpg'),
+            $this->getImage('el1503046889180', 'Para image'),
             $this->getRichText('el1503046917174', 'Para 2 text', 'Para 2 text gc item'),
             $this->getSection('el1503050151209', 'Guido', 'Guido gc item'),
           ],
@@ -355,7 +355,7 @@ class GatherContentUploadTestBase extends EntityKernelTestBase {
           'elements' => [
             $this->getPlainText('el1503046938794', 'Title', 'Title gc item HU'),
             $this->getRichText('el1503046938795', 'Body', 'Body gc item HU'),
-            $this->getImage('el1503046938796', 'Image', 'http://test.ts/example-image.jpg'),
+            $this->getImage('el1503046938796', 'Image'),
             $this->getRadio('el1503046938797', 'Radiogaga', [
               [
                 'name' => 'op15030467537046960',
@@ -386,7 +386,7 @@ class GatherContentUploadTestBase extends EntityKernelTestBase {
               ],
             ]),
             $this->getRichText('el1503046938799', 'Para text', 'Para text gc item'),
-            $this->getImage('el1503046938800', 'Para image', 'http://test.ts/example-image.jpg'),
+            $this->getImage('el1503046938800', 'Para image'),
             $this->getRichText('el1503046938801', 'Para 2 text', 'Para 2 text gc item'),
             $this->getSection('el1503050171534', 'Guido', 'Guido gc item'),
           ],
@@ -654,27 +654,17 @@ class GatherContentUploadTestBase extends EntityKernelTestBase {
    *   Name string.
    * @param string $label
    *   Label string.
-   * @param string $value
-   *   Value string.
    *
    * @return array
    *   Return item array.
    */
-  public function getImage($name, $label, $value) {
+  public function getImage($name, $label) {
     return [
       'name' => $name,
       'type' => 'files',
       'label' => $label,
       'required' => FALSE,
       'microcopy' => '',
-      'user_id' => 1,
-      'item_id' => 1,
-      'field' => $name,
-      'url' => $value,
-      'filename' => 'Test image gc item',
-      'size' => '100',
-      'created_at' => date('Y-m-d H:i:s', rand(0, time())),
-      'updated_at' => date('Y-m-d H:i:s', rand(0, time())),
     ];
   }
 

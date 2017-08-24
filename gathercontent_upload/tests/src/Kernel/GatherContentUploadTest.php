@@ -5,7 +5,6 @@ namespace Drupal\Tests\gathercontent_upload\Kernel;
 use Cheppers\GatherContent\DataTypes\Element;
 use Cheppers\GatherContent\DataTypes\Item;
 use Drupal\Core\Field\FieldItemListInterface;
-use Drupal\file\Entity\File;
 use Drupal\node\NodeInterface;
 use Drupal\paragraphs\Entity\Paragraph;
 use Drupal\taxonomy\Entity\Term;
@@ -89,8 +88,7 @@ class GatherContentUploadTest extends GatherContentUploadTestBase {
             break;
 
           case 'el1501598415730':
-            $image = $entity->get('field_image');
-            $this->assertImage($field, $image);
+            // No possibility to upload image!
             break;
 
           case 'el1500994276297':
@@ -104,8 +102,7 @@ class GatherContentUploadTest extends GatherContentUploadTestBase {
             break;
 
           case 'el1501666248919':
-            $paragraph = $entity->get('field_para');
-            $this->assertParagraphImage($field, $paragraph);
+            // No possibility to upload image!
             break;
 
           case 'el1501772184393':
@@ -151,8 +148,7 @@ class GatherContentUploadTest extends GatherContentUploadTestBase {
             break;
 
           case 'el1503046930689':
-            $image = $entity->getTranslation('en')->get('field_image');
-            $this->assertImage($field, $image);
+            // No possibility to upload image!
             break;
 
           case 'el1503046753703':
@@ -171,8 +167,7 @@ class GatherContentUploadTest extends GatherContentUploadTestBase {
             break;
 
           case 'el1503046889180':
-            $paragraph = $entity->getTranslation('en')->get('field_para');
-            $this->assertParagraphImage($field, $paragraph);
+            // No possibility to upload image!
             break;
 
           case 'el1503046917174':
@@ -195,8 +190,7 @@ class GatherContentUploadTest extends GatherContentUploadTestBase {
             break;
 
           case 'el1503046938796':
-            $image = $entity->getTranslation('hu')->get('field_image');
-            $this->assertImage($field, $image);
+            // No possibility to upload image!
             break;
 
           case 'el1503046938797':
@@ -215,8 +209,7 @@ class GatherContentUploadTest extends GatherContentUploadTestBase {
             break;
 
           case 'el1503046938800':
-            $paragraph = $entity->getTranslation('hu')->get('field_para');
-            $this->assertParagraphImage($field, $paragraph, TRUE);
+            // No possibility to upload image!
             break;
 
           case 'el1503046938801':
@@ -353,24 +346,6 @@ class GatherContentUploadTest extends GatherContentUploadTestBase {
   }
 
   /**
-   * Check image value.
-   *
-   * @param \Cheppers\GatherContent\DataTypes\Element $field
-   *   GatherContent Element.
-   * @param \Drupal\Core\Field\FieldItemListInterface $itemList
-   *   Item list.
-   */
-  public function assertImage(Element $field, FieldItemListInterface $itemList) {
-    $targets = $itemList->getValue();
-    $target = array_shift($targets);
-
-    $img = File::load($target['target_id']);
-    $image_url = $img->url();
-
-    $this->assertNotEquals($image_url, $field->url);
-  }
-
-  /**
    * Check paragraph text value.
    *
    * @param \Cheppers\GatherContent\DataTypes\Element $field
@@ -400,30 +375,6 @@ class GatherContentUploadTest extends GatherContentUploadTestBase {
     }
 
     $this->assertEquals($value, $field->getValue());
-  }
-
-  /**
-   * Check paragraph image value.
-   *
-   * @param \Cheppers\GatherContent\DataTypes\Element $field
-   *   GatherContent Element.
-   * @param \Drupal\Core\Field\FieldItemListInterface $itemList
-   *   Item list.
-   * @param bool $translated
-   *   Is the content translated.
-   */
-  public function assertParagraphImage(Element $field, FieldItemListInterface $itemList, $translated = FALSE) {
-    $targets = $itemList->getValue();
-    $target = array_shift($targets);
-
-    $para = Paragraph::load($target['target_id']);
-    if ($translated) {
-      $image = $para->getTranslation('hu')->get('field_image');
-    }
-    else {
-      $image = $para->get('field_image');
-    }
-    $this->assertImage($field, $image);
   }
 
 }
