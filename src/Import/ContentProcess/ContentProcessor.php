@@ -246,6 +246,11 @@ class ContentProcessor implements ContainerInjectionInterface {
         $target = &$entity;
         if ($is_translatable) {
           $target = $entity->getTranslation($language);
+          if (empty($field->value)) {
+            throw new \Exception(
+              "Field '{$field->label}' must not be empty (it's a title field in a translatable item)."
+            );
+          }
         }
         $target->setTitle($field->value);
         return;
