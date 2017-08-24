@@ -12,6 +12,7 @@ use Drupal\gathercontent\Event\PostNodeSaveEvent;
 use Drupal\gathercontent\Event\PreNodeSaveEvent;
 use Drupal\gathercontent\Import\ContentProcess\ContentProcessor;
 use Drupal\gathercontent\MappingLoader;
+use Drupal\node\NodeInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
@@ -93,10 +94,6 @@ class Importer implements ContainerInjectionInterface {
   public function import(Item $gc_item, ImportOptions $importOptions) {
     $this->updateStatus($gc_item, $importOptions->getNewStatus());
     $files = $this->client->itemFilesGet($gc_item->id);
-    $mapping = MappingLoader::load($gc_item);
-    $is_translatable = static::isContentTypeTranslatable($mapping->getContentType());
-    $is_menu_translatable = static::isMenuTranslatable();
-
     $entity = $this->contentProcessor->createNode($gc_item, $importOptions, $files);
 
     $this->eventDispatcher->dispatch(
@@ -107,23 +104,7 @@ class Importer implements ContainerInjectionInterface {
     $entity->save();
     $entity = $entity->getTranslation(reset($entity->getTranslationLanguages())->getId());
 
-    // Create menu link items.
-    $menu_link_defaults = menu_ui_get_menu_link_defaults($entity);
-    if (!(bool) $menu_link_defaults['id']) {
-      if ($is_translatable && $is_menu_translatable) {
-        $languages = $entity->getTranslationLanguages();
-        $original_link_id = NULL;
-        foreach ($languages as $langcode => $language) {
-          $localized_entity = $entity->hasTranslation($langcode) ? $entity->getTranslation($langcode) : NULL;
-          if (!is_null($localized_entity)) {
-            gc_create_menu_link($entity->id(), $localized_entity->getTitle(), $importOptions->getParentMenuItem(), $langcode, $original_link_id);
-          }
-        }
-      }
-      else {
-        gc_create_menu_link($entity->id(), $entity->getTitle(), $importOptions->getParentMenuItem());
-      }
-    }
+    static::createMenu($entity, $importOptions->getParentMenuItem());
 
     $this->eventDispatcher->dispatch(
       GatherContentEvents::POST_NODE_SAVE,
@@ -131,6 +112,30 @@ class Importer implements ContainerInjectionInterface {
     );
 
     return $entity->id();
+  }
+
+  /**
+   * Create a menu link to the imported node.
+   */
+  public static function createMenu(NodeInterface $entity, $parentMenuItem) {
+    $isContentTypeTranslatable = static::isContentTypeTranslatable($entity->bundle());
+    $isMenuTranslatable = static::isMenuTranslatable();
+    $menuLinkDefaults = menu_ui_get_menu_link_defaults($entity);
+    if (!(bool) $menuLinkDefaults['id']) {
+      if ($isContentTypeTranslatable && $isMenuTranslatable) {
+        $languages = $entity->getTranslationLanguages();
+        $originalLinkId = NULL;
+        foreach ($languages as $langcode => $language) {
+          $localized_entity = $entity->hasTranslation($langcode) ? $entity->getTranslation($langcode) : NULL;
+          if (!is_null($localized_entity)) {
+            gc_create_menu_link($entity->id(), $localized_entity->getTitle(), $parentMenuItem, $langcode, $originalLinkId);
+          }
+        }
+      }
+      else {
+        gc_create_menu_link($entity->id(), $entity->getTitle(), $parentMenuItem);
+      }
+    }
   }
 
   /**
