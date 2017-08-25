@@ -171,7 +171,11 @@ class ContentProcessorTest extends GcImportTestBase {
     $insertedMetatags = unserialize(reset($fields[MockData::METATAG_FIELD])['value']);
     $metatagElements = $gcItem->config[MockData::METATAG_TAB]->elements;
     foreach ($metatagTab as $gcId => $fieldName) {
-      static::assertEquals($metatagElements[$gcId]->value, $insertedMetatags[$fieldName]);
+      static::assertEquals(
+        $metatagElements[$gcId]->value,
+        $insertedMetatags[$fieldName],
+        'Metatag was inserted incorrectly.'
+      );
     }
   }
 
@@ -239,22 +243,33 @@ class ContentProcessorTest extends GcImportTestBase {
   public static function assertFileFieldEqualsResponseFiles(array $field, array $files) {
     // No files attached to GC item.
     if (empty($files)) {
-      static::assertEmpty($field);
+      static::assertEmpty($field, 'No files should be inserted.');
       return;
     }
 
     // Always insert the latest file gotten from API.
-    // There must only be one image in the field.
-    static::assertEquals(1, count($field));
+    static::assertEquals(1, count($field), 'There must only be one image in the field.');
     $fileId = reset($field)['target_id'];
     $fileField = File::load($fileId);
-    static::assertNotNull($fileField);
+    static::assertNotNull($fileField, 'File was not saved.');
     /** @var \Cheppers\GatherContent\DataTypes\File $fileResponse */
     $fileResponse = end($files);
 
-    static::assertEquals($fileResponse->url, $fileField->get('uri')->getValue()[0]['value']);
-    static::assertEquals($fileResponse->id, $fileField->get('gc_id')->getValue()[0]['value']);
-    static::assertEquals($fileResponse->fileName, $fileField->get('filename')->getValue()[0]['value']);
+    static::assertEquals(
+      $fileResponse->url,
+      $fileField->get('uri')->getValue()[0]['value'],
+      'Incorrect field value.'
+    );
+    static::assertEquals(
+      $fileResponse->id,
+      $fileField->get('gc_id')->getValue()[0]['value'],
+      'Incorrect field value.'
+    );
+    static::assertEquals(
+      $fileResponse->fileName,
+      $fileField->get('filename')->getValue()[0]['value'],
+      'Incorrect field value.'
+    );
   }
 
   /**
@@ -281,10 +296,17 @@ class ContentProcessorTest extends GcImportTestBase {
       });
 
       if ($option['selected']) {
-        static::assertEquals(1, count($termsMatchingThisOption));
+        static::assertEquals(
+          1,
+          count($termsMatchingThisOption),
+          'Term was not imported correctly.'
+        );
       }
       else {
-        static::assertEmpty($termsMatchingThisOption);
+        static::assertEmpty(
+          $termsMatchingThisOption,
+          'Term should not be imported.'
+        );
       }
     }
   }
@@ -308,13 +330,24 @@ class ContentProcessorTest extends GcImportTestBase {
     }
 
     // If there are selected radios, there must only be one.
-    static::assertEquals(1, count($field));
+    static::assertEquals(
+      1,
+      count($field),
+      'There must only be one radio taxonomy term imported.'
+    );
     $termId = reset($field)['target_id'];
     static::assertTrue(is_string($termId));
 
     $term = Term::load($termId);
-    static::assertEquals(MockData::RADIO_TAXONOMY_NAME, $term->get('vid')->getValue()[0]['target_id']);
-    static::assertNotEmpty($selectedOptions);
+    static::assertEquals(
+      MockData::RADIO_TAXONOMY_NAME,
+      $term->get('vid')->getValue()[0]['target_id'],
+      'Term was imported in the wrong taxonomy.'
+    );
+    static::assertNotEmpty(
+      $selectedOptions,
+      'No taxonomy term should be imported.'
+    );
 
     $optionsMatchingThisTerm = array_filter($selectedOptions, function ($option) use ($term) {
       $isSameName = $term->get('name')->getValue()[0]['value'] == $option['label'];
@@ -328,7 +361,11 @@ class ContentProcessorTest extends GcImportTestBase {
       return $isSameName && $isSameOptionId;
     });
 
-    static::assertEquals(1, count($optionsMatchingThisTerm));
+    static::assertEquals(
+      1,
+      count($optionsMatchingThisTerm),
+      'Term was incorrectly imported.'
+    );
   }
 
 }

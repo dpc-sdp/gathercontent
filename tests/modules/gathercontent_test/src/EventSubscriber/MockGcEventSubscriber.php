@@ -31,7 +31,10 @@ class MockGcEventSubscriber implements EventSubscriberInterface {
    */
   public function preNodeSave(PreNodeSaveEvent $event) {
     $node = $event->getNode();
-    TestCase::assertTrue($node->isNew());
+    TestCase::assertTrue(
+      $node->isNew(),
+      'The event was recieved after the entity got saved.'
+    );
     static::$preNodeSaveCalled++;
   }
 
@@ -40,7 +43,10 @@ class MockGcEventSubscriber implements EventSubscriberInterface {
    */
   public function postNodeSave(PostNodeSaveEvent $event) {
     $node = $event->getNode();
-    TestCase::assertFalse($node->isNew());
+    TestCase::assertFalse(
+      $node->isNew(),
+      'The event was recieved before the entity got saved.'
+    );
     static::$postNodeSaveCalled++;
   }
 

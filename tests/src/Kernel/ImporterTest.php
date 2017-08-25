@@ -52,15 +52,27 @@ class ImporterTest extends GcImportTestBase {
    * Assert import's events are called.
    */
   public static function assertMockImportEventsCalled() {
-    static::assertEquals(1, MockGcEventSubscriber::$postNodeSaveCalled);
-    static::assertEquals(1, MockGcEventSubscriber::$preNodeSaveCalled);
+    static::assertEquals(
+      1,
+      MockGcEventSubscriber::$postNodeSaveCalled,
+      'The post node save event should only be dispatched once.'
+    );
+    static::assertEquals(
+      1,
+      MockGcEventSubscriber::$preNodeSaveCalled,
+      'The pre node save event should only be dispatched once.'
+    );
   }
 
   /**
    * Assert status changed.
    */
   public static function assertStatusChooseCalled($statusId) {
-    static::assertEquals(MockDrupalGatherContentClient::$choosenStatus, $statusId);
+    static::assertEquals(
+      MockDrupalGatherContentClient::$choosenStatus,
+      $statusId,
+      'Wrong status was sent to the client.'
+    );
   }
 
   /**
@@ -68,14 +80,17 @@ class ImporterTest extends GcImportTestBase {
    */
   public static function assertMenuLinkCreated($parentMenuName, $menuTitle) {
     $menus = MenuLinkContent::loadMultiple();
-    $menusInParent = array_filter($menus, function ($menu) use ($parentMenuName) {
+    $menusInParent = array_filter($menus, function ($menu) use ($parentMenuName, $menuTitle) {
       /** @var \Drupal\menu_link_content\Entity\MenuLinkContent $menu */
-      return $menu->getMenuName() === $parentMenuName;
+      $isSameParentMenu = $menu->getMenuName() === $parentMenuName;
+      $isSameMenuName = $menu->getTitle() === $menuTitle;
+      return $isSameMenuName && $isSameParentMenu;
     });
-    static::assertEquals(1, count($menusInParent));
-    /** @var \Drupal\menu_link_content\Entity\MenuLinkContent $menu */
-    $menu = reset($menusInParent);
-    static::assertEquals($menuTitle, $menu->getTitle());
+    static::assertEquals(
+      1,
+      count($menusInParent),
+      "Didn't find '$menuTitle' in '$parentMenuName' parent menu."
+    );
   }
 
 }
