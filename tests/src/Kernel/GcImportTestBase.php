@@ -4,6 +4,7 @@ namespace Drupal\Tests\gathercontent\Kernel;
 
 use Drupal\gathercontent\Import\ContentProcess\ContentProcessor;
 use Drupal\gathercontent\Import\Importer;
+use Drupal\gathercontent\MetatagQuery;
 use Drupal\gathercontent_test\MockData;
 use Drupal\gathercontent_test\MockDrupalGatherContentClient;
 use Drupal\Tests\token\Kernel\KernelTestBase;
@@ -62,9 +63,25 @@ class GcImportTestBase extends KernelTestBase {
   public static function getProcessor() {
     static $processor = NULL;
     if ($processor === NULL) {
-      $processor = new ContentProcessor(static::getClient());
+      $processor = new ContentProcessor(
+        static::getClient(),
+        static::getMetatag()
+      );
     }
     return $processor;
+  }
+
+  /**
+   * Get singleton MetatagQuery object.
+   */
+  public static function getMetatag() {
+    static $metatag = NULL;
+    if ($metatag === NULL) {
+      $metatag = new MetatagQuery(
+        \Drupal::service('entity_field.manager')
+      );
+    }
+    return $metatag;
   }
 
   /**

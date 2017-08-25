@@ -12,6 +12,7 @@ use Drupal\Core\Language\Language;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\gathercontent\Entity\Mapping;
+use Drupal\gathercontent\MetatagQuery;
 use Drupal\gathercontent_upload\Event\GatherUploadContentEvents;
 use Drupal\gathercontent_upload\Event\PostNodeUploadEvent;
 use Drupal\gathercontent_upload\Event\PreNodeUploadEvent;
@@ -31,11 +32,17 @@ class Exporter implements ContainerInjectionInterface {
    */
   protected $client;
 
+  protected $metatag;
+
   /**
    * DI GatherContent Client.
    */
-  public function __construct(GatherContentClientInterface $client) {
+  public function __construct(
+    GatherContentClientInterface $client,
+    MetatagQuery $metatag
+  ) {
     $this->client = $client;
+    $this->metatag = $metatag;
   }
 
   /**
@@ -43,7 +50,8 @@ class Exporter implements ContainerInjectionInterface {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('gathercontent.client')
+      $container->get('gathercontent.client'),
+      $container->get('gathercontent.metatag')
     );
   }
 
@@ -205,7 +213,7 @@ class Exporter implements ContainerInjectionInterface {
           $field = $this->processSetFields($field, $current_entity, $is_translatable, $language, $current_field_name, $type, $bundle);
         }
         elseif ($mapping_data[$pane->id]['type'] === 'metatag') {
-          if (\Drupal::moduleHandler()->moduleExists('metatag') && check_metatag($entity->getType())) {
+          if (\Drupal::moduleHandler()->moduleExists('metatag') && $this->metatag->checkMetatag($entity->getType())) {
             $field = $this->processMetaTagFields($field, $entity, $local_field_id, $is_translatable, $language);
           }
         }
@@ -307,7 +315,7 @@ class Exporter implements ContainerInjectionInterface {
    *   Returns field.
    */
   public function processMetaTagFields(Element $field, EntityInterface $entity, $local_field_name, $is_translatable, $language) {
-    $metatag_fields = get_metatag_fields($entity->getType());
+    $metatag_fields = $this->metatag->getMetatagFields($entity->getType());
 
     foreach ($metatag_fields as $metatag_field) {
       if ($is_translatable) {

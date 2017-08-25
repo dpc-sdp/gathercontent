@@ -8,3 +8,6 @@ services:
   gathercontent.importer:
     class: Drupal\gathercontent\Import\Importer
     arguments: ['@gathercontent.client', '@gathercontent.content_processor', '@event_dispatcher']
+  gathercontent.metatag:
+    class: Drupal\gathercontent\MetatagQuery
+    arguments: ['@entity_field.manager']

@@ -15,6 +15,7 @@ use Drupal\gathercontent\Import\Importer;
 use Drupal\gathercontent\Import\ImportOptions;
 use Drupal\gathercontent\Import\NodeUpdateMethod;
 use Drupal\gathercontent\MappingLoader;
+use Drupal\gathercontent\MetatagQuery;
 use Drupal\node\NodeInterface;
 use Drupal\taxonomy\Entity\Term;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -38,11 +39,17 @@ class ContentProcessor implements ContainerInjectionInterface {
    */
   protected $importedReferences = [];
 
+  protected $metatag;
+
   /**
    * {@inheritdoc}
    */
-  public function __construct(GatherContentClientInterface $client) {
+  public function __construct(
+    GatherContentClientInterface $client,
+    MetatagQuery $metatag
+  ) {
     $this->client = $client;
+    $this->metatag = $metatag;
     $this->init();
   }
 
@@ -51,7 +58,8 @@ class ContentProcessor implements ContainerInjectionInterface {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('gathercontent.client')
+      $container->get('gathercontent.client'),
+      $container->get('gathercontent.metatag')
     );
   }
 
@@ -305,8 +313,8 @@ class ContentProcessor implements ContainerInjectionInterface {
    *   If content save fails, exceptions is thrown.
    */
   public function processMetatagPane(NodeInterface &$entity, $local_field_name, $field, $content_type, $is_translatable, $language) {
-    if (\Drupal::moduleHandler()->moduleExists('metatag') && check_metatag($content_type)) {
-      $metatag_fields = get_metatag_fields($content_type);
+    if (\Drupal::moduleHandler()->moduleExists('metatag') && $this->metatag->checkMetatag($content_type)) {
+      $metatag_fields = $this->metatag->getMetatagFields($content_type);
 
       foreach ($metatag_fields as $metatag_field) {
         if ($is_translatable) {
