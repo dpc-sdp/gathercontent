@@ -4,15 +4,11 @@ namespace Drupal\gathercontent\Import;
 
 use Cheppers\GatherContent\DataTypes\Item;
 use Cheppers\GatherContent\GatherContentClientInterface;
-use Drupal\Component\EventDispatcher\ContainerAwareEventDispatcher;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
-use Drupal\gathercontent\Entity\Mapping;
 use Drupal\gathercontent\Event\GatherContentEvents;
 use Drupal\gathercontent\Event\PostNodeSaveEvent;
 use Drupal\gathercontent\Event\PreNodeSaveEvent;
 use Drupal\gathercontent\Import\ContentProcess\ContentProcessor;
-use Drupal\gathercontent\MappingLoader;
-use Drupal\node\NodeInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
