@@ -104,7 +104,7 @@ class Importer implements ContainerInjectionInterface {
     $entity->save();
     $entity = $entity->getTranslation(reset($entity->getTranslationLanguages())->getId());
 
-    static::createMenu($entity, $importOptions->getParentMenuItem());
+    MenuCreator::createMenu($entity, $importOptions->getParentMenuItem());
 
     $this->eventDispatcher->dispatch(
       GatherContentEvents::POST_NODE_SAVE,
@@ -112,30 +112,6 @@ class Importer implements ContainerInjectionInterface {
     );
 
     return $entity->id();
-  }
-
-  /**
-   * Create a menu link to the imported node.
-   */
-  public static function createMenu(NodeInterface $entity, $parentMenuItem) {
-    $isContentTypeTranslatable = static::isContentTypeTranslatable($entity->bundle());
-    $isMenuTranslatable = static::isMenuTranslatable();
-    $menuLinkDefaults = menu_ui_get_menu_link_defaults($entity);
-    if (!(bool) $menuLinkDefaults['id']) {
-      if ($isContentTypeTranslatable && $isMenuTranslatable) {
-        $languages = $entity->getTranslationLanguages();
-        $originalLinkId = NULL;
-        foreach ($languages as $langcode => $language) {
-          $localized_entity = $entity->hasTranslation($langcode) ? $entity->getTranslation($langcode) : NULL;
-          if (!is_null($localized_entity)) {
-            gc_create_menu_link($entity->id(), $localized_entity->getTitle(), $parentMenuItem, $langcode, $originalLinkId);
-          }
-        }
-      }
-      else {
-        gc_create_menu_link($entity->id(), $entity->getTitle(), $parentMenuItem);
-      }
-    }
   }
 
   /**
@@ -166,16 +142,6 @@ class Importer implements ContainerInjectionInterface {
       ->moduleExists('content_translation')
       && \Drupal::service('content_translation.manager')
         ->isEnabled('node', $contentType);
-  }
-
-  /**
-   * Decide whether a menu is translatable.
-   */
-  public static function isMenuTranslatable() {
-    return \Drupal::moduleHandler()
-      ->moduleExists('content_translation')
-      && \Drupal::service('content_translation.manager')
-        ->isEnabled('menu_link_content');
   }
 
 }
