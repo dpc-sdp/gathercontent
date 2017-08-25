@@ -329,14 +329,13 @@ class ContentProcessorTest extends GcImportTestBase {
       return;
     }
 
-    // If there are selected radios, there must only be one.
     static::assertEquals(
       1,
       count($field),
       'There must only be one radio taxonomy term imported.'
     );
     $termId = reset($field)['target_id'];
-    static::assertTrue(is_string($termId));
+    static::assertTrue(is_string($termId), 'Term id should be a string, but it is a(n) "' . gettype($termId) . '".');
 
     $term = Term::load($termId);
     static::assertEquals(
