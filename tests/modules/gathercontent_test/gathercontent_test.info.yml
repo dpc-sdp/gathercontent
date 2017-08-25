@@ -1,5 +1,5 @@
 name: 'GC Test'
-description: 'GC tests for import functionality without paragraphs.'
+description: 'Tests of import functionality.'
 package: 'Testing'
 type: module
 core: 8.x

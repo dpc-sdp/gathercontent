@@ -6,11 +6,10 @@ use Cheppers\GatherContent\DataTypes\Element;
 use Cheppers\GatherContent\DataTypes\Item;
 use Drupal\file\Entity\File;
 use Drupal\gathercontent\Entity\Operation;
-use Drupal\gathercontent\Import\ContentProcess\ContentProcessor;
 use Drupal\gathercontent\Import\ImportOptions;
 use Drupal\gathercontent\Import\NodeUpdateMethod;
 use Drupal\gathercontent\MappingLoader;
-use Drupal\KernelTests\KernelTestBase;
+use Drupal\gathercontent_test\MockData;
 use Drupal\node\NodeInterface;
 use Drupal\paragraphs\Entity\Paragraph;
 use Drupal\taxonomy\Entity\Term;
@@ -26,38 +25,7 @@ use Drupal\taxonomy\Entity\Term;
  *
  * @group gathercontent
  */
-class ContentProcessorTest extends KernelTestBase {
-
-  /**
-   * {@inheritdoc}
-   */
-  protected static $modules = [
-    'node', 'text', 'field', 'user', 'image', 'file', 'taxonomy', 'language',
-    'content_translation', 'paragraphs', 'entity_reference_revisions', 'system',
-    'gathercontent', 'test_module', 'metatag',
-  ];
-
-  /**
-   * {@inheritdoc}
-   */
-  protected function setUp() {
-    parent::setUp();
-    $this->installSchema('node', 'node_access');
-    $this->installEntitySchema('node');
-    $this->installEntitySchema('gathercontent_operation');
-    $this->installEntitySchema('file');
-    $this->installSchema('file', ['file_usage']);
-    $this->installEntitySchema('taxonomy_term');
-    $this->installEntitySchema('paragraph');
-    $this->installEntitySchema('user');
-    $this->installConfig(['test_module']);
-    MockData::$drupalRoot = $this->getDrupalRoot();
-    /** @var \Drupal\taxonomy\Entity\Term[] $terms */
-    $terms = MockData::createTaxonomyTerms();
-    foreach ($terms as $term) {
-      $term->save();
-    }
-  }
+class ContentProcessorTest extends GcImportTestBase {
 
   /**
    * Data provider for createNodeTest.
@@ -142,17 +110,6 @@ class ContentProcessorTest extends KernelTestBase {
     $node = static::getProcessor()->createNode($gcItem, $importOptions, $files);
     $node->save();
     static::assertNodeEqualsGcItem($node->getTranslation('en'), $gcItem, $files);
-  }
-
-  /**
-   * Get processor injected with mock object.
-   */
-  public static function getProcessor() {
-    return new ContentProcessor(
-      new MockDrupalGatherContentClient(
-        \Drupal::service('http_client')
-      )
-    );
   }
 
   /**

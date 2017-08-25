@@ -1,10 +1,11 @@
 <?php
 
-namespace Drupal\Tests\gathercontent\Kernel;
+namespace Drupal\gathercontent_test;
 
 use Cheppers\GatherContent\DataTypes\ElementFiles;
 use Cheppers\GatherContent\DataTypes\File;
 use Cheppers\GatherContent\DataTypes\Item;
+use Cheppers\GatherContent\DataTypes\Status;
 use Cheppers\GatherContent\DataTypes\Tab;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\gathercontent\Entity\Mapping;
@@ -173,7 +174,7 @@ class MockData {
       $file->userId = static::getUniqueInt();
       $file->itemId = $item->id;
       $file->field = $element->id;
-      $file->url = static::$drupalRoot . '/' . drupal_get_path('module', 'test_module') . '/images/test.jpg';
+      $file->url = static::$drupalRoot . '/' . drupal_get_path('module', 'gathercontent_test') . '/images/test.png';
       $file->fileName = 'test.jpg';
       $file->size = 60892;
       $file->type = 'field';
@@ -192,6 +193,40 @@ class MockData {
     $mapping_id = \Drupal::entityQuery('gathercontent_mapping')->execute();
     $mapping_id = reset($mapping_id);
     return Mapping::load($mapping_id);
+  }
+
+  /**
+   * Get mock statuses.
+   */
+  public static function getStatuses() {
+    $statuses = [];
+
+    $status1 = new Status();
+    $status1->id = 1;
+    $status1->isDefault = TRUE;
+    $status1->position = 1;
+    $status1->color = '#FF0000';
+    $status1->name = 'Status 1';
+    $status1->canEdit = TRUE;
+    $statuses[] = $status1;
+
+    $status2 = new Status();
+    $status2->id = 2;
+    $status2->position = 2;
+    $status2->color = '#00FF00';
+    $status2->name = 'Status 2';
+    $status2->canEdit = TRUE;
+    $statuses[] = $status2;
+
+    $status3 = new Status();
+    $status3->id = 3;
+    $status3->position = 3;
+    $status3->color = '#0000FF';
+    $status3->name = 'Status 3';
+    $status3->canEdit = TRUE;
+    $statuses[] = $status3;
+
+    return $statuses;
   }
 
 }
