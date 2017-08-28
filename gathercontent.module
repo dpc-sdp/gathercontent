@@ -67,7 +67,8 @@ function gathercontent_import_process($gc_id, ImportOptions $import_options, &$c
     ]);
 
   try {
-    $importer->import($item, $import_options);
+    $nid = $importer->import($item, $import_options);
+    $operation_item->nid = $nid;
     $operation_item->status = 'Success';
     $operation_item->save();
   }
