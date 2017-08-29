@@ -441,9 +441,21 @@ class ContentProcessor implements ContainerInjectionInterface {
     foreach ($options as $option) {
       if ($option['selected']) {
         if ($field_info->getType() === 'entity_reference') {
+          if (!empty($field_info->getSetting('handler_settings')['auto_create_bundle'])) {
+            $vid = $field_info->getSetting('handler_settings')['auto_create_bundle'];
+          }
+          else {
+            $handler_settings = $field_info->getSetting('handler_settings');
+            $handler_settings = reset($handler_settings);
+            $vid = array_shift($handler_settings);
+          }
+
           $taxonomy = \Drupal::entityTypeManager()
             ->getStorage('taxonomy_term')
-            ->loadByProperties(['gathercontent_option_ids' => $option['name']]);
+            ->loadByProperties([
+              'gathercontent_option_ids' => $option['name'],
+              'vid' => $vid,
+            ]);
 
           /** @var \Drupal\taxonomy\Entity\Term $term */
           $term = array_shift($taxonomy);
@@ -540,9 +552,22 @@ class ContentProcessor implements ContainerInjectionInterface {
       else {
         // Dealing with predefined options.
         if ($field_info->getType() === 'entity_reference') {
+          if (!empty($field_info->getSetting('handler_settings')['auto_create_bundle'])) {
+            $vid = $field_info->getSetting('handler_settings')['auto_create_bundle'];
+          }
+          else {
+            $handler_settings = $field_info->getSetting('handler_settings');
+            $handler_settings = reset($handler_settings);
+            $vid = array_shift($handler_settings);
+          }
+
           $terms = \Drupal::entityTypeManager()
             ->getStorage('taxonomy_term')
-            ->loadByProperties(['gathercontent_option_ids' => $option['name']]);
+            ->loadByProperties([
+              'gathercontent_option_ids' => $option['name'],
+              'vid' => $vid,
+            ]);
+
           /** @var \Drupal\taxonomy\Entity\Term $term */
           $term = array_shift($terms);
           if (!empty($term)) {
