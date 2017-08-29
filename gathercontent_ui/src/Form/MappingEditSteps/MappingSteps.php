@@ -448,7 +448,9 @@ abstract class MappingSteps {
               }
             }
 
-            $this->entityReferenceFieldsOptions[] = $key;
+            if (empty($this->entityReferenceFieldsOptions) || !in_array($key, $this->entityReferenceFieldsOptions)) {
+              $this->entityReferenceFieldsOptions[] = $key;
+            }
           }
         }
       }

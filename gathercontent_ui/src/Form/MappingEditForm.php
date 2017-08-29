@@ -79,10 +79,10 @@ class MappingEditForm extends MappingEditFormBase {
 
     if ($this->step === 'field_mapping') {
       if (!$this->new) {
-        $this->mappingStep = $this->mappingService->getNewStep($mapping, $template);
+        $this->mappingStep = $this->mappingService->getEditStep($mapping, $template);
       }
       else {
-        $this->mappingStep = $this->mappingService->getEditStep($mapping, $template);
+        $this->mappingStep = $this->mappingService->getNewStep($mapping, $template);
       }
     }
     elseif ($this->step === 'er_mapping') {
@@ -103,6 +103,8 @@ class MappingEditForm extends MappingEditFormBase {
 
     $this->setEntityReferenceFields($this->mappingStep->getEntityReferenceFields());
     $this->setEntityReferenceFieldsOptions($this->mappingStep->getEntityReferenceFieldsOptions());
+
+    $form['#attached']['drupalSettings']['gathercontent'] = $this->entityReferenceFieldsOptions;
 
     return $form;
   }
