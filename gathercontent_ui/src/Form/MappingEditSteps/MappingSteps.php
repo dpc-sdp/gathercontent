@@ -407,7 +407,7 @@ abstract class MappingSteps {
                 ->load($bundle)
                 ->label();
 
-              $new_bundle_label .= ' (' . $bundle_name . ')';
+              $new_bundle_label .= ' (bundle: ' . $bundle_name . ')';
 
               $targetFields = $this->filterFieldsRecursively($gc_field, $bundle, $target_type, $new_nested_ids, $new_bundle_label);
 
