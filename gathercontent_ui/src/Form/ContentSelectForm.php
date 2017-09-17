@@ -4,13 +4,11 @@ namespace Drupal\gathercontent_ui\Form;
 
 use Cheppers\GatherContent\GatherContentClientInterface;
 use Drupal\Core\Datetime\DateFormatterInterface;
-use Drupal\Core\Entity\EntityManagerInterface;
-use Drupal\Core\Entity\Query\QueryFactory;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Link;
 use Drupal\Core\Url;
 use Drupal\gathercontent\Entity\Mapping;
-use Drupal\node\Entity\Node;
 use Drupal\user\PrivateTempStoreFactory;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -30,14 +28,12 @@ class ContentSelectForm extends MultistepFormBase {
    * {@inheritdoc}
    */
   public function __construct(
-    EntityManagerInterface $entity_manager,
+    EntityTypeManagerInterface $entity_type_manager,
     DateFormatterInterface $date_formatter,
     PrivateTempStoreFactory $temp_store_factory,
-    QueryFactory $entityQuery,
     GatherContentClientInterface $client
   ) {
-    parent::__construct($entity_manager, $date_formatter, $temp_store_factory,
-      $entityQuery);
+    parent::__construct($entity_type_manager, $date_formatter, $temp_store_factory);
     $this->client = $client;
   }
 
@@ -46,10 +42,9 @@ class ContentSelectForm extends MultistepFormBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('entity.manager'),
+      $container->get('entity_type.manager'),
       $container->get('date.formatter'),
       $container->get('user.private_tempstore'),
-      $container->get('entity.query'),
       $container->get('gathercontent.client')
     );
   }
@@ -81,11 +76,11 @@ class ContentSelectForm extends MultistepFormBase {
       }
     }
 
-    $node_ids = $this->entityQuery->get('node')
-      ->condition('gc_id', NULL, 'IS NOT')
+    $query = $this->entityTypeManager->getStorage('node')->getQuery();
+    $node_ids = $query->condition('gc_id', NULL, 'IS NOT')
       ->condition('gc_mapping_id', NULL, 'IS NOT')
       ->execute();
-    $nodes = Node::loadMultiple($node_ids);
+    $nodes = $this->entityTypeManager->getStorage('node')->loadMultiple($node_ids);
     $selected_projects = [];
 
     foreach ($created_mapping_ids as $mapping) {

@@ -3,8 +3,7 @@
 namespace Drupal\gathercontent_ui\Form;
 
 use Drupal\Core\Datetime\DateFormatterInterface;
-use Drupal\Core\Entity\EntityManagerInterface;
-use Drupal\Core\Entity\Query\QueryFactory;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\user\PrivateTempStoreFactory;
@@ -19,11 +18,11 @@ abstract class MultistepFormBase extends FormBase {
 
 
   /**
-   * Drupal\Core\Entity\EntityManager definition.
+   * Drupal\Core\Entity\EntityTypeManager definition.
    *
-   * @var \Drupal\Core\Entity\EntityManager
+   * @var \Drupal\Core\Entity\EntityTypeManager
    */
-  protected $entityManager;
+  protected $entityTypeManager;
 
   /**
    * Drupal\Core\Datetime\DateFormatter definition.
@@ -40,13 +39,6 @@ abstract class MultistepFormBase extends FormBase {
   protected $tempStoreFactory;
 
   /**
-   * Drupal\Core\Entity\Query\QueryFactory definition.
-   *
-   * @var \Drupal\Core\Entity\Query\QueryFactory
-   */
-  protected $entityQuery;
-
-  /**
    * Drupal\user\PrivateTempStore definition.
    *
    * @var \Drupal\user\PrivateTempStore
@@ -56,25 +48,21 @@ abstract class MultistepFormBase extends FormBase {
   /**
    * Constructor for class.
    *
-   * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
-   *   EntityManagerInterface object.
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
+   *   EntityTypeManagerInterface object.
    * @param \Drupal\Core\Datetime\DateFormatterInterface $date_formatter
    *   DateFormatterInterface object.
    * @param \Drupal\user\PrivateTempStoreFactory $temp_store_factory
    *   PrivateTempStoreFactory object.
-   * @param \Drupal\Core\Entity\Query\QueryFactory $entityQuery
-   *   QueryFactory object.
    */
   public function __construct(
-    EntityManagerInterface $entity_manager,
+    EntityTypeManagerInterface $entity_type_manager,
     DateFormatterInterface $date_formatter,
-    PrivateTempStoreFactory $temp_store_factory,
-    QueryFactory $entityQuery
+    PrivateTempStoreFactory $temp_store_factory
   ) {
-    $this->entityManager = $entity_manager;
+    $this->entityTypeManager = $entity_type_manager;
     $this->dateFormatter = $date_formatter;
     $this->tempStoreFactory = $temp_store_factory;
-    $this->entityQuery = $entityQuery;
     $this->store = $this->tempStoreFactory->get('gathercontent_multistep_data');
   }
 
@@ -83,10 +71,9 @@ abstract class MultistepFormBase extends FormBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('entity.manager'),
+      $container->get('entity_type.manager'),
       $container->get('date.formatter'),
-      $container->get('user.private_tempstore'),
-      $container->get('entity.query')
+      $container->get('user.private_tempstore')
     );
   }
 
