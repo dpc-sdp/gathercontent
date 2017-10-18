@@ -725,6 +725,10 @@ function gathercontent_gathercontent_process_metatag_pane(EntityMetadataWrapper 
  */
 function gathercontent_gathercontent_process_content_pane(EntityMetadataWrapper &$node, $local_field_name, $field, $content_type, $is_translatable, $language, $files, &$_title_is_mapped = FALSE) {
   $field_info = field_info_field($local_field_name);
+  $field_instances = field_info_instances('node', $content_type);
+  $field_settings  = $field_instances[$local_field_name]['settings'];
+  $is_textfield = isset($field_settings['text_processing']) ? !$field_settings['text_processing'] : FALSE;
+
   $is_translatable = $is_translatable && $field_info['translatable'];
   switch ($field->type) {
     case 'files':
@@ -767,10 +771,15 @@ function gathercontent_gathercontent_process_content_pane(EntityMetadataWrapper 
 
           }
           else {
-            $node->language($language)->{$local_field_name}->set(array(
-              'value' => $field->value,
-              'format' => ($field->plain_text ? 'plain_text' : 'filtered_gathercontent_html'),
-            ));
+            if ($is_textfield) {
+              $node->language($language)->{$local_field_name}->set($field->value);
+            }
+            else {
+              $node->language($language)->{$local_field_name}->set(array(
+                'value' => $field->value,
+                'format' => ($field->plain_text ? 'plain_text' : 'filtered_gathercontent_html'),
+              ));
+            }
           }
         }
         else {
@@ -790,10 +799,15 @@ function gathercontent_gathercontent_process_content_pane(EntityMetadataWrapper 
             $_title_is_mapped = TRUE;
           }
           else {
-            $node->{$local_field_name}->set(array(
-              'value' => $field->value,
-              'format' => ($field->plain_text ? 'plain_text' : 'filtered_gathercontent_html'),
-            ));
+            if ($is_textfield) {
+              $node->{$local_field_name}->set($field->value);
+            }
+            else{
+              $node->{$local_field_name}->set(array(
+                'value' => $field->value,
+                'format' => ($field->plain_text ? 'plain_text' : 'filtered_gathercontent_html'),
+              ));
+            }
           }
         }
       }
