@@ -355,7 +355,7 @@ abstract class MappingSteps {
         // and checkboxes (GC).
         switch ($gc_field->type) {
           case 'text':
-            if ($gc_field->plainText && in_array($instance->getType(), [
+            if (!$gc_field->plainText && in_array($instance->getType(), [
               'string',
               'string_long',
               'email',
