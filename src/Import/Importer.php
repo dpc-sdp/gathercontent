@@ -98,7 +98,9 @@ class Importer implements ContainerInjectionInterface {
     );
 
     $entity->save();
-    $entity = $entity->getTranslation(reset($entity->getTranslationLanguages())->getId());
+    $languages = $entity->getTranslationLanguages();
+    $translation_id = reset($languages)->getId();
+    $entity = $entity->getTranslation($translation_id);
 
     MenuCreator::createMenu($entity, $importOptions->getParentMenuItem());
 
