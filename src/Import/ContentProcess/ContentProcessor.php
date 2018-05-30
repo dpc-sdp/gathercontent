@@ -4,6 +4,7 @@ namespace Drupal\gathercontent\Import\ContentProcess;
 
 use Cheppers\GatherContent\DataTypes\Item;
 use Cheppers\GatherContent\GatherContentClientInterface;
+use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Component\Render\PlainTextOutput;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\EntityInterface;
@@ -39,17 +40,31 @@ class ContentProcessor implements ContainerInjectionInterface {
    */
   protected $importedReferences = [];
 
+  /**
+   * Meta tag query object.
+   *
+   * @var \Drupal\gathercontent\MetatagQuery
+   */
   protected $metatag;
+
+  /**
+   * The time service.
+   *
+   * @var \Drupal\Component\Datetime\TimeInterface
+   */
+  protected $time;
 
   /**
    * {@inheritdoc}
    */
   public function __construct(
     GatherContentClientInterface $client,
-    MetatagQuery $metatag
+    MetatagQuery $metatag,
+    TimeInterface $time
   ) {
     $this->client = $client;
     $this->metatag = $metatag;
+    $this->time = $time;
     $this->init();
   }
 
@@ -59,7 +74,8 @@ class ContentProcessor implements ContainerInjectionInterface {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('gathercontent.client'),
-      $container->get('gathercontent.metatag')
+      $container->get('gathercontent.metatag'),
+      $container->get('datetime.time')
     );
   }
 
@@ -89,16 +105,28 @@ class ContentProcessor implements ContainerInjectionInterface {
     // Create a Drupal entity corresponding to GC item.
     $entity = NodeUpdateMethod::getDestinationNode($gc_item->id, $options->getNodeUpdateMethod(), $content_type, $langcode);
 
+    if ($entity === FALSE) {
+      throw new \Exception("System error, please contact you administrator.");
+    }
+
+    // Create new revision according to the import options.
+    if (
+      $entity->getEntityType()->isRevisionable() &&
+      !$entity->isNew() &&
+      $options->getCreateNewRevision()
+    ) {
+      $entity->setNewRevision(TRUE);
+      $entity->setRevisionLogMessage('Created revision for node ID: ' . $entity->id());
+      $entity->setRevisionCreationTime($this->time->getRequestTime());
+      $entity->setRevisionUserId(\Drupal::currentUser()->id());
+    }
+
     $entity->set('gc_id', $gc_item->id);
     $entity->set('gc_mapping_id', $mapping->id());
     $entity->setOwnerId(\Drupal::currentUser()->id());
 
     if ($entity->isNew()) {
       $entity->setPublished($options->getPublish());
-    }
-
-    if ($entity === FALSE) {
-      throw new \Exception("System error, please contact you administrator.");
     }
 
     foreach ($gc_item->config as $pane) {

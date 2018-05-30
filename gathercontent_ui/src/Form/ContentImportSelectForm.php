@@ -362,6 +362,17 @@ class ContentImportSelectForm extends FormBase {
         ],
       ];
 
+      $form['node_create_new_revision'] = [
+        '#type' => 'checkbox',
+        '#title' => $this->t('Create new revision'),
+        '#default_value' => $import_config->get('node_create_new_revision'),
+        '#states' => [
+          'visible' => [
+            ':input[name="node_update_method"]' => ['value' => NodeUpdateMethod::ALWAYS_UPDATE],
+          ],
+        ],
+      ];
+
       $form['actions']['#type'] = 'actions';
       $form['actions']['submit'] = [
         '#type' => 'submit',
@@ -469,6 +480,7 @@ class ContentImportSelectForm extends FormBase {
             $import_options = new ImportOptions(
               $form_state->getValue('node_update_method'),
               $drupal_status,
+              $form_state->getValue('node_create_new_revision'),
               $form_state->getValue('status'),
               $parent_menu_item,
               $operation->uuid()
@@ -498,6 +510,7 @@ class ContentImportSelectForm extends FormBase {
               $import_options = new ImportOptions(
                 $form_state->getValue('node_update_method'),
                 $drupal_status,
+                $form_state->getValue('node_create_new_revision'),
                 $form_state->getValue('status'),
                 $parent_menu_item,
                 $operation->uuid()
