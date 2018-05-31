@@ -251,6 +251,11 @@ class ContentImportSelectForm extends FormBase {
                 '#title' => $this->t('Publish'),
                 '#title_display' => 'invisible',
                 '#default_value' => isset($this->drupalStatus[$item->id]) ? $this->drupalStatus[$item->id] : $import_config->get('node_default_status'),
+                '#states' => [
+                  'disabled' => [
+                    ':input[name="items[' . $item->id . '][selected]"]' => ['checked' => FALSE],
+                  ],
+                ],
               ],
               'menu' => [
                 '#type' => 'select',
@@ -262,6 +267,11 @@ class ContentImportSelectForm extends FormBase {
                   ->getParentSelectOptions('', $available_menus),
                 '#title' => t('Menu'),
                 '#title_display' => 'invisible',
+                '#states' => [
+                  'disabled' => [
+                    ':input[name="items[' . $item->id . '][selected]"]' => ['checked' => FALSE],
+                  ],
+                ],
               ],
             ];
           }
