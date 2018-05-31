@@ -149,8 +149,17 @@ class ContentProcessor implements ContainerInjectionInterface {
       foreach ($pane->elements as $field) {
         if (isset($mapping_data[$pane->id]['elements'][$field->id]) && !empty($mapping_data[$pane->id]['elements'][$field->id])) {
           $local_field_id = $mapping_data[$pane->id]['elements'][$field->id];
+          $local_field_text_format = '';
+
+          if (
+            isset($mapping_data[$pane->id]['element_text_formats']) &&
+            !empty($mapping_data[$pane->id]['element_text_formats'][$field->id])
+          ) {
+            $local_field_text_format = $mapping_data[$pane->id]['element_text_formats'][$field->id];
+          }
+
           if (isset($mapping_data[$pane->id]['type']) && ($mapping_data[$pane->id]['type'] === 'content') || !isset($mapping_data[$pane->id]['type'])) {
-            $this->processContentPane($entity, $local_field_id, $field, $is_pane_translatable, $language, $files);
+            $this->processContentPane($entity, $local_field_id, $field, $is_pane_translatable, $language, $files, $local_field_text_format);
           }
           elseif (isset($mapping_data[$pane->id]['type']) && ($mapping_data[$pane->id]['type'] === 'metatag')) {
             $this->processMetatagPane($entity, $local_field_id, $field, $mapping->getContentType(), $is_pane_translatable, $language);
@@ -181,8 +190,10 @@ class ContentProcessor implements ContainerInjectionInterface {
    *   Language of translation if applicable.
    * @param array $files
    *   Array of files fetched from GatherContent.
+   * @param string $local_field_text_format
+   *   Text format setting for the local drupal field.
    */
-  public function processContentPane(EntityInterface &$entity, $local_field_id, $field, $is_translatable, $language, array $files) {
+  public function processContentPane(EntityInterface &$entity, $local_field_id, $field, $is_translatable, $language, array $files, $local_field_text_format) {
     $local_id_array = explode('||', $local_field_id);
 
     if (count($local_id_array) > 1) {
@@ -245,7 +256,7 @@ class ContentProcessor implements ContainerInjectionInterface {
             if (count($local_id_array) > 1 || empty($check_field_value)) {
               $this->processContentPane($childEntity[$target['target_id']],
                 implode('||', $local_id_array), $field, $is_translatable,
-                $language, $files);
+                $language, $files, $local_field_text_format);
 
               $childEntity[$target['target_id']]->save();
               $to_import = FALSE;
@@ -259,7 +270,8 @@ class ContentProcessor implements ContainerInjectionInterface {
           'type' => $field_target_info->getTargetBundle(),
         ]);
 
-        $this->processContentPane($childEntity, implode('||', $local_id_array), $field, $is_translatable, $language, $files);
+        $this->processContentPane($childEntity, implode('||', $local_id_array),
+          $field, $is_translatable, $language, $files, $local_field_text_format);
 
         $childEntity->save();
 
@@ -315,7 +327,7 @@ class ContentProcessor implements ContainerInjectionInterface {
 
         default:
           $this->processDefaultField($entity, $field_info, $is_translatable,
-            $language, $field);
+            $language, $field, $local_field_text_format);
           break;
       }
     }
@@ -376,8 +388,10 @@ class ContentProcessor implements ContainerInjectionInterface {
    *   Language of translation if applicable.
    * @param object $field
    *   Object with field attributes.
+   * @param string $text_format
+   *   Text format string.
    */
-  protected function processDefaultField(EntityInterface &$entity, FieldConfig $field_info, $is_translatable, $language, $field) {
+  protected function processDefaultField(EntityInterface &$entity, FieldConfig $field_info, $is_translatable, $language, $field, $text_format) {
     $local_field_name = $field_info->getName();
     $value = $field->value;
     $target = &$entity;
@@ -411,12 +425,11 @@ class ContentProcessor implements ContainerInjectionInterface {
         // Probably some kind of text field.
         $target->{$local_field_name} = [
           'value' => $value,
-          'format' => ($field->plainText ? 'plain_text' : 'basic_html'),
+          'format' => ($field->plainText ? 'plain_text' : (!empty($text_format) ? $text_format : 'basic_html')),
         ];
         break;
     }
   }
-
 
   /**
    * Processing function for section type of field.
