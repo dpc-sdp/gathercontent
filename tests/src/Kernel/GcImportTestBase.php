@@ -65,7 +65,8 @@ class GcImportTestBase extends KernelTestBase {
     if ($processor === NULL) {
       $processor = new ContentProcessor(
         static::getClient(),
-        static::getMetatag()
+        static::getMetatag(),
+        \Drupal::service('datetime.time')
       );
     }
     return $processor;
