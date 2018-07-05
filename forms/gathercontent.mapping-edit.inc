@@ -316,11 +316,13 @@ function gathercontent_mapping_edit_form_validate($form, &$form_state) {
       'content_type',
       'id',
       'updated',
+      'submit',
+      'cancel',
     ));
 
     $mapping_data = array();
     foreach ($form_state['values'] as $key => $value) {
-      if (!in_array($key, $non_data_elements) && substr_compare($key, 'tab', 0, 3) === 0) {
+      if (!in_array($key, $non_data_elements)) {
         $mapping_data[$key] = $value;
       }
     }
@@ -431,11 +433,13 @@ function gathercontent_mapping_edit_form_submit($form, &$form_state) {
       'content_type',
       'id',
       'updated',
+      'submit',
+      'cancel',
     ));
 
     $mapping_data = array();
     foreach ($form_state['values'] as $key => $value) {
-      if (!in_array($key, $non_data_elements) && substr_compare($key, 'tab', 0, 3) === 0) {
+      if (!in_array($key, $non_data_elements)) {
         $mapping_data[$key] = $value;
       }
     }
