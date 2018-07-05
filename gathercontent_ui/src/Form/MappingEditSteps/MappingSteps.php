@@ -159,11 +159,14 @@ abstract class MappingSteps {
       'updated',
       'gathercontent_project',
       'gathercontent_template',
+      'er_mapping_type',
+      'submit',
+      'close',
     ]);
 
     $mapping_data = [];
     foreach ($formState->getValues() as $key => $value) {
-      if (!in_array($key, $non_data_elements) && substr_compare($key, 'tab', 0, 3) === 0) {
+      if (!in_array($key, $non_data_elements)) {
         $mapping_data[$key] = $value;
       }
     }

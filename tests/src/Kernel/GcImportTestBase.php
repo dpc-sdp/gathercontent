@@ -7,7 +7,7 @@ use Drupal\gathercontent\Import\Importer;
 use Drupal\gathercontent\MetatagQuery;
 use Drupal\gathercontent_test\MockData;
 use Drupal\gathercontent_test\MockDrupalGatherContentClient;
-use Drupal\Tests\token\Kernel\KernelTestBase;
+use Drupal\KernelTests\KernelTestBase;
 
 /**
  * Base class for import kernel tests.
