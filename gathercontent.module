@@ -537,7 +537,7 @@ function _gathercontent_fetcher($gathercontent_id, $uuid, $drupal_status, $statu
             $node->save();
           }
           elseif ($is_translatable && (isset($node->language) || !empty($node->language))) {
-            $handler = entity_translation_get_handler('node', $node);
+            $handler = entity_translation_get_handler('node', $node->value());
             $translation = array(
               'translate' => 0,
               'status' => 1,
