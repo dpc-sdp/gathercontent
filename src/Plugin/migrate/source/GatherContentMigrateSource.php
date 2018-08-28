@@ -78,7 +78,6 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
       'templateId',
       'tabId',
       'fields',
-      'identifier',
     ];
 
     foreach ($configFields as $configField) {
@@ -124,14 +123,8 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
    * {@inheritdoc}
    */
   public function getIds() {
-    if (is_array($this->identifier)) {
-      return $this->identifier;
-    }
-
     return [
-      $this->identifier => [
-        'type' => 'string',
-      ],
+      'id' => ['type' => 'string'],
     ];
   }
 
