@@ -2,8 +2,9 @@
 
 namespace Drupal\gathercontent\Plugin\migrate\source;
 
+use Cheppers\GatherContent\DataTypes\Element;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
-use Drupal\gathercontent\Import\Importer;
+use Drupal\gathercontent\DrupalGatherContentClient;
 use Drupal\migrate\MigrateException;
 use Drupal\migrate\Plugin\migrate\source\SourcePluginBase;
 use Drupal\migrate\Plugin\MigrationInterface;
@@ -13,7 +14,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 /**
  * A source class for Gathercontent API.
  *
- * @\Drupal\migrate\Annotation\MigrateSource(
+ * @MigrateSource(
  *   id = "gathercontent_migration"
  * )
  */
@@ -48,13 +49,6 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
   protected $fields = [];
 
   /**
-   * Gathercontent importer.
-   *
-   * @var \Drupal\gathercontent\Import\Importer
-   */
-  protected $importer;
-
-  /**
    * Drupal GatherContent Client.
    *
    * @var \Drupal\gathercontent\DrupalGatherContentClient
@@ -69,7 +63,7 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
     $plugin_id,
     $plugin_definition,
     MigrationInterface $migration,
-    Importer $importer
+    DrupalGatherContentClient $client
   ) {
     parent::__construct($configuration, $plugin_id, $plugin_definition, $migration);
 
@@ -89,8 +83,7 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
       }
     }
 
-    $this->importer = $importer;
-    $this->client = $this->importer->getClient();
+    $this->client = $client;
   }
 
   /**
@@ -108,7 +101,7 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
       $plugin_id,
       $plugin_definition,
       $migration,
-      $container->get('gathercontent.importer')
+      $container->get('gathercontent.client')
     );
   }
 
@@ -192,6 +185,51 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
   }
 
   /**
+   * Returns the chosen tab's data.
+   *
+   * @param array $data
+   *   Tabs array.
+   * @param int $tabId
+   *   Tab ID.
+   *
+   * @return \Cheppers\GatherContent\DataTypes\Tab|bool
+   *   Returns tab object or false on failure.
+   */
+  protected function getTabData(array $data, $tabId) {
+    /** @var \Cheppers\GatherContent\DataTypes\Tab $pane */
+    foreach ($data as $tab) {
+      if ($tabId === $tab->id) {
+        return $tab;
+      }
+    }
+
+    return FALSE;
+  }
+
+  /**
+   * Returns the correct files for the gathecontent content.
+   *
+   * @param array $gcFiles
+   *   Gathercontent file array.
+   * @param \Cheppers\GatherContent\DataTypes\Element $field
+   *   Gathercontent field.
+   *
+   * @return array
+   *   File list.
+   */
+  protected function getFiles(array $gcFiles, Element $field) {
+    $value = [];
+
+    foreach ($gcFiles as $file) {
+      if ($file->field == $field->label) {
+        $value[] = $file;
+      }
+    }
+
+    return $value;
+  }
+
+  /**
    * {@inheritdoc}
    */
   protected function initializeIterator() {
@@ -204,9 +242,32 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
   public function prepareRow(Row $row) {
     $ret = parent::prepareRow($row);
 
-    $gcId = $row->getSourceProperty('id');
+    if ($ret) {
+      $gcId = $row->getSourceProperty('id');
+      $gcItem = $this->client->itemGet($gcId);
 
-    $gcItem = $this->client->itemGet($gcId);
+      if (empty($gcItem)) {
+        return FALSE;
+      }
+
+      $tabData = $this->getTabData($gcItem->config, $this->tabId);
+
+      if (!$tabData) {
+        return FALSE;
+      }
+
+      $gcFiles = $this->client->itemFilesGet($gcId);
+
+      foreach ($tabData->elements as $field) {
+        $value = $field->getValue();
+
+        if ($field->type == 'files') {
+          $value = $this->getFiles($gcFiles, $field);
+        }
+
+        $row->setSourceProperty($field->id, $value);
+      }
+    }
 
     return $ret;
   }
