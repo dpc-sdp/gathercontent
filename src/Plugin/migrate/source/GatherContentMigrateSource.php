@@ -168,7 +168,7 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
 
     $this->clearUnwantedItems();
 
-    return $this->items;
+    return $this->convertItemsToArray($this->items);
   }
 
   /**
@@ -182,6 +182,21 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
         }
       }
     }
+  }
+
+  /**
+   * Remove items which are not connected to the template id.
+   */
+  protected function convertItemsToArray($items) {
+    $converted = [];
+
+    if ($items !== NULL) {
+      foreach ($items as $key => $item) {
+        $converted[$key] = get_object_vars($item);
+      }
+    }
+
+    return $converted;
   }
 
   /**
