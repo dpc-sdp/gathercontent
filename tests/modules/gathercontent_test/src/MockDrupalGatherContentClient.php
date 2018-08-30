@@ -28,19 +28,14 @@ class MockDrupalGatherContentClient extends DrupalGatherContentClient {
    * {@inheritdoc}
    */
   public function itemsGet($projectId) {
-    return $this->mockItems[$projectId];
+    return $this->mockItems['project_items'][$projectId];
   }
 
   /**
    * {@inheritdoc}
    */
   public function itemGet($itemId) {
-    $this->sendGet("items/$itemId");
-
-    $this->validateResponse();
-    $body = $this->parseResponse();
-
-    return empty($body['data']) ? null : new DataTypes\Item($body['data']);
+    return $this->mockItems['detailed_items'][$itemId];
   }
 
   /**
