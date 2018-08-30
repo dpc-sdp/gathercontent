@@ -19,6 +19,7 @@ abstract class GatherContentMigrateSourceTestBase extends MigrateSourceTestBase 
   public static $modules = [
     'node', 'text', 'field', 'user', 'image', 'file', 'taxonomy', 'language',
     'content_translation', 'paragraphs', 'entity_reference_revisions', 'system',
+    'migrate', 'migrate_plus', 'migrate_tools',
     'metatag', 'menu_ui', 'menu_link_content', 'link', 'gathercontent', 'gathercontent_test',
   ];
 
@@ -68,7 +69,21 @@ abstract class GatherContentMigrateSourceTestBase extends MigrateSourceTestBase 
   }
 
   /**
-   * {@inheritdoc}
+   * Tests the source plugin against a particular data set.
+   *
+   * @param array $source_data
+   *   The source data that the plugin will read. See getClient() for the
+   *   expected format.
+   * @param array $expected_data
+   *   The result rows the plugin is expected to return.
+   * @param int $expected_count
+   *   (optional) How many rows the source plugin is expected to return.
+   * @param array $configuration
+   *   (optional) Configuration for the source plugin.
+   * @param mixed $high_water
+   *   (optional) The value of the high water field.
+   *
+   * @dataProvider providerSource
    */
   public function testSource(array $source_data, array $expected_data, $expected_count = NULL, array $configuration = [], $high_water = NULL) {
     $plugin = $this->getPlugin($configuration);
