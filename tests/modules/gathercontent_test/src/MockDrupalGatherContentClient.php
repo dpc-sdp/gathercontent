@@ -12,32 +12,6 @@ class MockDrupalGatherContentClient extends DrupalGatherContentClient {
 
   public static $choosenStatus = NULL;
 
-  public $mockItems = [];
-
-  /**
-   * Set mock items.
-   *
-   * @param array $mockItems
-   *   Mock items array.
-   */
-  public function setMockItems(array $mockItems) {
-    $this->mockItems = $mockItems;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function itemsGet($projectId) {
-    return $this->mockItems['project_items'][$projectId];
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function itemGet($itemId) {
-    return $this->mockItems['detailed_items'][$itemId];
-  }
-
   /**
    * Mock download.
    */
