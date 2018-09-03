@@ -9,6 +9,7 @@ use Drupal\gathercontent\Entity\Mapping;
 use Drupal\gathercontent\Entity\Operation;
 use Drupal\gathercontent\Import\ImportOptions;
 use Drupal\gathercontent\Import\NodeUpdateMethod;
+use Drupal\gathercontent\MappingLoader;
 use Drupal\node\Entity\NodeType;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -483,55 +484,85 @@ class ContentImportSelectForm extends FormBase {
         $operations = [];
         $stack = [];
         $import_content = $this->nodes;
+        $gcIds = [];
+
         foreach ($import_content as $k => $value) {
+          /** @var \Cheppers\GatherContent\DataTypes\Item $item */
+          $gc_item = $this->client->itemGet($value);
+          /** @var \Drupal\gathercontent\Entity\MappingInterface $mapping */
+          $mapping = MappingLoader::load($gc_item);
+          $mappingId = $mapping->id();
+
           if ((isset($this->menu[$value]) && $this->menu[$value] != -1) || !isset($this->menu[$value])) {
             $parent_menu_item = isset($this->menu[$value]) ? $this->menu[$value] : NULL;
             $drupal_status = isset($this->drupalStatus[$value]) ? $this->drupalStatus[$value] : 0;
+
             $import_options = new ImportOptions(
               $form_state->getValue('node_update_method'),
               $drupal_status,
               $form_state->getValue('node_create_new_revision'),
               $form_state->getValue('status'),
               $parent_menu_item,
-              $operation->uuid()
+              $operation->uuid(),
+              $mapping
             );
-            $operations[] = [
+
+            if (!array_search($value, $gcIds[$mappingId])) {
+              $gcIds[$mappingId][] = $value;
+            }
+
+            $operations[$mappingId] = [
               'gathercontent_import_process',
               [
-                $value,
+                $gcIds[$mappingId],
                 $import_options,
               ],
             ];
+
             $stack[$value] = $value;
             unset($import_content[$k]);
           }
         }
 
         if (!empty($import_content)) {
+          $gcIds = [];
           // Load all by project_id.
           /** @var \Cheppers\GatherContent\DataTypes\Item[] $content */
           $content = $this->client->itemsGet($this->projectId);
 
           while (!empty($import_content)) {
             $current = reset($import_content);
+
             if (isset($stack[$content[$current]->parentId])) {
+              /** @var \Drupal\gathercontent\Entity\MappingInterface $mapping */
+              $mapping = MappingLoader::load($current);
+              $mappingId = $mapping->id();
+
               $parent_menu_item = 'node:' . $content[$current]->parentId;
               $drupal_status = isset($this->drupalStatus[$current]) ? $this->drupalStatus[$current] : 0;
+
               $import_options = new ImportOptions(
                 $form_state->getValue('node_update_method'),
                 $drupal_status,
                 $form_state->getValue('node_create_new_revision'),
                 $form_state->getValue('status'),
                 $parent_menu_item,
-                $operation->uuid()
+                $operation->uuid(),
+                $mapping
               );
-              $operations[] = [
+
+              if (!array_search($current, $gcIds[$mappingId])) {
+                $gcIds[$mappingId][] = $current;
+              }
+
+              $operations[$mappingId] = [
                 'gathercontent_import_process',
                 [
-                  $current,
+                  $gcIds[$mappingId],
                   $import_options,
                 ],
               ];
+
               $stack[$current] = $current;
               array_shift($import_content);
             }
