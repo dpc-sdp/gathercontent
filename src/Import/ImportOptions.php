@@ -2,6 +2,8 @@
 
 namespace Drupal\gathercontent\Import;
 
+use Drupal\gathercontent\Entity\MappingInterface;
+
 /**
  * A class for storing and serializing the import/update options of a node.
  */
@@ -40,18 +42,25 @@ class ImportOptions {
   public $parentMenuItem = NULL;
 
   /**
+   * Mapping object.
+   */
+  public $mapping = NULL;
+
+  /**
    * ImportOptions constructor.
    */
   public function __construct(
     $publish = FALSE,
     $create_new_revision = FALSE,
     $new_status = NULL,
-    $parent_menu_item = NULL
+    $parent_menu_item = NULL,
+    MappingInterface $mapping = NULL
   ) {
     $this->createNewRevision = $create_new_revision;
     $this->publish = $publish;
     $this->newStatus = filter_var($new_status, FILTER_VALIDATE_INT);
     $this->parentMenuItem = $parent_menu_item;
+    $this->mapping = $mapping;
   }
 
   /**
@@ -111,6 +120,21 @@ class ImportOptions {
    */
   public function setParentMenuItem($parent_menu_item) {
     $this->parentMenuItem = $parent_menu_item;
+    return $this;
+  }
+
+  /**
+   * Getter $mapping.
+   */
+  public function getMapping() {
+    return $this->mapping;
+  }
+
+  /**
+   * Setter $mapping.
+   */
+  public function setMapping(MappingInterface $mapping) {
+    $this->mapping = $mapping;
     return $this;
   }
 
