@@ -32,3 +32,7 @@ gathercontent.gathercontent_mapping.*:
     template:
       type: string
       label: 'Template'
+    migration_definitions:
+      type: sequence
+      sequence:
+        type: string

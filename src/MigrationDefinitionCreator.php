@@ -76,15 +76,28 @@ class MigrationDefinitionCreator {
   }
 
   public function createMigrationDefinition() {
+    $migrationDefinitionIds = [];
     $this->setBasicData();
     $this->setDefinitionBaseProperties();
     $this->setDefinitionSourceProperties();
 
     foreach ($this->definitions as $tabId => $definition) {
       $this->setDefinitionFieldProperties($tabId);
+      $definitionID = $this->definitions[$tabId]['id'];
+
+      $isNew = $this->isNewConfiguration($definitionID);
+      if (!$isNew) {
+        $config = $this->configFactory->getEditable('migrate_plus.migration.' . $definitionID);
+        $config->delete();
+      }
+
       $migration = Migration::create($this->definitions[$tabId]);
       $migration->save();
+      $migrationDefinitionIds[] = $definitionID;
     }
+
+    $this->mapping->set('migration_definitions', $migrationDefinitionIds);
+    $this->mapping->save();
   }
 
   protected function setBasicData() {
