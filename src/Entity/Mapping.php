@@ -266,4 +266,11 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
     return !empty($this->get('data'));
   }
 
+  /**
+   * {@inheritdoc}
+   */
+  public function getMigrations() {
+    return $this->get('migration_definitions');
+  }
+
 }
