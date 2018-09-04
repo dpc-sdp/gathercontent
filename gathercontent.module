@@ -44,7 +44,7 @@ function gathercontent_entity_base_field_info(EntityTypeInterface $entity_type) 
 /**
  * Batch operation callback for importing items.
  */
-function gathercontent_import_process($gc_ids, array $import_options, MappingInterface $mapping, &$context = ['86701_791717_article_tab1500994234813']) {
+function gathercontent_import_process($gc_ids, array $import_options, MappingInterface $mapping, &$context = []) {
   $migrationIds = $mapping->getMigrations();
 
   if (!isset($context['results']['success'])) {
