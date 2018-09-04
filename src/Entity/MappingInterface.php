@@ -137,4 +137,12 @@ interface MappingInterface extends ConfigEntityInterface {
    */
   public function getFormatterUpdatedDrupal();
 
+  /**
+   * Getter for GatherContent migrations list.
+   *
+   * @return array
+   *   Migration id list as array.
+   */
+  public function getMigrations();
+
 }
