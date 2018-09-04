@@ -6,6 +6,7 @@ use Cheppers\GatherContent\GatherContentClientInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\field\Entity\FieldConfig;
+use Drupal\gathercontent\MigrationDefinitionCreator;
 use Drupal\gathercontent_ui\Form\MappingEditSteps\MappingStepService;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -37,6 +38,8 @@ class MappingEditForm extends MappingEditFormBase {
    */
   protected $mappingService;
 
+  protected $migrationDefinitionCreator;
+
   /**
    * MappingImportForm constructor.
    *
@@ -45,9 +48,10 @@ class MappingEditForm extends MappingEditFormBase {
    * @param \Drupal\gathercontent_ui\Form\MappingEditSteps\MappingStepService $mapping_service
    *   MappingStepService.
    */
-  public function __construct(GatherContentClientInterface $client, MappingStepService $mapping_service) {
+  public function __construct(GatherContentClientInterface $client, MappingStepService $mapping_service, MigrationDefinitionCreator $migrationDefinitionCreator) {
     $this->client = $client;
     $this->mappingService = $mapping_service;
+    $this->migrationDefinitionCreator = $migrationDefinitionCreator;
   }
 
   /**
@@ -56,7 +60,8 @@ class MappingEditForm extends MappingEditFormBase {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('gathercontent.client'),
-      $container->get('gathercontent_ui.mapping_service')
+      $container->get('gathercontent_ui.mapping_service'),
+      $container->get('gathercontent.migration_creator')
     );
   }
 
@@ -267,6 +272,12 @@ class MappingEditForm extends MappingEditFormBase {
         else {
           drupal_set_message(t('Mapping has been updated.'));
         }
+
+        $this
+          ->migrationDefinitionCreator
+          ->setMapping($mapping)
+          ->setMappingData($mapping_data)
+          ->createMigrationDefinition();
 
         if (!empty($this->entityReferenceFields)) {
           drupal_set_message($this->formatPlural($this->erImported, '@count term was imported', '@count terms were imported'));
