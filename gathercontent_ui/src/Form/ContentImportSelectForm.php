@@ -507,7 +507,7 @@ class ContentImportSelectForm extends FormBase {
               $mapping
             );
 
-            if (!array_search($value, $gcIds[$mappingId])) {
+            if (!empty($value) && (!isset($gcIds[$mappingId]) || !array_search($value, $gcIds[$mappingId]))) {
               $gcIds[$mappingId][] = $value;
             }
 
@@ -551,7 +551,7 @@ class ContentImportSelectForm extends FormBase {
                 $mapping
               );
 
-              if (!array_search($current, $gcIds[$mappingId])) {
+              if (!empty($current) && (!isset($gcIds[$mappingId]) || !array_search($current, $gcIds[$mappingId]))) {
                 $gcIds[$mappingId][] = $current;
               }
 

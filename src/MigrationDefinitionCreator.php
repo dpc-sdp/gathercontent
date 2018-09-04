@@ -32,11 +32,9 @@ class MigrationDefinitionCreator {
       'status' => 'constants/dst_status',
     ],
     'destination' => [
-      'plugin' => '',
+      'plugin' => 'entity:node',
     ],
-    'migration_dependencies' => [
-      'required' => '',
-    ],
+    'migration_dependencies' => [],
   ];
 
   protected $definitions;
