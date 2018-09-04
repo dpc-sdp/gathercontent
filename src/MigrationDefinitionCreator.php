@@ -135,8 +135,21 @@ class MigrationDefinitionCreator {
       $element = $this->getElementLastPart($element);
       $this->definitions[$tabId]['source']['fields'][] = $elementId;
       $this->definitions[$tabId]['process'][$element] = $elementId;
+      $this->setTextFormat($tabId, $elementId, $element);
     }
+  }
 
+  protected function setTextFormat(string $tabId, string $elementId, string $element) {
+    if (isset($this->mappingData[$tabId]['element_text_formats'][$elementId])
+      && !empty($this->mappingData[$tabId]['element_text_formats'][$elementId])
+    ) {
+      unset($this->definitions[$tabId]['process'][$element]);
+      $this->definitions[$tabId]['process'][$element . '/format'] = [
+        'plugin' => 'default_value',
+        'default_value' => $this->mappingData[$tabId]['element_text_formats'][$elementId],
+      ];
+      $this->definitions[$tabId]['process'][$element . '/value'] = $elementId;
+    }
   }
 
   protected function getElementLastPart(string $element) {
