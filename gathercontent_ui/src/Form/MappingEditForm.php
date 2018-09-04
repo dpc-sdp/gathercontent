@@ -136,7 +136,7 @@ class MappingEditForm extends MappingEditFormBase {
 
       if ($this->step === 'field_mapping') {
         $this->step = 'er_mapping';
-        $mapping_data = $this->extractMappingData($form_state->getValues());
+        $this->extractMappingData($form_state->getValues());
         if ($this->new) {
           $this->contentType = $form_state->getValue('content_type');
         }
@@ -204,7 +204,7 @@ class MappingEditForm extends MappingEditFormBase {
                 }
               }
               elseif ($gc_field->type === 'choice_radio') {
-                if (!empty($mapping_data[$fieldset->id]['elements'][$gc_field->id])) {
+                if (!empty($local_field_id)) {
                   $local_options = [];
                   foreach ($gc_field->options as $option) {
                     if (!isset($option['value'])) {
@@ -276,7 +276,7 @@ class MappingEditForm extends MappingEditFormBase {
         $this
           ->migrationDefinitionCreator
           ->setMapping($mapping)
-          ->setMappingData($mapping_data)
+          ->setMappingData($this->mappingData)
           ->createMigrationDefinition();
 
         if (!empty($this->entityReferenceFields)) {
