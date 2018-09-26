@@ -287,6 +287,8 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
 
         $row->setSourceProperty($field->id, $value);
       }
+
+      $row->setSourceProperty('item_title', $gcItem->name);
     }
 
     return $ret;
