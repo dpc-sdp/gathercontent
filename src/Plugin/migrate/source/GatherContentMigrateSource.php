@@ -58,6 +58,11 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
   /**
    * {@inheritdoc}
    */
+  protected $trackChanges = TRUE;
+
+  /**
+   * {@inheritdoc}
+   */
   public function __construct(
     array $configuration,
     $plugin_id,
@@ -282,6 +287,8 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
 
         $row->setSourceProperty($field->id, $value);
       }
+
+      $row->setSourceProperty('item_title', $gcItem->name);
     }
 
     return $ret;
