@@ -126,9 +126,8 @@ class MappingStepEdit extends MappingSteps {
           ];
 
           if (
-          in_array($gc_field->type, ['text', 'section']) &&
-          isset($gc_field->plainText) &&
-          !$gc_field->plainText
+            (!isset($gc_field->plainText) || !$gc_field->plainText) &&
+            in_array($gc_field->type, ['text', 'section'])
           ) {
             $form['mapping'][$fieldset->id]['element_text_formats'][$gc_field->id] = [
               '#type' => 'select',

@@ -459,7 +459,7 @@ class ContentProcessor implements ContainerInjectionInterface {
         // Probably some kind of text field.
         $target->{$local_field_name} = [
           'value' => $this->concatFieldValues[$id],
-          'format' => ($field->plainText ? 'plain_text' : (!empty($text_format) ? $text_format : 'basic_html')),
+          'format' => (isset($field->plainText) && $field->plainText ? 'plain_text' : (!empty($text_format) ? $text_format : 'basic_html')),
         ];
         break;
     }

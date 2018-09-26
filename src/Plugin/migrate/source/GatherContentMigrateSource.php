@@ -58,11 +58,6 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
   /**
    * {@inheritdoc}
    */
-  protected $trackChanges = TRUE;
-
-  /**
-   * {@inheritdoc}
-   */
   public function __construct(
     array $configuration,
     $plugin_id,

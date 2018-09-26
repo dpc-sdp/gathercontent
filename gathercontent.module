@@ -46,7 +46,8 @@ function gathercontent_entity_base_field_info(EntityTypeInterface $entity_type) 
  */
 function gathercontent_import_process($gc_ids, ImportOptions $import_options, &$context = []) {
   $mapping = $import_options->getMapping();
-  $migrationIds = $mapping->getMigrations();
+  $migrationIds = ['86701_791717_article_tab1500994234813'];
+  //$migrationIds = $mapping->getMigrations();
 
   if (!isset($context['results']['success'])) {
     $context['results']['success'] = 0;
