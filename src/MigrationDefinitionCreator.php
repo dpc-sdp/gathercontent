@@ -80,6 +80,7 @@ class MigrationDefinitionCreator {
     $this->setBasicData();
     $this->setDefinitionBaseProperties();
     $this->setDefinitionSourceProperties();
+    $this->setMigrationDependencies();
 
     foreach ($this->definitions as $tabId => $definition) {
       $this->setDefinitionFieldProperties($tabId);
@@ -95,6 +96,8 @@ class MigrationDefinitionCreator {
       $migration->save();
       $migrationDefinitionIds[] = $definitionID;
     }
+
+    $this->mapping->set('migration_definitions', $migrationDefinitionIds);
 
     $this->mapping->set('migration_definitions', $migrationDefinitionIds);
     $this->mapping->save();
@@ -187,6 +190,28 @@ class MigrationDefinitionCreator {
     }
 
     $this->definitions = $definitions;
+  }
+
+  protected function setMigrationDependencies() {
+    $siteDefaultLangCode = $this
+      ->configFactory
+      ->getEditable('system.site')
+      ->get('langcode');
+
+    $defaultLangMigrationId = '';
+
+    foreach ($this->definitions as $tabId => $tab) {
+      if ($this->definitions[$tabId]['langcode'] == $siteDefaultLangCode) {
+        $defaultLangMigrationId = $this->definitions[$tabId]['id'];
+      }
+    }
+
+    foreach ($this->definitions as $tabId => $tab) {
+      if ($this->definitions[$tabId]['langcode'] != $siteDefaultLangCode) {
+        $this->definitions[$tabId]['migration_dependencies']['optional'][] = $defaultLangMigrationId;
+      }
+    }
+
   }
 
 }
