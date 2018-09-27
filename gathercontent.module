@@ -8,8 +8,6 @@
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\gathercontent\Entity\MappingInterface;
-use Drupal\migrate\Event\MigrateEvents;
-use Drupal\migrate\Event\MigratePostRowSaveEvent;
 use Drupal\migrate\MigrateMessage;
 use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\gathercontent\MigrateExecutable;
