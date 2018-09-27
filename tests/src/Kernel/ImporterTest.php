@@ -4,7 +4,6 @@ namespace Drupal\Tests\gathercontent\Kernel;
 
 use Drupal\gathercontent\Entity\Operation;
 use Drupal\gathercontent\Import\ImportOptions;
-use Drupal\gathercontent\Import\NodeUpdateMethod;
 use Drupal\gathercontent_test\MockData;
 use Drupal\gathercontent_test\MockDrupalGatherContentClient;
 use Drupal\menu_link_content\Entity\MenuLinkContent;
@@ -26,15 +25,11 @@ class ImporterTest extends GcImportTestBase {
    */
   public function testImport() {
     $importer = static::getImporter();
-    $operation = Operation::create([
-      'type' => 'import',
-    ]);
     $importOptions = new ImportOptions(
-      NodeUpdateMethod::ALWAYS_CREATE,
+      FALSE,
       FALSE,
       2,
-      'main:',
-      $operation->uuid()
+      'main:'
     );
     $mapping = MockData::getMapping();
     $item = MockData::createItem(

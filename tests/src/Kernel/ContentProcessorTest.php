@@ -7,7 +7,6 @@ use Cheppers\GatherContent\DataTypes\Item;
 use Drupal\file\Entity\File;
 use Drupal\gathercontent\Entity\Operation;
 use Drupal\gathercontent\Import\ImportOptions;
-use Drupal\gathercontent\Import\NodeUpdateMethod;
 use Drupal\gathercontent\MappingLoader;
 use Drupal\gathercontent_test\MockData;
 use Drupal\node\NodeInterface;
@@ -43,7 +42,7 @@ class ContentProcessorTest extends GcImportTestBase {
       [TRUE, FALSE, TRUE],
       [TRUE, FALSE, FALSE]
     );
-    $importOptions = new ImportOptions(NodeUpdateMethod::ALWAYS_CREATE);
+    $importOptions = new ImportOptions();
 
     $cases = [
       'no checkboxes, no radioboxes' => [

@@ -4,7 +4,6 @@ namespace Drupal\gathercontent\Form;
 
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\gathercontent\Import\NodeUpdateMethod;
 
 /**
  * Class ImportConfigForm.
@@ -43,17 +42,6 @@ class ImportConfigForm extends ConfigFormBase {
       '#options' => [
         0 => $this->t('Unpublished'),
         1 => $this->t('Published'),
-      ],
-    ];
-    $form['node_update_method'] = [
-      '#type' => 'radios',
-      '#required' => TRUE,
-      '#title' => $this->t('Content update method'),
-      '#default_value' => $config->get('node_update_method'),
-      '#options' => [
-        NodeUpdateMethod::ALWAYS_CREATE => $this->t('Always create new Content'),
-        NodeUpdateMethod::UPDATE_IF_NOT_CHANGED => $this->t('Create new Content if it has changed since the last import'),
-        NodeUpdateMethod::ALWAYS_UPDATE => $this->t('Always update existing Content'),
       ],
     ];
 
