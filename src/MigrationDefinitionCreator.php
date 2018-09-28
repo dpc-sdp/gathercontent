@@ -23,16 +23,14 @@ class MigrationDefinitionCreator {
       'tabId' => '',
       'constants' => [
         'dst_bundle' => '',
-        'dst_status' => '',
       ],
       'fields' => [],
     ],
     'process' => [
       'type' => 'constants/dst_bundle',
-      'status' => 'constants/dst_status',
     ],
     'destination' => [
-      'plugin' => 'entity:node',
+      'plugin' => 'gc_entity:node',
     ],
     'migration_dependencies' => [],
   ];
@@ -61,8 +59,15 @@ class MigrationDefinitionCreator {
 
   protected $gcImportConfig;
 
+  protected $siteDefaultLangCode;
+
   public function __construct(ConfigFactoryInterface $configFactory) {
     $this->configFactory = $configFactory;
+
+    $this->siteDefaultLangCode = $this
+      ->configFactory
+      ->getEditable('system.site')
+      ->get('langcode');
   }
 
   public function setMapping(MappingInterface $mapping) {
@@ -80,6 +85,7 @@ class MigrationDefinitionCreator {
     $this->setBasicData();
     $this->setDefinitionBaseProperties();
     $this->setDefinitionSourceProperties();
+    $this->setMigrationDependencies();
 
     foreach ($this->definitions as $tabId => $definition) {
       $this->setDefinitionFieldProperties($tabId);
@@ -113,21 +119,37 @@ class MigrationDefinitionCreator {
   }
 
   protected function setDefinitionSourceProperties() {
-    $gcImportConfig = $this->configFactory->get('gathercontent.import');
-    $nodeDefaultStatus = $gcImportConfig->get('node_default_status');
-
     foreach ($this->definitions as $tabId => $definition) {
       $this->definitions[$tabId]['source']['projectId'] = $this->projectId;
       $this->definitions[$tabId]['source']['templateId'] = $this->templateId;
       $this->definitions[$tabId]['source']['tabId'] = $tabId;
       $this->definitions[$tabId]['source']['constants'] = [
         'dst_bundle' => $this->contentType,
-        'dst_status' => $nodeDefaultStatus,
       ];
     }
   }
 
   protected function setDefinitionFieldProperties(string $tabId) {
+    if ($this->definitions[$tabId]['langcode'] != $this->siteDefaultLangCode) {
+      $defaultLangMigrationId = $this->getDefaultMigrationId();
+
+      $this->definitions[$tabId]['destination']['translations'] = TRUE;
+      $this->definitions[$tabId]['process']['nid'] = [
+        'plugin' => 'migration_lookup',
+        'source' => 'id',
+        'migration' => $defaultLangMigrationId,
+      ];
+      $this->definitions[$tabId]['process']['langcode'] = [
+        'plugin' => 'default_value',
+        'default_value' => $this->definitions[$tabId]['langcode'],
+      ];
+    }
+
+    // Always set the title to default to the content's title.
+    // If they chose another field to be the title, the loop will replace it.
+    $this->definitions[$tabId]['source']['fields'][] = 'item_title';
+    $this->definitions[$tabId]['process']['title'] = 'item_title';
+
     foreach ($this->mappingData[$tabId]['elements'] as $elementId => $element) {
       if (!$element) {
         continue;
@@ -135,8 +157,38 @@ class MigrationDefinitionCreator {
       $element = $this->getElementLastPart($element);
       $this->definitions[$tabId]['source']['fields'][] = $elementId;
       $this->definitions[$tabId]['process'][$element] = $elementId;
-    }
 
+      if ($this->definitions[$tabId]['langcode'] != $this->siteDefaultLangCode) {
+        $this->definitions[$tabId]['process'][$element] = [
+          'plugin' => 'get',
+          'source' => $elementId,
+          'language' => $this->definitions[$tabId]['langcode'],
+        ];
+      }
+
+      $this->setTextFormat($tabId, $elementId, $element);
+    }
+  }
+
+  protected function setTextFormat(string $tabId, string $elementId, string $element) {
+    if (isset($this->mappingData[$tabId]['element_text_formats'][$elementId])
+      && !empty($this->mappingData[$tabId]['element_text_formats'][$elementId])
+    ) {
+      unset($this->definitions[$tabId]['process'][$element]);
+      $this->definitions[$tabId]['process'][$element . '/format'] = [
+        'plugin' => 'default_value',
+        'default_value' => $this->mappingData[$tabId]['element_text_formats'][$elementId],
+      ];
+      $this->definitions[$tabId]['process'][$element . '/value'] = $elementId;
+
+      if ($this->definitions[$tabId]['langcode'] != $this->siteDefaultLangCode) {
+        $this->definitions[$tabId]['process'][$element . '/value'] = [
+          'plugin' => 'get',
+          'source' => $elementId,
+          'language' => $this->definitions[$tabId]['langcode'],
+        ];
+      }
+    }
   }
 
   protected function getElementLastPart(string $element) {
@@ -174,6 +226,29 @@ class MigrationDefinitionCreator {
     }
 
     $this->definitions = $definitions;
+  }
+
+  protected function setMigrationDependencies() {
+    $defaultLangMigrationId = $this->getDefaultMigrationId();
+
+    foreach ($this->definitions as $tabId => $tab) {
+      if ($this->definitions[$tabId]['langcode'] != $this->siteDefaultLangCode) {
+        $this->definitions[$tabId]['migration_dependencies']['optional'][] = $defaultLangMigrationId;
+      }
+    }
+
+  }
+
+  protected function getDefaultMigrationId() {
+    $defaultLangMigrationId = '';
+
+    foreach ($this->definitions as $tabId => $tab) {
+      if ($this->definitions[$tabId]['langcode'] == $this->siteDefaultLangCode) {
+        $defaultLangMigrationId = $this->definitions[$tabId]['id'];
+      }
+    }
+
+    return $defaultLangMigrationId;
   }
 
 }
