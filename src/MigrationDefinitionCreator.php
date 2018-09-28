@@ -32,7 +32,7 @@ class MigrationDefinitionCreator {
       'status' => 'constants/dst_status',
     ],
     'destination' => [
-      'plugin' => 'entity:node',
+      'plugin' => 'gc_entity:node',
     ],
     'migration_dependencies' => [],
   ];
@@ -96,8 +96,6 @@ class MigrationDefinitionCreator {
       $migration->save();
       $migrationDefinitionIds[] = $definitionID;
     }
-
-    $this->mapping->set('migration_definitions', $migrationDefinitionIds);
 
     $this->mapping->set('migration_definitions', $migrationDefinitionIds);
     $this->mapping->save();
