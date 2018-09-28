@@ -2,8 +2,6 @@
 
 namespace Drupal\gathercontent\Import;
 
-use Drupal\gathercontent\Entity\MappingInterface;
-
 /**
  * A class for storing and serializing the import/update options of a node.
  */
