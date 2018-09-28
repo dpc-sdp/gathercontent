@@ -252,9 +252,15 @@ function drush_gathercontent_import($mapping_id = NULL, $status_id = '', $parent
     ],
   ];
 
-  $batch = Importer::getBasicImportBatch();
-  $batch['operations'] = $operations;
-  $batch['finished'] = 'gathercontent_drush_import_process_finished';
+  $batch = [
+    'title' => t('Importing'),
+    'init_message' => t('Starting import'),
+    'error_message' => t('An error occurred during processing'),
+    'progress_message' => t('Processed @current out of @total.'),
+    'progressive' => TRUE,
+    'operations' => $operations,
+    'finished' => 'gathercontent_drush_import_process_finished',
+  ];
 
   batch_set($batch);
   drush_backend_batch_process();
