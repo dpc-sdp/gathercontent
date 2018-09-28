@@ -24,29 +24,16 @@ class PostImportEvent extends Event {
   protected $unsuccessNodes;
 
   /**
-   * ID of operation.
-   *
-   * You can fetch \Drupal\gathercontent\Entity\Operation using this ID or you
-   * can fetch all OperationItems related to Operation.
-   *
-   * @var int
-   */
-  protected $operationId;
-
-  /**
    * Constructs a post import event object.
    *
    * @param array $success
    *   Array of arrays with successfully imported nids and their gc_ids.
    * @param array $unsuccess
    *   Array of arrays with unsuccessfully imported nids and their gc_ids.
-   * @param string $operationId
-   *   UUID of \Drupal\gathercontent\Entity\Operation entity.
    */
-  public function __construct(array $success, array $unsuccess, $operationId) {
+  public function __construct(array $success, array $unsuccess) {
     $this->successNodes = $success;
     $this->unsuccessNodes = $unsuccess;
-    $this->operationId = $operationId;
   }
 
   /**
@@ -67,16 +54,6 @@ class PostImportEvent extends Event {
    */
   public function getUnsuccessNodes() {
     return $this->unsuccessNodes;
-  }
-
-  /**
-   * Get operation ID property.
-   *
-   * @return string
-   *   UUID of \Drupal\gathercontent\Entity\Operation entity
-   */
-  public function getOperationId() {
-    return $this->operationId;
   }
 
 }

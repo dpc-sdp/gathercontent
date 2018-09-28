@@ -47,32 +47,6 @@ class GcImportTestBase extends KernelTestBase {
   }
 
   /**
-   * Get singleton Importer injected with mock object.
-   */
-  public static function getImporter() {
-    return new Importer(
-      static::getClient(),
-      static::getProcessor(),
-      \Drupal::service('event_dispatcher')
-    );
-  }
-
-  /**
-   * Get singleton ContentProcessor injected with mock object.
-   */
-  public static function getProcessor() {
-    static $processor = NULL;
-    if ($processor === NULL) {
-      $processor = new ContentProcessor(
-        static::getClient(),
-        static::getMetatag(),
-        \Drupal::service('datetime.time')
-      );
-    }
-    return $processor;
-  }
-
-  /**
    * Get singleton MetatagQuery object.
    */
   public static function getMetatag() {
