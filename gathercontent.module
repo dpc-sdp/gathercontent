@@ -76,6 +76,10 @@ function gathercontent_import_process($gc_ids, array $import_options, MappingInt
           $status = $executable->import();
           $context['results']['success'] += $executable->getCreatedCount() + $executable->getUpdatedCount();
           $context['results']['failed'] += $executable->getFailedCount() + $executable->getIgnoredCount();
+
+          if ($executable->getFailedCount() + $executable->getIgnoredCount() > 0) {
+            $executable->rollback();
+          }
         }
         catch (\Exception $e) {
           \Drupal::logger('migrate_drupal_ui')->error($e->getMessage());
