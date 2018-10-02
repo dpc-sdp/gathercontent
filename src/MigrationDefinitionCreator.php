@@ -2,7 +2,9 @@
 
 namespace Drupal\gathercontent;
 
+use Drupal\Component\Render\PlainTextOutput;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\field\Entity\FieldConfig;
 use Drupal\gathercontent\Entity\MappingInterface;
 use Drupal\migrate_plus\Entity\Migration;
 
@@ -130,7 +132,10 @@ class MigrationDefinitionCreator {
   }
 
   protected function setDefinitionFieldProperties(string $tabId) {
-    if ($this->definitions[$tabId]['langcode'] != $this->siteDefaultLangCode) {
+    if (
+      $this->definitions[$tabId]['langcode'] != $this->siteDefaultLangCode &&
+      $this->definitions[$tabId]['langcode'] != 'und'
+    ) {
       $defaultLangMigrationId = $this->getDefaultMigrationId();
 
       $this->definitions[$tabId]['destination']['translations'] = TRUE;
@@ -145,28 +150,65 @@ class MigrationDefinitionCreator {
       ];
     }
 
-    // Always set the title to default to the content's title.
-    // If they chose another field to be the title, the loop will replace it.
-    $this->definitions[$tabId]['source']['fields'][] = 'item_title';
-    $this->definitions[$tabId]['process']['title'] = 'item_title';
+    $titleSet = FALSE;
 
     foreach ($this->mappingData[$tabId]['elements'] as $elementId => $element) {
       if (!$element) {
         continue;
       }
+      $fieldInfo = FieldConfig::load($element);
+      $fieldType = 'string';
+      $isTranslatable = TRUE;
+
+      if (!empty($fieldInfo)) {
+        $fieldType = $fieldInfo->getType();
+        $isTranslatable = $fieldInfo->isTranslatable();
+      }
+
       $element = $this->getElementLastPart($element);
       $this->definitions[$tabId]['source']['fields'][] = $elementId;
-      $this->definitions[$tabId]['process'][$element] = $elementId;
+      $this->definitions[$tabId]['process'][$element] = [
+        'plugin' => 'get',
+        'source' => $elementId,
+      ];
 
-      if ($this->definitions[$tabId]['langcode'] != $this->siteDefaultLangCode) {
-        $this->definitions[$tabId]['process'][$element] = [
-          'plugin' => 'get',
-          'source' => $elementId,
-          'language' => $this->definitions[$tabId]['langcode'],
-        ];
+      switch ($fieldType) {
+        case 'image':
+        case 'file':
+          $fileDir = $fieldInfo->getSetting('file_directory');
+          $uriScheme = $fieldInfo->getFieldStorageDefinition()->getSetting('uri_scheme') . '://';
+
+          $this->definitions[$tabId]['process'][$element]['plugin'] = 'gather_content_file';
+          $this->definitions[$tabId]['process'][$element]['uri_scheme'] = $uriScheme;
+          $this->definitions[$tabId]['process'][$element]['file_dir'] = $fileDir;
+          $this->definitions[$tabId]['process'][$element]['language'] = $this->siteDefaultLangCode;
+
+          if ($this->definitions[$tabId]['langcode'] == 'und') {
+            $this->definitions[$tabId]['process'][$element]['language'] = 'und';
+          }
+          break;
+
+        default:
+          if ($element == 'title') {
+            $titleSet = TRUE;
+          }
+          break;
+      }
+
+      if (
+        $this->definitions[$tabId]['langcode'] != $this->siteDefaultLangCode &&
+        $this->definitions[$tabId]['langcode'] != 'und' &&
+        $isTranslatable
+      ) {
+        $this->definitions[$tabId]['process'][$element]['language'] = $this->definitions[$tabId]['langcode'];
       }
 
       $this->setTextFormat($tabId, $elementId, $element);
+    }
+
+    if (!$titleSet) {
+      $this->definitions[$tabId]['source']['fields'][] = 'item_title';
+      $this->definitions[$tabId]['process']['title'] = 'item_title';
     }
   }
 
@@ -179,14 +221,16 @@ class MigrationDefinitionCreator {
         'plugin' => 'default_value',
         'default_value' => $this->mappingData[$tabId]['element_text_formats'][$elementId],
       ];
-      $this->definitions[$tabId]['process'][$element . '/value'] = $elementId;
+      $this->definitions[$tabId]['process'][$element . '/value'] = [
+        'plugin' => 'get',
+        'source' => $elementId,
+      ];
 
-      if ($this->definitions[$tabId]['langcode'] != $this->siteDefaultLangCode) {
-        $this->definitions[$tabId]['process'][$element . '/value'] = [
-          'plugin' => 'get',
-          'source' => $elementId,
-          'language' => $this->definitions[$tabId]['langcode'],
-        ];
+      if (
+        $this->definitions[$tabId]['langcode'] != $this->siteDefaultLangCode &&
+        $this->definitions[$tabId]['langcode'] != 'und'
+      ) {
+        $this->definitions[$tabId]['process'][$element . '/value']['language'] = $this->definitions[$tabId]['langcode'];
       }
     }
   }
@@ -232,7 +276,10 @@ class MigrationDefinitionCreator {
     $defaultLangMigrationId = $this->getDefaultMigrationId();
 
     foreach ($this->definitions as $tabId => $tab) {
-      if ($this->definitions[$tabId]['langcode'] != $this->siteDefaultLangCode) {
+      if (
+        $this->definitions[$tabId]['langcode'] != $this->siteDefaultLangCode &&
+        $this->definitions[$tabId]['langcode'] != 'und'
+      ) {
         $this->definitions[$tabId]['migration_dependencies']['optional'][] = $defaultLangMigrationId;
       }
     }
