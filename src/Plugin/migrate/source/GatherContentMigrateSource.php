@@ -190,7 +190,7 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
   }
 
   /**
-   * Remove items which are not connected to the template id.
+   * Convert items to array.
    */
   protected function convertItemsToArray($items) {
     $converted = [];
@@ -283,6 +283,25 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
 
         if ($field->type == 'files') {
           $value = $this->getFiles($gcFiles, $field);
+        }
+
+        if (
+          $field->type == 'choice_radio' ||
+          $field->type == 'choice_checkbox'
+        ) {
+          $selected = [];
+
+          foreach ($value as $key => $option) {
+            if (!$option) {
+              continue;
+            }
+
+            $selected[] = [
+              'value' => $key,
+            ];
+          }
+
+          $value = $selected;
         }
 
         $row->setSourceProperty($field->id, $value);
