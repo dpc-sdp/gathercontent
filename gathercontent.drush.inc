@@ -7,12 +7,8 @@
 
 use Drupal\gathercontent\DrupalGatherContentClient;
 use Drupal\gathercontent\Entity\Mapping;
-use Drupal\gathercontent\Entity\Operation;
-use Drupal\gathercontent\Entity\OperationItem;
 use Drupal\gathercontent\Import\Importer;
 use Drupal\gathercontent\Import\ImportOptions;
-use Drupal\gathercontent\Import\NodeUpdateMethod;
-use Drush\Log\LogLevel;
 
 /**
  * Implements hook_drush_command().
@@ -69,9 +65,8 @@ function gathercontent_drush_command() {
     'required-arguments' => FALSE,
     'arguments' => [
       'mapping_id' => dt('The drupal side content mapping ID. Use: gathercontent-list-mappings'),
-      'node_update_method' => dt("Three choices: always_create, update_if_not_changed, always_update (this is the default)"),
-      'parent_menu_item' => dt("Parent menu item. E.g.: Create under 'My account' menu, use: 'account:user.page'"),
       'status_id' => dt('Change the document status on GC side. Use: gathercontent-list-status'),
+      'parent_menu_item' => dt("Parent menu item. E.g.: Create under 'My account' menu, use: 'account:user.page'"),
     ],
     'options' => [
       'publish' => [
@@ -187,7 +182,7 @@ function drush_gathercontent_import_validate($mapping_id = NULL) {
 /**
  * Implements drush_COMMAND().
  */
-function drush_gathercontent_import($mapping_id = NULL, $node_update_method = NodeUpdateMethod::ALWAYS_UPDATE, $status_id = '', $parent_menu_item = NULL) {
+function drush_gathercontent_import($mapping_id = NULL, $status_id = '', $parent_menu_item = NULL) {
   if ($mapping_id === NULL) {
     /** @var \Drupal\gathercontent\Entity\MappingInterface[] $gc_mappings */
     $gc_mappings = \Drupal::entityTypeManager()->getStorage('gathercontent_mapping')->loadMultiple();
@@ -200,7 +195,8 @@ function drush_gathercontent_import($mapping_id = NULL, $node_update_method = No
   }
 
   if (!$mapping_id) {
-    return drush_set_error('gathercontent_unknown_mapping_id', dt('Unknown mapping ID.'));
+    drush_set_error('gathercontent_unknown_mapping_id', dt('Unknown mapping ID.'));
+    return;
   }
 
   $mapping = Mapping::load($mapping_id);
@@ -236,56 +232,38 @@ function drush_gathercontent_import($mapping_id = NULL, $node_update_method = No
   $selected_items = array_filter($items, $isItemFromSelectedTemplate);
   $gc_ids = array_map($itemToId, $selected_items);
 
-  $operation = Operation::create([
-    'type' => 'import',
-  ]);
-  $operation->save();
-
   $operations = [];
+
   foreach ($gc_ids as $gc_id) {
-    $import_options = new ImportOptions(
-      $node_update_method,
+    $import_options[$gc_id] = new ImportOptions(
       $publish,
       $createNewRevision,
       $status_id,
-      $parent_menu_item,
-      $operation->uuid()
+      $parent_menu_item
     );
-    $operations[] = [
-      'gathercontent_import_process',
-      [
-        $gc_id,
-        $import_options,
-      ],
-    ];
   }
 
-  $batch = Importer::getBasicImportBatch();
-  $batch['operations'] = $operations;
-  $batch['finished'] = 'gathercontent_drush_import_process_finished';
+  $operations[] = [
+    'gathercontent_import_process',
+    [
+      $gc_ids,
+      $import_options,
+      $mapping,
+    ],
+  ];
+
+  $batch = [
+    'title' => t('Importing'),
+    'init_message' => t('Starting import'),
+    'error_message' => t('An error occurred during processing'),
+    'progress_message' => t('Processed @current out of @total.'),
+    'progressive' => TRUE,
+    'operations' => $operations,
+    'finished' => 'gathercontent_drush_import_process_finished',
+  ];
 
   batch_set($batch);
   drush_backend_batch_process();
-
-  // Display results.
-  $mappings = [];
-  $result = \Drupal::entityQuery('gathercontent_operation_item')
-    ->condition('operation_uuid', $operation->uuid())
-    ->execute();
-  if (!empty($result)) {
-    $imported_items = OperationItem::loadMultiple($result);
-    /** @var \Drupal\gathercontent\Entity\OperationItem $imported_item */
-    foreach ($imported_items as $imported_item) {
-      $mappings[$imported_item->id()] = [
-        'id' => $imported_item->id(),
-        'item_name' => $imported_item->item_name->value,
-        'node_status' => $imported_item->getItemStatus(),
-        'import_status' => $imported_item->getStatus(),
-      ];
-    }
-  }
-
-  return $mappings;
 }
 
 /**
@@ -293,9 +271,32 @@ function drush_gathercontent_import($mapping_id = NULL, $node_update_method = No
  */
 function gathercontent_drush_import_process_finished($success, $results, $operations) {
   if ($success) {
-    drush_log(dt('Import finished'), LogLevel::OK);
+    if ($results['success'] > 0) {
+      drush_log(\Drupal::translation()
+        ->formatPlural($results['success'], '1 item was imported successfully.', '@count items were imported successfully.'));
+    }
+
+    if ($results['failed'] > 0) {
+      drush_log(\Drupal::translation()
+        ->formatPlural($results['failed'], '1 item was not imported. Check errors below.', '@count items were not imported. Check errors below.'), 'error');
+    }
+
+    if ($results['failed'] == 0 && $results['success'] == 0) {
+      drush_log(\Drupal::translation()
+        ->translate('Nothing was imported or updated.'));
+    }
   }
   else {
-    drush_set_error('gathercontent_import_failed', dt('Import failed'));
+    $error_operation = reset($operations);
+
+    drush_set_error(
+      'gathercontent_import_failed',
+      dt('An error occurred while processing @operation with arguments : @args',
+        [
+          '@operation' => $error_operation[0],
+          '@args' => print_r($error_operation[0], TRUE),
+        ]
+      )
+    );
   }
 }

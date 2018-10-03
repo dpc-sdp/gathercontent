@@ -14,7 +14,7 @@ class MenuCreator {
    * Create a menu link to the imported node.
    */
   public static function createMenu(NodeInterface $entity, $parentMenuItem) {
-    $isContentTypeTranslatable = Importer::isContentTypeTranslatable($entity->bundle());
+    $isContentTypeTranslatable = static::isContentTypeTranslatable($entity->bundle());
     $isMenuTranslatable = static::isMenuTranslatable();
     $menuLinkDefaults = menu_ui_get_menu_link_defaults($entity);
     if (!(bool) $menuLinkDefaults['id']) {
@@ -151,6 +151,16 @@ class MenuCreator {
       ->moduleExists('content_translation')
       && \Drupal::service('content_translation.manager')
         ->isEnabled('menu_link_content');
+  }
+
+  /**
+   * Decide whether a content type is translatable.
+   */
+  public static function isContentTypeTranslatable($contentType) {
+    return \Drupal::moduleHandler()
+        ->moduleExists('content_translation')
+      && \Drupal::service('content_translation.manager')
+        ->isEnabled('node', $contentType);
   }
 
 }

@@ -241,7 +241,7 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
     $value = [];
 
     foreach ($gcFiles as $file) {
-      if ($file->field == $field->label) {
+      if ($file->field == $field->id) {
         $value[] = $file;
       }
     }

@@ -135,3 +135,15 @@ function gathercontent_update_8402() {
     \Drupal::service('module_installer')->uninstall(['gathercontent_upload']);
   }
 }
+
+/**
+ * Uninstall operation entity.
+ */
+function gathercontent_update_8501() {
+  $entity_update_manager = \Drupal::entityDefinitionUpdateManager();
+  $entity_type = $entity_update_manager->getEntityType('gathercontent_operation');
+  $entity_update_manager->uninstallEntityType($entity_type);
+
+  $entity_type = $entity_update_manager->getEntityType('gathercontent_operation_item');
+  $entity_update_manager->uninstallEntityType($entity_type);
+}

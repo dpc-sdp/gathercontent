@@ -29,12 +29,4 @@ function gathercontent_ui_entity_type_alter(array &$entity_types) {
     $entity_types['gathercontent_mapping']->setLinkTemplate('delete-form', '/admin/config/gathercontent/mapping/{gathercontent_mapping}/delete');
     $entity_types['gathercontent_mapping']->setLinkTemplate('collection', '/admin/config/gathercontent/mapping');
   }
-
-  if (isset($entity_types['gathercontent_operation_item'])) {
-    $entity_types['gathercontent_operation_item']->setHandlerClass('views_data', 'Drupal\gathercontent_ui\Entity\OperationItemViewsData');
-  }
-
-  if (isset($entity_types['gathercontent_operation'])) {
-    $entity_types['gathercontent_operation']->setHandlerClass('views_data', 'Drupal\gathercontent_ui\Entity\OperationViewsData');
-  }
 }

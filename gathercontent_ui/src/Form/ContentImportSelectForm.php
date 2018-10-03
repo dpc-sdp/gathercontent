@@ -6,9 +6,7 @@ use Cheppers\GatherContent\GatherContentClientInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\gathercontent\Entity\Mapping;
-use Drupal\gathercontent\Entity\Operation;
 use Drupal\gathercontent\Import\ImportOptions;
-use Drupal\gathercontent\Import\NodeUpdateMethod;
 use Drupal\gathercontent\MappingLoader;
 use Drupal\node\Entity\NodeType;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -361,27 +359,11 @@ class ContentImportSelectForm extends FormBase {
       ];
 
       $import_config = $this->configFactory()->get('gathercontent.import');
-      $form['node_update_method'] = [
-        '#type' => 'radios',
-        '#required' => TRUE,
-        '#title' => $this->t('Content update method'),
-        '#default_value' => $import_config->get('node_update_method'),
-        '#options' => [
-          NodeUpdateMethod::ALWAYS_CREATE => $this->t('Always create new Content'),
-          NodeUpdateMethod::UPDATE_IF_NOT_CHANGED => $this->t('Create new Content if it has changed since the last import'),
-          NodeUpdateMethod::ALWAYS_UPDATE => $this->t('Always update existing Content'),
-        ],
-      ];
 
       $form['node_create_new_revision'] = [
         '#type' => 'checkbox',
         '#title' => $this->t('Create new revision'),
         '#default_value' => $import_config->get('node_create_new_revision'),
-        '#states' => [
-          'visible' => [
-            ':input[name="node_update_method"]' => ['value' => NodeUpdateMethod::ALWAYS_UPDATE],
-          ],
-        ],
       ];
 
       $form['actions']['#type'] = 'actions';
@@ -476,15 +458,11 @@ class ContentImportSelectForm extends FormBase {
         $form_state->setRebuild(TRUE);
       }
       elseif ($this->step === 2) {
-        $operation = Operation::create([
-          'type' => 'import',
-        ]);
-        $operation->save();
-
         $operations = [];
         $stack = [];
         $import_content = $this->nodes;
         $gcIds = [];
+        $import_options = [];
 
         foreach ($import_content as $k => $value) {
           /** @var \Cheppers\GatherContent\DataTypes\Item $item */
@@ -497,14 +475,11 @@ class ContentImportSelectForm extends FormBase {
             $parent_menu_item = isset($this->menu[$value]) ? $this->menu[$value] : NULL;
             $drupal_status = isset($this->drupalStatus[$value]) ? $this->drupalStatus[$value] : 0;
 
-            $import_options = new ImportOptions(
-              $form_state->getValue('node_update_method'),
+            $import_options[$mappingId][$value] = new ImportOptions(
               $drupal_status,
               $form_state->getValue('node_create_new_revision'),
               $form_state->getValue('status'),
-              $parent_menu_item,
-              $operation->uuid(),
-              $mapping
+              $parent_menu_item
             );
 
             if (!empty($value) && (!isset($gcIds[$mappingId]) || !array_search($value, $gcIds[$mappingId]))) {
@@ -515,7 +490,8 @@ class ContentImportSelectForm extends FormBase {
               'gathercontent_import_process',
               [
                 $gcIds[$mappingId],
-                $import_options,
+                $import_options[$mappingId],
+                $mapping,
               ],
             ];
 
@@ -541,14 +517,11 @@ class ContentImportSelectForm extends FormBase {
               $parent_menu_item = 'node:' . $content[$current]->parentId;
               $drupal_status = isset($this->drupalStatus[$current]) ? $this->drupalStatus[$current] : 0;
 
-              $import_options = new ImportOptions(
-                $form_state->getValue('node_update_method'),
+              $import_options[$mappingId][$current] = new ImportOptions(
                 $drupal_status,
                 $form_state->getValue('node_create_new_revision'),
                 $form_state->getValue('status'),
-                $parent_menu_item,
-                $operation->uuid(),
-                $mapping
+                $parent_menu_item
               );
 
               if (!empty($current) && (!isset($gcIds[$mappingId]) || !array_search($current, $gcIds[$mappingId]))) {
@@ -559,7 +532,8 @@ class ContentImportSelectForm extends FormBase {
                 'gathercontent_import_process',
                 [
                   $gcIds[$mappingId],
-                  $import_options,
+                  $import_options[$mappingId],
+                  $mapping,
                 ],
               ];
 
