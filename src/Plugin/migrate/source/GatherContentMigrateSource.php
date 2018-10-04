@@ -297,7 +297,7 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
             }
 
             $selected[] = [
-              'value' => $key,
+              'gc_id' => $key,
             ];
           }
 

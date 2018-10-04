@@ -55,6 +55,13 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
   protected $gathercontent_template;
 
   /**
+   * Entity type machine name.
+   *
+   * @var string
+   */
+  protected $entity_type;
+
+  /**
    * Content type machine name.
    *
    * @var string
@@ -155,6 +162,20 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
    */
   public function setGathercontentTemplate($gathercontent_template) {
     $this->gathercontent_template = $gathercontent_template;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getMappedEntityType() {
+    return $this->get('entity_type');
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setMappedEntityType($entity_type) {
+    $this->entity_type = $entity_type;
   }
 
   /**

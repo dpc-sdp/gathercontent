@@ -17,6 +17,9 @@ gathercontent.gathercontent_mapping.*:
     gathercontent_template:
       type: string
       label: 'GC Template'
+    entity_type:
+      type: string
+      label: 'Entity type machine name'
     content_type:
       type: string
       label: 'Content type machine name'
