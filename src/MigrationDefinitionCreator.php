@@ -156,6 +156,9 @@ class MigrationDefinitionCreator {
     $this->mapping->save();
   }
 
+  /**
+   * Set reference migration dependencies and processes.
+   */
   public function setReferenceDependencies(&$definitions) {
     if (empty($this->collectedReferences)) {
       return;
@@ -166,45 +169,55 @@ class MigrationDefinitionCreator {
         continue;
       }
 
-      $reference = $this->collectedReferences[$definitionId];
+      $references = $this->collectedReferences[$definitionId];
 
-      $subDefinition = $this->buildMigrationDefinition(
-        $reference['base_data'],
-        $reference['base_data']['tabId'],
-        $reference['data'],
-        'entity_reference_revisions'
-      );
+      foreach ($references as $element => $target) {
+        $subDependencies = [];
 
-      $subDependencies = [
-        $subDefinition['id'] => $subDefinition,
-      ];
-      $this->setReferenceDependencies($subDependencies);
+        foreach ($target as $reference) {
+          $subDefinition = $this->buildMigrationDefinition(
+            $reference['base_data'],
+            $reference['base_data']['tabId'],
+            $reference['data'],
+            'entity_reference_revisions'
+          );
 
-      $migration = Migration::create($subDefinition);
-      $migration->save();
+          $subDependencies[$subDefinition['id']] = $subDefinition;
+        }
+        $this->setReferenceDependencies($subDependencies);
 
-      $this->migrationDefinitionIds[] = $subDefinition['id'];
+        foreach ($subDependencies as $subDefinitionId => $subDefinition) {
+          $migration = Migration::create($subDefinition);
+          $migration->save();
 
-      $definitions[$definitionId]['migration_dependencies']['optional'][] = $subDefinition['id'];
+          $this->migrationDefinitionIds[] = $subDefinitionId;
 
-      foreach ($reference['reference_data'] as $elementId => $element) {
+          $definitions[$definitionId]['migration_dependencies']['optional'][] = $subDefinitionId;
+        }
+
         $definitions[$definitionId]['process'][$element] = [
-          'plugin' => 'sub_process',
-          'process' => [
-            'temp_migration' => [
-              'plugin' => 'migration_lookup',
-              'migration' => $subDefinition['id'],
-              'source' => 'id',
-            ],
-            'target_id' => [
-              'plugin' => 'extract',
-              'source' => '@temp_migration',
-              'index' => [0],
-            ],
-            'target_revision_id' => [
-              'plugin' => 'extract',
-              'source' => '@temp_migration',
-              'index' => [1],
+          [
+            'plugin' => 'gather_content_reference_revision',
+            'source' => 'id',
+          ],
+          [
+            'plugin' => 'sub_process',
+            'process' => [
+              'collect_' . $element => [
+                'plugin' => 'migration_lookup',
+                'migration' => array_keys($subDependencies),
+                'source' => 'id',
+              ],
+              'target_id' => [
+                'plugin' => 'extract',
+                'source' => '@collect_' . $element,
+                'index' => [0],
+              ],
+              'target_revision_id' => [
+                'plugin' => 'extract',
+                'source' => '@collect_' . $element,
+                'index' => [1],
+              ],
             ],
           ],
         ];
@@ -289,7 +302,9 @@ class MigrationDefinitionCreator {
 
       if (!empty($elementKeys[1])) {
         $data['elements'][$elementId] = $elementKeys[1];
-        $targetFieldInfo = FieldConfig::load($elementKeys[1]);
+        $subElementKeys = explode('||', $elementKeys[1]);
+
+        $targetFieldInfo = FieldConfig::load($subElementKeys[0]);
       }
 
       $definition['source']['fields'][] = $elementId;
@@ -387,16 +402,18 @@ class MigrationDefinitionCreator {
         break;
 
       case 'entity_reference_revisions':
-        $this->collectedReferences[$definition['id']]['data']['language'] = $data['language'];
-        $this->collectedReferences[$definition['id']]['data']['elements'][$elementId] = $data['elements'][$elementId];
-        $this->collectedReferences[$definition['id']]['base_data'] = [
+        $targetEntityBundle = $targetFieldInfo->getTargetBundle();
+
+        $this->collectedReferences[$definition['id']][$element][$targetEntityBundle]['data']['language'] = $data['language'];
+        $this->collectedReferences[$definition['id']][$element][$targetEntityBundle]['data']['elements'][$elementId] = $data['elements'][$elementId];
+        $this->collectedReferences[$definition['id']][$element][$targetEntityBundle]['base_data'] = [
           'projectId' => $this->mapping->getGathercontentProjectId(),
           'templateId' => $this->mapping->getGathercontentTemplateId(),
           'entityType' => $targetFieldInfo->getTargetEntityTypeId(),
-          'contentType' => $targetFieldInfo->getTargetBundle(),
+          'contentType' => $targetEntityBundle,
           'tabId' => $tabId,
         ];
-        $this->collectedReferences[$definition['id']]['reference_data'][$elementId] = $element;
+        $this->collectedReferences[$definition['id']][$element][$targetEntityBundle]['reference_data'][] = $elementId;
         break;
     }
 

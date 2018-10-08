@@ -8,9 +8,9 @@
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\gathercontent\Entity\MappingInterface;
-use Drupal\migrate\MigrateMessage;
 use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\gathercontent\MigrateExecutable;
+use Drupal\gathercontent\MigrateMessageCapture;
 
 /**
  * Implements hook_entity_base_field_info().
@@ -65,7 +65,7 @@ function gathercontent_import_process($gc_ids, array $import_options, MappingInt
         ->createInstance($migrationId, $definition);
 
       if ($migration) {
-        $messages = new MigrateMessage();
+        $messages = new MigrateMessageCapture();
         $executable = new MigrateExecutable($migration, $messages, [
           'idlist' => implode(',', $gc_ids),
           'import_options' => $import_options,
@@ -82,13 +82,19 @@ function gathercontent_import_process($gc_ids, array $import_options, MappingInt
           }
         }
         catch (\Exception $e) {
-          \Drupal::logger('migrate_drupal_ui')->error($e->getMessage());
+          \Drupal::logger('gathercontent')->error($e->getMessage());
         }
 
         switch ($status) {
           case MigrationInterface::RESULT_FAILED:
             if ($migration->getStatus() !== MigrationInterface::STATUS_IDLE) {
               $migration->setStatus(MigrationInterface::STATUS_IDLE);
+            }
+
+            // Add and log any captured messages.
+            foreach ($messages->getMessages() as $message) {
+              $context['results']['messages'][] = (string) $message;
+              \Drupal::logger('gathercontent')->error($message);
             }
             break;
         }
@@ -117,6 +123,12 @@ function gathercontent_import_finished($success, $results, $operations) {
     if ($results['failed'] == 0 && $results['success'] == 0) {
       drupal_set_message(\Drupal::translation()
         ->translate('Nothing was imported or updated.'));
+    }
+
+    if (isset($results['messages']) && count($results['messages']) > 0) {
+      foreach ($results['messages'] as $message) {
+        drupal_set_message($message, 'error');
+      }
     }
   }
   else {
