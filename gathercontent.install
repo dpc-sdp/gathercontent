@@ -138,12 +138,44 @@ function gathercontent_update_8402() {
 
 /**
  * Uninstall operation entity.
+ *
+ * Convert previous version mapping type to the new one.
  */
 function gathercontent_update_8501() {
-  $entity_update_manager = \Drupal::entityDefinitionUpdateManager();
-  $entity_type = $entity_update_manager->getEntityType('gathercontent_operation');
-  $entity_update_manager->uninstallEntityType($entity_type);
+  try {
+    $entity_update_manager = \Drupal::entityDefinitionUpdateManager();
+    $entity_type = $entity_update_manager->getEntityType('gathercontent_operation');
+    $entity_update_manager->uninstallEntityType($entity_type);
 
-  $entity_type = $entity_update_manager->getEntityType('gathercontent_operation_item');
-  $entity_update_manager->uninstallEntityType($entity_type);
+    $entity_type = $entity_update_manager->getEntityType('gathercontent_operation_item');
+    $entity_update_manager->uninstallEntityType($entity_type);
+  }
+  catch (\Exception $e) {
+    // TODO: remove this when https://www.drupal.org/project/drupal/issues/2655162 issue merged.
+  }
+
+  // Convert mappings.
+  $mapping_ids = \Drupal::entityQuery('gathercontent_mapping')->execute();
+
+  if (empty($mapping_ids)) {
+    throw new Exception("Operation failed: There are no templates mapped.");
+  }
+
+  $migrationDefinitionCreator = \Drupal::service('gathercontent.migration_creator');
+
+  foreach ($mapping_ids as $mapping_id) {
+    $mapping = Mapping::load($mapping_id);
+    $mapping->setMappedEntityType('node');
+    $mapping->setUpdatedDrupal(time());
+    $mapping->save();
+
+    $mapping_data = unserialize($mapping->getData());
+
+    if (!empty($mapping_data)) {
+      $migrationDefinitionCreator
+        ->setMapping($mapping)
+        ->setMappingData($mapping_data)
+        ->createMigrationDefinition();
+    }
+  }
 }
