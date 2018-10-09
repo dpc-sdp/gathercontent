@@ -7,7 +7,6 @@ use Cheppers\GatherContent\DataTypes\File;
 use Cheppers\GatherContent\DataTypes\Item;
 use Cheppers\GatherContent\DataTypes\Status;
 use Cheppers\GatherContent\DataTypes\Tab;
-use Drupal\Core\Language\LanguageInterface;
 use Drupal\gathercontent\Entity\Mapping;
 use Drupal\taxonomy\Entity\Term;
 
@@ -191,6 +190,14 @@ class MockData {
    */
   public static function getMapping() {
     $mapping_id = \Drupal::entityQuery('gathercontent_mapping')->execute();
+    $mapping_id = reset($mapping_id);
+    return Mapping::load($mapping_id);
+  }
+
+  public static function getSpecificMapping(string $templateId) {
+    $mapping_id = \Drupal::entityQuery('gathercontent_mapping')
+      ->condition('gathercontent_template_id', $templateId)
+      ->execute();
     $mapping_id = reset($mapping_id);
     return Mapping::load($mapping_id);
   }

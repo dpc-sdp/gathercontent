@@ -31,6 +31,7 @@ class MigrationDefinitionCreator {
       'plugin' => '',
     ],
     'migration_dependencies' => [],
+    'migration_tags' => [],
   ];
 
   /**
