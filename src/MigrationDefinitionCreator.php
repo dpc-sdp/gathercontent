@@ -186,6 +186,8 @@ class MigrationDefinitionCreator {
         }
         $this->setReferenceDependencies($subDependencies);
 
+        $collected = [];
+
         foreach ($subDependencies as $subDefinitionId => $subDefinition) {
           $migration = Migration::create($subDefinition);
           $migration->save();
@@ -193,34 +195,43 @@ class MigrationDefinitionCreator {
           $this->migrationDefinitionIds[] = $subDefinitionId;
 
           $definitions[$definitionId]['migration_dependencies']['optional'][] = $subDefinitionId;
+          $definitions[$definitionId]['process']['collect_' . $subDefinitionId] = [
+            'plugin' => 'migration_lookup',
+            'migration' => $subDefinitionId,
+            'source' => 'id',
+          ];
+
+          $collected[] = '@collect_' . $subDefinitionId;
         }
 
-        $definitions[$definitionId]['process'][$element] = [
-          [
-            'plugin' => 'gather_content_reference_revision',
-            'source' => 'id',
-          ],
-          [
-            'plugin' => 'sub_process',
-            'process' => [
-              'collect_' . $element => [
-                'plugin' => 'migration_lookup',
-                'migration' => array_keys($subDependencies),
-                'source' => 'id',
-              ],
-              'target_id' => [
-                'plugin' => 'extract',
-                'source' => '@collect_' . $element,
-                'index' => [0],
-              ],
-              'target_revision_id' => [
-                'plugin' => 'extract',
-                'source' => '@collect_' . $element,
-                'index' => [1],
+        if (!empty($collected)) {
+          $definitions[$definitionId]['process']['get_collected_' . $element] = [
+            'plugin' => 'get',
+            'source' => $collected,
+          ];
+
+          $definitions[$definitionId]['process'][$element] = [
+            [
+              'plugin' => 'gather_content_reference_revision',
+              'source' => '@get_collected_' . $element,
+            ],
+            [
+              'plugin' => 'sub_process',
+              'process' => [
+                'target_id' => [
+                  'plugin' => 'extract',
+                  'source' => 'id',
+                  'index' => [0],
+                ],
+                'target_revision_id' => [
+                  'plugin' => 'extract',
+                  'source' => 'id',
+                  'index' => [1],
+                ],
               ],
             ],
-          ],
-        ];
+          ];
+        }
       }
     }
   }
@@ -295,7 +306,7 @@ class MigrationDefinitionCreator {
 
       if (
         $element == $entityDefinition->getKey('label') ||
-        $entityDefinition->getKey('label') == 0
+        $entityDefinition->getKey('label') === FALSE
       ) {
         $labelSet = TRUE;
       }
@@ -469,7 +480,7 @@ class MigrationDefinitionCreator {
   protected function setLanguageDefinitions(&$definitions) {
     $defaultLangMigrationId = $this->getDefaultMigrationId($definitions);
 
-    foreach ($definitions as $definition) {
+    foreach ($definitions as $definitionId => $definition) {
       if (
         $definition['langcode'] != $this->siteDefaultLangCode &&
         $definition['langcode'] != 'und'
@@ -477,17 +488,17 @@ class MigrationDefinitionCreator {
         $plugin = explode(':', $definition['destination']['plugin']);
         $entityDefinition = $this->entityTypeManager->getDefinition($plugin[1]);
 
-        $definition['process'][$entityDefinition->getKey('id')] = [
+        $definitions[$definitionId]['process'][$entityDefinition->getKey('id')] = [
           'plugin' => 'migration_lookup',
           'source' => 'id',
           'migration' => $defaultLangMigrationId,
         ];
-        $definition['process']['langcode'] = [
+        $definitions[$definitionId]['process']['langcode'] = [
           'plugin' => 'default_value',
           'default_value' => $definition['langcode'],
         ];
 
-        $definition['migration_dependencies']['optional'][] = $defaultLangMigrationId;
+        $definitions[$definitionId]['migration_dependencies']['optional'][] = $defaultLangMigrationId;
       }
     }
   }
@@ -498,9 +509,9 @@ class MigrationDefinitionCreator {
   protected function getDefaultMigrationId($definitions) {
     $defaultLangMigrationId = '';
 
-    foreach ($definitions as $tab) {
-      if ($tab['langcode'] == $this->siteDefaultLangCode) {
-        $defaultLangMigrationId = $tab['id'];
+    foreach ($definitions as $definition) {
+      if ($definition['langcode'] == $this->siteDefaultLangCode) {
+        $defaultLangMigrationId = $definition['id'];
       }
     }
 
