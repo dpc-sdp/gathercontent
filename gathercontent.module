@@ -57,12 +57,9 @@ function gathercontent_import_process($gc_ids, array $import_options, MappingInt
 
   if (!empty($migrationIds)) {
     foreach ($migrationIds as $migrationId) {
-      $definition = \Drupal::service('plugin.manager.migration')
-        ->getDefinition($migrationId);
-
       /** @var \Drupal\migrate\Plugin\Migration $migration */
       $migration = \Drupal::service('plugin.manager.migration')
-        ->createInstance($migrationId, $definition);
+        ->createInstance($migrationId);
 
       if ($migration) {
         $messages = new MigrateMessageCapture();
