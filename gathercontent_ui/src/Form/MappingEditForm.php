@@ -6,6 +6,7 @@ use Cheppers\GatherContent\GatherContentClientInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\field\Entity\FieldConfig;
+use Drupal\gathercontent\MigrationDefinitionCreator;
 use Drupal\gathercontent_ui\Form\MappingEditSteps\MappingStepService;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -37,6 +38,8 @@ class MappingEditForm extends MappingEditFormBase {
    */
   protected $mappingService;
 
+  protected $migrationDefinitionCreator;
+
   /**
    * MappingImportForm constructor.
    *
@@ -45,9 +48,10 @@ class MappingEditForm extends MappingEditFormBase {
    * @param \Drupal\gathercontent_ui\Form\MappingEditSteps\MappingStepService $mapping_service
    *   MappingStepService.
    */
-  public function __construct(GatherContentClientInterface $client, MappingStepService $mapping_service) {
+  public function __construct(GatherContentClientInterface $client, MappingStepService $mapping_service, MigrationDefinitionCreator $migrationDefinitionCreator) {
     $this->client = $client;
     $this->mappingService = $mapping_service;
+    $this->migrationDefinitionCreator = $migrationDefinitionCreator;
   }
 
   /**
@@ -56,7 +60,8 @@ class MappingEditForm extends MappingEditFormBase {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('gathercontent.client'),
-      $container->get('gathercontent_ui.mapping_service')
+      $container->get('gathercontent_ui.mapping_service'),
+      $container->get('gathercontent.migration_creator')
     );
   }
 
@@ -131,7 +136,7 @@ class MappingEditForm extends MappingEditFormBase {
 
       if ($this->step === 'field_mapping') {
         $this->step = 'er_mapping';
-        $mapping_data = $this->extractMappingData($form_state->getValues());
+        $this->extractMappingData($form_state->getValues());
         if ($this->new) {
           $this->contentType = $form_state->getValue('content_type');
         }
@@ -153,6 +158,8 @@ class MappingEditForm extends MappingEditFormBase {
       if ($this->step === 'completed' || $this->skip) {
         $this->erImported = 0;
         if ($this->new) {
+          // TODO: make it changeable.
+          $mapping->setMappedEntityType('node');
           $mapping->setContentType($this->contentType);
           $content_types = node_type_get_names();
           $mapping->setContentTypeName($content_types[$this->contentType]);
@@ -199,7 +206,7 @@ class MappingEditForm extends MappingEditFormBase {
                 }
               }
               elseif ($gc_field->type === 'choice_radio') {
-                if (!empty($mapping_data[$fieldset->id]['elements'][$gc_field->id])) {
+                if (!empty($local_field_id)) {
                   $local_options = [];
                   foreach ($gc_field->options as $option) {
                     if (!isset($option['value'])) {
@@ -267,6 +274,12 @@ class MappingEditForm extends MappingEditFormBase {
         else {
           drupal_set_message(t('Mapping has been updated.'));
         }
+
+        $this
+          ->migrationDefinitionCreator
+          ->setMapping($mapping)
+          ->setMappingData($this->mappingData)
+          ->createMigrationDefinition();
 
         if (!empty($this->entityReferenceFields)) {
           drupal_set_message($this->formatPlural($this->erImported, '@count term was imported', '@count terms were imported'));
