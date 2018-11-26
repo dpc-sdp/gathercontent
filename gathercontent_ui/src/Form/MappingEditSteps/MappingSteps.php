@@ -416,6 +416,16 @@ abstract class MappingSteps {
 
           if (!empty($settings['target_bundles'])) {
             $bundles = $settings['target_bundles'];
+            if (!empty($settings['negate']) && !empty($settings['target_bundles_drag_drop'])) {
+              $negated_bundles = array_filter(
+                $settings['target_bundles_drag_drop'],
+                function ($v) {
+                  return !$v['enabled'];
+                }
+              );
+
+              $bundles = array_combine(array_keys($negated_bundles), array_keys($negated_bundles));
+            }
             $target_type = $instance->getFieldStorageDefinition()
               ->getSetting('target_type');
             $bundle_entity_type = $entityTypeManager
