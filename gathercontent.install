@@ -438,6 +438,14 @@ function gathercontent_update_7310() {
 }
 
 /**
+ * Fix permissions on views.
+ */
+function gathercontent_update_7311() {
+  ctools_include('object-cache');
+  ctools_object_cache_clear('view', 'mapping');
+}
+
+/**
  * Implements hook_requirements().
  */
 function gathercontent_requirements($phase) {
