@@ -8,7 +8,6 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\gathercontent\Entity\Mapping;
 use Drupal\gathercontent\Import\ImportOptions;
 use Drupal\gathercontent\MappingLoader;
-use Drupal\gathercontent\MappingLoader;
 use Drupal\node\Entity\NodeType;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
