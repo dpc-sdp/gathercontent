@@ -42,6 +42,22 @@ interface MappingInterface extends ConfigEntityInterface {
   public function getGathercontentTemplate();
 
   /**
+   * Getter for entity type machine name.
+   *
+   * @return string
+   *   Entity type machine name.
+   */
+  public function getMappedEntityType();
+
+  /**
+   * Setter for entity type machine name.
+   *
+   * @param string $entity_type
+   *   Entity type machine name.
+   */
+  public function setMappedEntityType($entity_type);
+
+  /**
    * Getter for content type machine name.
    *
    * @return string
@@ -136,5 +152,13 @@ interface MappingInterface extends ConfigEntityInterface {
    *   If not empty return formatted date, else return string Never.
    */
   public function getFormatterUpdatedDrupal();
+
+  /**
+   * Getter for GatherContent migrations list.
+   *
+   * @return array
+   *   Migration id list as array.
+   */
+  public function getMigrations();
 
 }

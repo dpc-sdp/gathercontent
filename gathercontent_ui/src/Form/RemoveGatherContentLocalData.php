@@ -48,8 +48,6 @@ class RemoveGatherContentLocalData extends FormBase {
     $batch = [
       'title' => $this->t('Deleting...'),
       'operations' => [
-        [static::class . '::deleteAllEntity', ['gathercontent_operation_item']],
-        [static::class . '::deleteAllEntity', ['gathercontent_operation']],
         [static::class . '::cleanUpGcData', ['node']],
         [static::class . '::cleanUpGcData', ['file']],
       ],
@@ -61,7 +59,7 @@ class RemoveGatherContentLocalData extends FormBase {
   }
 
   /**
-   * Delete gathercontent_operation and gathercontent_operation_item entities.
+   * Delete gathercontent_entities.
    *
    * @param string $entity_type_id
    *   Entity type ID of which we want to delete entities.

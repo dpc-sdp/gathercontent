@@ -47,3 +47,13 @@ gathercontent_ui.mapping_controller_testConnectionPage:
     _permission: 'administer gathercontent'
   options:
     _admin_route: TRUE
+
+gathercontent_ui.tracked_entities_list:
+  path: '/admin/config/gathercontent/import/results'
+  defaults:
+    _controller: '\Drupal\gathercontent_ui\Controller\TrackedEntitiesController::listTrackedEntities'
+    _title: 'Test connection'
+  requirements:
+    _permission: 'administer gathercontent'
+  options:
+    _admin_route: TRUE

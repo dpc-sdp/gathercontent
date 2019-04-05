@@ -5,6 +5,8 @@
  * Install and uninstall script for GatherContent UI module.
  */
 
+use Drupal\views\Views;
+
 /**
  * Implements hook_requirements().
  */
@@ -43,4 +45,12 @@ function gathercontent_ui_requirements($phase) {
   }
 
   return $requirements;
+}
+
+/**
+ * Uninstall results view.
+ */
+function gathercontent_ui_update_8501() {
+  $view = Views::getView('result_pages');
+  $view->storage->delete();
 }
