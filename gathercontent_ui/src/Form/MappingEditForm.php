@@ -163,8 +163,6 @@ class MappingEditForm extends MappingEditFormBase {
         }
 
         if ($this->new) {
-          // TODO: make it changeable.
-          $mapping->setMappedEntityType('node');
           $mapping->setContentType($this->contentType);
           $content_types = node_type_get_names();
           $mapping->setContentTypeName($content_types[$this->contentType]);
