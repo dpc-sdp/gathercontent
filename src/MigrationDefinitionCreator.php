@@ -423,8 +423,13 @@ class MigrationDefinitionCreator {
 
       case 'entity_reference_revisions':
         $targetEntityBundle = $targetFieldInfo->getTargetBundle();
+        $language = $this->siteDefaultLangCode;
 
-        $this->collectedReferences[$definition['id']][$element][$targetEntityBundle]['data']['language'] = $data['language'];
+        if (isset($data['language'])) {
+          $language = $data['language'];
+        }
+
+        $this->collectedReferences[$definition['id']][$element][$targetEntityBundle]['data']['language'] = $language;
         $this->collectedReferences[$definition['id']][$element][$targetEntityBundle]['data']['elements'][$elementId] = $data['elements'][$elementId];
         $this->collectedReferences[$definition['id']][$element][$targetEntityBundle]['base_data'] = [
           'projectId' => $this->mapping->getGathercontentProjectId(),
