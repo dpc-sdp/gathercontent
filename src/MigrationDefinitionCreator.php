@@ -534,7 +534,7 @@ class MigrationDefinitionCreator {
    * Returns formatted tab ID. Removing the dashes.
    */
   protected function formatTabId(string $tabId) {
-    return str_replace('-', '_', $tabId);
+    return \Drupal::database()->escapeTable($tabId);
   }
 
 }
