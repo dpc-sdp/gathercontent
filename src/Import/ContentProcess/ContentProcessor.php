@@ -177,7 +177,7 @@ class ContentProcessor implements ContainerInjectionInterface {
       }
     }
 
-    if (!$is_translatable && empty($entity->getTitle())) {
+    if (empty($entity->getTitle())) {
       $entity->setTitle($gc_item->name);
     }
 
