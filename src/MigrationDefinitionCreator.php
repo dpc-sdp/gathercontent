@@ -383,19 +383,8 @@ class MigrationDefinitionCreator {
 
       case 'text':
       case 'text_with_summary':
-        $definition['process'][$element] = [
-          'plugin' => 'get',
-          'source' => $elementId,
-        ];
-
+        $this->setTextFieldDefinition($definition, $element, $elementId);
         $this->setTextFormat($definition, $data, $elementId, $element);
-        break;
-
-      default:
-        $definition['process'][$element] = [
-          'plugin' => 'get',
-          'source' => $elementId,
-        ];
         break;
 
       case 'entity_reference':
@@ -440,6 +429,10 @@ class MigrationDefinitionCreator {
         ];
         $this->collectedReferences[$definition['id']][$element][$targetEntityBundle]['reference_data'][] = $elementId;
         break;
+
+      default:
+        $this->setTextFieldDefinition($definition, $element, $elementId);
+        break;
     }
 
     if (
@@ -455,27 +448,58 @@ class MigrationDefinitionCreator {
   /**
    * Set the text format for the text type fields.
    */
-  protected function setTextFormat(array &$definitions, array $data, string $elementId, string $element) {
+  protected function setTextFormat(array &$definition, array $data, string $elementId, string $element) {
     if (isset($data['element_text_formats'][$elementId])
       && !empty($data['element_text_formats'][$elementId])
+      && isset($definition['process'][$element])
     ) {
-      unset($definitions['process'][$element]);
-      $definitions['process'][$element . '/format'] = [
+      $origElement = $definition['process'][$element];
+      unset($definition['process'][$element]);
+
+      $definition['process'][$element . '/format'] = [
         'plugin' => 'default_value',
         'default_value' => $data['element_text_formats'][$elementId],
       ];
-      $definitions['process'][$element . '/value'] = [
-        'plugin' => 'get',
-        'source' => $elementId,
-      ];
+      $definition['process'][$element . '/value'] = $origElement;
 
       if (
-        $definitions['langcode'] != $this->siteDefaultLangCode &&
-        $definitions['langcode'] != 'und'
+        $definition['langcode'] != $this->siteDefaultLangCode &&
+        $definition['langcode'] != 'und'
       ) {
-        $definitions['process'][$element . '/value']['language'] = $definitions['langcode'];
+        $definition['process'][$element . '/value']['language'] = $definition['langcode'];
       }
     }
+  }
+
+  /**
+   * Set the text definition. Set concatenation if needed.
+   */
+  protected function setTextFieldDefinition(array &$definition, string $element, string $elementId) {
+    // Check if the field has a /value element to support different formats.
+    $key = $element . '/value';
+    if (!isset($definition['process'][$key])) {
+      $key = $element;
+    }
+
+    if (isset($definition['process'][$key])) {
+      $definition['process'][$key]['plugin'] = 'concat';
+
+      if (!is_array($definition['process'][$key]['source'])) {
+        $definition['process'][$key]['source'] = [
+          $definition['process'][$key]['source'],
+        ];
+      }
+
+      $definition['process'][$key]['source'][] = $elementId;
+      $definition['process'][$key]['delimiter'] = ' ';
+
+      return;
+    }
+
+    $definition['process'][$element] = [
+      'plugin' => 'get',
+      'source' => $elementId,
+    ];
   }
 
   /**
