@@ -60,7 +60,6 @@ class MappingStepNew extends MappingSteps {
         'method' => 'replace',
         'effect' => 'fade',
       ],
-      '#default_value' => $formState->getValue('content_type'),
       '#prefix' => '<div id="content-type-select">',
       '#suffix' => '</div>',
     ];

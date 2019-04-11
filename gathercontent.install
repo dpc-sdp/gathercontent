@@ -14,15 +14,6 @@ use Drupal\gathercontent\Entity\Mapping;
  * Implements hook_install().
  */
 function gathercontent_install() {
-  /** @var \Drupal\Core\Entity\EntityFieldManager $entityFieldManager */
-  $entityFieldManager = \Drupal::service('entity_field.manager');
-  /** @var \Drupal\Core\Field\FieldStorageDefinitionListener $fieldStorageDefinitionListener */
-  $fieldStorageDefinitionListener = \Drupal::service('field_storage_definition.listener');
-  $definition = $entityFieldManager->getFieldStorageDefinitions('node')['gc_mapping_id'];
-  $fieldStorageDefinitionListener->onFieldStorageDefinitionCreate($definition);
-  $definition = $entityFieldManager->getFieldStorageDefinitions('node')['gc_id'];
-  $fieldStorageDefinitionListener->onFieldStorageDefinitionCreate($definition);
-
   if (\Drupal::entityTypeManager()->hasDefinition('taxonomy_term')) {
     $entityFieldManager = \Drupal::service('entity_field.manager');
     $definitions = $entityFieldManager->getFieldStorageDefinitions('taxonomy_term');
@@ -178,4 +169,19 @@ function gathercontent_update_8501() {
         ->createMigrationDefinition();
     }
   }
+}
+
+/**
+ * Remove deprecated fields from node.
+ */
+function gathercontent_update_8502() {
+  /** @var \Drupal\Core\Entity\EntityFieldManager $entityFieldManager */
+  $entityFieldManager = \Drupal::service('entity_field.manager');
+  /** @var \Drupal\Core\Field\FieldStorageDefinitionListener $fieldStorageDefinitionListener */
+  $fieldStorageDefinitionListener = \Drupal::service('field_storage_definition.listener');
+
+  $definition = $entityFieldManager->getFieldStorageDefinitions('node')['gc_mapping_id'];
+  $fieldStorageDefinitionListener->onFieldStorageDefinitionDelete($definition);
+  $definition = $entityFieldManager->getFieldStorageDefinitions('node')['gc_id'];
+  $fieldStorageDefinitionListener->onFieldStorageDefinitionDelete($definition);
 }

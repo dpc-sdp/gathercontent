@@ -124,7 +124,7 @@ class MigrateExecutable extends MigrateExecutableBase {
       $options = $this->importOptions[$row['sourceid1']];
       $parent_menu_item = $options->getParentMenuItem();
 
-      if ($parent_menu_item != '0') {
+      if (!empty($parent_menu_item) && $parent_menu_item != '0') {
         // TODO: Use the entity type from the mapping, not the node!
         $entity = Node::load($row['destid1']);
 

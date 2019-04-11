@@ -180,7 +180,7 @@ class ContentImportSelectForm extends FormBase {
             && $item->templateId != 'null'
             && isset($mapping_array[$item->templateId])
           ) {
-            if($entity_types[$item->templateId] == 'node') {
+            if ($entity_types[$item->templateId] == 'node') {
               $node_type = NodeType::load($content_types[$item->templateId]);
               $selected_boxes = $node_type->getThirdPartySetting('menu_ui', 'available_menus', ['main']);
               $available_menus = [];
@@ -264,17 +264,18 @@ class ContentImportSelectForm extends FormBase {
               'menu' => [
                 '#type' => 'markup',
                 '#markup' => '',
-              ]
+              ],
             ];
-            if($entity_types[$item->templateId] == 'node') {
+
+            if ($entity_types[$item->templateId] == 'node') {
               $form['import']['items'][$item->id]['menu'] = [
                 '#type' => 'select',
                 '#default_value' => $node_type->getThirdPartySetting('menu_ui', 'parent'),
                 '#empty_option' => $this->t("- Don't create menu item -"),
                 '#empty_value' => 0,
                 '#options' => [-1 => t("Parent being imported")]
-                  + \Drupal::service('menu.parent_form_selector')
-                    ->getParentSelectOptions('', $available_menus),
+                + \Drupal::service('menu.parent_form_selector')
+                  ->getParentSelectOptions('', $available_menus),
                 '#title' => t('Menu'),
                 '#title_display' => 'invisible',
                 '#states' => [
@@ -406,7 +407,10 @@ class ContentImportSelectForm extends FormBase {
         foreach ($form_state->getValue('items') as $item_id => $item) {
           if ($item['selected'] === "1") {
             $import_content[] = $item_id;
-            $selected_menus[$item_id] = $item['menu'];
+
+            if (!empty($item['menu'])) {
+              $selected_menus[$item_id] = $item['menu'];
+            }
           }
         }
         foreach ($import_content as $k => $value) {
@@ -458,8 +462,11 @@ class ContentImportSelectForm extends FormBase {
         foreach ($form_state->getValue('items') as $item_id => $item) {
           if ($item['selected'] === "1") {
             $selected_nodes[] = $item_id;
-            $selected_menus[$item_id] = $item['menu'];
             $selected_statuses[$item_id] = $item['drupal_status'];
+
+            if (!empty($item['menu'])) {
+              $selected_menus[$item_id] = $item['menu'];
+            }
           }
         }
         $this->nodes = $selected_nodes;

@@ -552,7 +552,7 @@ abstract class MappingSteps {
    * @return array
    *   Assoc array of bundle types.
    */
-  function getBundles($entityType) {
+  public function getBundles($entityType) {
     $bundleTypes = \Drupal::service('entity_type.bundle.info')->getBundleInfo($entityType);
     $response = [];
 
@@ -569,7 +569,7 @@ abstract class MappingSteps {
    * @return array
    *   Assoc array of entity types.
    */
-  function getEntityTypes() {
+  public function getEntityTypes() {
     $entityTypes = \Drupal::entityTypeManager()->getDefinitions();
     $unsupportedTypes = [
       'user',
@@ -583,7 +583,7 @@ abstract class MappingSteps {
         $class = $value->getOriginalClass();
         if (in_array(FieldableEntityInterface::class, class_implements($class))
           && !in_array($key, $unsupportedTypes)) {
-          $label = (string)$value->getLabel();
+          $label = (string) $value->getLabel();
           $response[$key] = $label;
         }
       }
