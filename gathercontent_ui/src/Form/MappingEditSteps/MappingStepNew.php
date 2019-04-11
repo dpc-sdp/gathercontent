@@ -2,6 +2,7 @@
 
 namespace Drupal\gathercontent_ui\Form\MappingEditSteps;
 
+use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Form\FormStateInterface;
 
 /**
@@ -24,12 +25,29 @@ class MappingStepNew extends MappingSteps {
       $filterFormatOptions[$key] = $filterFormat->label();
     }
 
-    $content_types = node_type_get_names();
+    $form['gathercontent']['entity_type'] = [
+      '#type' => 'select',
+      '#title' => t('Drupal entity type'),
+      '#options' => $this->getEntityTypes(),
+      '#required' => TRUE,
+      '#wrapper_attributes' => [
+        'class' => [
+          'inline-label',
+        ],
+      ],
+      '#ajax' => [
+        'callback' => '::getContentTypes',
+        'wrapper' => 'content-type-select',
+        'method' => 'replace',
+        'effect' => 'fade',
+      ],
+      '#default_value' => $formState->getValue('entity_type'),
+    ];
 
     $form['gathercontent']['content_type'] = [
       '#type' => 'select',
-      '#title' => t('Drupal content type'),
-      '#options' => $content_types,
+      '#title' => t('Drupal bundle type'),
+      '#options' => $this->getBundles($formState->getValue('entity_type')),
       '#required' => TRUE,
       '#wrapper_attributes' => [
         'class' => [
@@ -43,6 +61,8 @@ class MappingStepNew extends MappingSteps {
         'effect' => 'fade',
       ],
       '#default_value' => $formState->getValue('content_type'),
+      '#prefix' => '<div id="content-type-select">',
+      '#suffix' => '</div>',
     ];
 
     $form['mapping'] = [
@@ -52,6 +72,7 @@ class MappingStepNew extends MappingSteps {
 
     if ($formState->hasValue('content_type')) {
       $contentType = $formState->getValue('content_type');
+      $entityType = $formState->getValue('entity_type');
       foreach ($this->template->config as $i => $fieldset) {
         if ($fieldset->hidden === FALSE) {
           $form['mapping'][$fieldset->id] = [
@@ -105,7 +126,7 @@ class MappingStepNew extends MappingSteps {
               // We need different handling for changed fieldset.
               if ($formState->getTriggeringElement()['#array_parents'][1] === $fieldset->id) {
                 if ($formState->getTriggeringElement()['#value'] === 'content') {
-                  $d_fields = $this->filterFields($gc_field, $contentType);
+                  $d_fields = $this->filterFields($gc_field, $contentType, $entityType);
                 }
                 elseif ($formState->getTriggeringElement()['#value'] === 'metatag') {
                   $d_fields = $this->filterMetatags($gc_field);
@@ -113,7 +134,7 @@ class MappingStepNew extends MappingSteps {
               }
               else {
                 if ($formState->getValue($fieldset->id)['type'] === 'content') {
-                  $d_fields = $this->filterFields($gc_field, $contentType);
+                  $d_fields = $this->filterFields($gc_field, $contentType, $entityType);
                 }
                 elseif ($formState->getValue($fieldset->id)['type'] === 'metatag') {
                   $d_fields = $this->filterMetatags($gc_field);
@@ -121,7 +142,7 @@ class MappingStepNew extends MappingSteps {
               }
             }
             else {
-              $d_fields = $this->filterFields($gc_field, $contentType);
+              $d_fields = $this->filterFields($gc_field, $contentType, $entityType);
             }
             $form['mapping'][$fieldset->id]['elements'][$gc_field->id] = [
               '#type' => 'select',
@@ -179,5 +200,4 @@ class MappingStepNew extends MappingSteps {
 
     return $form;
   }
-
 }

@@ -26,10 +26,11 @@ class MappingStepEdit extends MappingSteps {
 
     $mappingData = unserialize($this->mapping->getData());
     $contentType = $this->mapping->getContentType();
+    $entityType = $this->mapping->getMappedEntityType();
 
     $form['gathercontent']['content_type'] = [
       '#type' => 'item',
-      '#title' => t('Drupal content type:'),
+      '#title' => t('Drupal bundle type:'),
       '#markup' => $this->mapping->getContentTypeName(),
       '#wrapper_attributes' => [
         'class' => [
@@ -89,7 +90,7 @@ class MappingStepEdit extends MappingSteps {
             // We need different handling for changed fieldset.
             if ($formState->getTriggeringElement()['#array_parents'][1] === $fieldset->id) {
               if ($formState->getTriggeringElement()['#value'] === 'content') {
-                $d_fields = $this->filterFields($gc_field, $contentType);
+                $d_fields = $this->filterFields($gc_field, $contentType, $entityType);
               }
               elseif ($formState->getTriggeringElement()['#value'] === 'metatag') {
                 $d_fields = $this->filterMetatags($gc_field);
@@ -97,7 +98,7 @@ class MappingStepEdit extends MappingSteps {
             }
             else {
               if ($formState->getValue($fieldset->id)['type'] === 'content') {
-                $d_fields = $this->filterFields($gc_field, $contentType);
+                $d_fields = $this->filterFields($gc_field, $contentType, $entityType);
               }
               elseif ($formState->getTriggeringElement()['#value'] === 'metatag') {
                 $d_fields = $this->filterMetatags($gc_field);
@@ -106,7 +107,7 @@ class MappingStepEdit extends MappingSteps {
           }
           else {
             if ((isset($mappingData[$fieldset->id]['type']) && $mappingData[$fieldset->id]['type'] === 'content') || !isset($mappingData[$fieldset->id]['type'])) {
-              $d_fields = $this->filterFields($gc_field, $contentType);
+              $d_fields = $this->filterFields($gc_field, $contentType, $entityType);
             }
             else {
               $d_fields = $this->filterMetatags($gc_field);
