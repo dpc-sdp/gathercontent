@@ -139,9 +139,11 @@ class MappingEditForm extends MappingEditFormBase {
         $this->extractMappingData($form_state->getValues());
         if ($this->new) {
           $this->contentType = $form_state->getValue('content_type');
+          $this->entityType = $form_state->getValue('entity_type');
         }
         else {
           $this->contentType = $mapping->getContentType();
+          $this->entityType = $mapping->getMappedEntityType();
         }
 
         $this->erImportType = $form_state->getValue('er_mapping_type');
@@ -159,13 +161,13 @@ class MappingEditForm extends MappingEditFormBase {
         $this->erImported = 0;
         // TODO: make it changeable.
         if (!$mapping->getMappedEntityType()) {
-          $mapping->setMappedEntityType('node');
+          $mapping->setMappedEntityType($this->entityType);
         }
 
         if ($this->new) {
           $mapping->setContentType($this->contentType);
-          $content_types = node_type_get_names();
-          $mapping->setContentTypeName($content_types[$this->contentType]);
+          $bundles = $this->mappingStep->getBundles($this->entityType);
+          $mapping->setContentTypeName($bundles[$this->contentType]);
         }
         $mapping->setData(serialize($this->mappingData));
         $mapping->setUpdatedDrupal(time());

@@ -5,6 +5,7 @@ namespace Drupal\gathercontent_ui\Form\MappingEditSteps;
 use Cheppers\GatherContent\DataTypes\Element;
 use Cheppers\GatherContent\DataTypes\ElementText;
 use Cheppers\GatherContent\DataTypes\Template;
+use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageInterface;
@@ -155,6 +156,7 @@ abstract class MappingSteps {
     ];
     $non_data_elements = array_merge($form_definition_elements, [
       'content_type',
+      'entity_type',
       'id',
       'updated',
       'gathercontent_project',
@@ -286,12 +288,14 @@ abstract class MappingSteps {
    *   Type of field in GatherContent.
    * @param string $content_type
    *   Name of Drupal content type.
+   * @param string $entity_type
+   *   Name of Drupal entity type.
    *
    * @return array
    *   Associative array with equivalent fields.
    */
-  protected function filterFields(Element $gc_field, $content_type) {
-    $fields = $this->filterFieldsRecursively($gc_field, $content_type);
+  protected function filterFields(Element $gc_field, $content_type, $entity_type = 'node') {
+    $fields = $this->filterFieldsRecursively($gc_field, $content_type, $entity_type);
 
     if ($gc_field->type === 'text' &&
       $gc_field instanceof ElementText &&
@@ -542,4 +546,49 @@ abstract class MappingSteps {
     return $language_list;
   }
 
+  /**
+   * Get list of bundle types.
+   *
+   * @return array
+   *   Assoc array of bundle types.
+   */
+  function getBundles($entityType) {
+    $bundleTypes = \Drupal::service('entity_type.bundle.info')->getBundleInfo($entityType);
+    $response = [];
+
+    foreach ($bundleTypes as $key => $value) {
+      $response[$key] = $value['label'];
+    };
+
+    return $response;
+  }
+
+  /**
+   * Get list of entity types.
+   *
+   * @return array
+   *   Assoc array of entity types.
+   */
+  function getEntityTypes() {
+    $entityTypes = \Drupal::entityTypeManager()->getDefinitions();
+    $unsupportedTypes = [
+      'user',
+      'file',
+      'menu_link_content',
+    ];
+    $response = [];
+
+    foreach ($entityTypes as $key => $value) {
+      if ($value) {
+        $class = $value->getOriginalClass();
+        if (in_array(FieldableEntityInterface::class, class_implements($class))
+          && !in_array($key, $unsupportedTypes)) {
+          $label = (string)$value->getLabel();
+          $response[$key] = $label;
+        }
+      }
+    }
+
+    return $response;
+  }
 }

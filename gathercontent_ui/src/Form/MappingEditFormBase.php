@@ -60,6 +60,13 @@ class MappingEditFormBase extends EntityForm {
   protected $contentType;
 
   /**
+   * Machine name of entity type.
+   *
+   * @var string
+   */
+  protected $entityType;
+
+  /**
    * Type of import for entity reference fields.
    *
    * Values:
@@ -133,6 +140,19 @@ class MappingEditFormBase extends EntityForm {
     $form['mapping']['#attached']['drupalSettings']['gathercontent'] = (empty($fields) ? NULL : $fields);
     $form_state->setRebuild(TRUE);
     return $form['mapping'];
+  }
+
+  /**
+   * Ajax callback for mapping multistep form.
+   *
+   * @return array
+   *   Array of form elements.
+   *
+   * @inheritdoc
+   */
+  public function getContentTypes(array &$form, FormStateInterface $form_state) {
+    $form_state->setRebuild(TRUE);
+    return $form['gathercontent']['content_type'];
   }
 
   /**
@@ -507,6 +527,7 @@ class MappingEditFormBase extends EntityForm {
     $non_data_elements = array_merge($form_definition_elements, [
       'gc_template',
       'content_type',
+      'entity_type',
       'id',
       'updated',
       'gathercontent_project',

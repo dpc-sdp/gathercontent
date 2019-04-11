@@ -72,11 +72,13 @@ class ContentImportSelectForm extends FormBase {
       $projects = [];
       $mapping_array = [];
       $content_types = [];
+      $entity_types = [];
       foreach ($created_mapping_ids as $mapping) {
         /** @var \Drupal\gathercontent\Entity\Mapping $mapping */
         if ($mapping->hasMapping()) {
           if (!array_key_exists($mapping->getGathercontentTemplateId(), $content_types)) {
             $content_types[$mapping->getGathercontentTemplateId()] = $mapping->getContentType();
+            $entity_types[$mapping->getGathercontentTemplateId()] = $mapping->getMappedEntityType();
           }
           $projects[$mapping->getGathercontentProjectId()] = $mapping->getGathercontentProject();
           $mapping_array[$mapping->getGathercontentTemplateId()] = [
@@ -178,12 +180,15 @@ class ContentImportSelectForm extends FormBase {
             && $item->templateId != 'null'
             && isset($mapping_array[$item->templateId])
           ) {
-            $node_type = NodeType::load($content_types[$item->templateId]);
-            $selected_boxes = $node_type->getThirdPartySetting('menu_ui', 'available_menus', ['main']);
-            $available_menus = [];
-            foreach ($selected_boxes as $selected_box) {
-              $available_menus[$selected_box] = $selected_box;
+            if($entity_types[$item->templateId] == 'node') {
+              $node_type = NodeType::load($content_types[$item->templateId]);
+              $selected_boxes = $node_type->getThirdPartySetting('menu_ui', 'available_menus', ['main']);
+              $available_menus = [];
+              foreach ($selected_boxes as $selected_box) {
+                $available_menus[$selected_box] = $selected_box;
+              }
             }
+
             $this->items[$item->id] = [
               'color' => $item->status->color,
               'label' => $item->status->name,
@@ -257,13 +262,19 @@ class ContentImportSelectForm extends FormBase {
                 ],
               ],
               'menu' => [
+                '#type' => 'markup',
+                '#markup' => '',
+              ]
+            ];
+            if($entity_types[$item->templateId] == 'node') {
+              $form['import']['items'][$item->id]['menu'] = [
                 '#type' => 'select',
                 '#default_value' => $node_type->getThirdPartySetting('menu_ui', 'parent'),
                 '#empty_option' => $this->t("- Don't create menu item -"),
                 '#empty_value' => 0,
                 '#options' => [-1 => t("Parent being imported")]
-                + \Drupal::service('menu.parent_form_selector')
-                  ->getParentSelectOptions('', $available_menus),
+                  + \Drupal::service('menu.parent_form_selector')
+                    ->getParentSelectOptions('', $available_menus),
                 '#title' => t('Menu'),
                 '#title_display' => 'invisible',
                 '#states' => [
@@ -271,8 +282,8 @@ class ContentImportSelectForm extends FormBase {
                     ':input[name="items[' . $item->id . '][selected]"]' => ['checked' => FALSE],
                   ],
                 ],
-              ],
-            ];
+              ];
+            }
           }
         }
 
