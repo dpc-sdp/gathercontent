@@ -15,9 +15,3 @@ gathercontent_ui.remove_local_data_form:
   route_name: gathercontent_ui.remove_local_data_form
   parent: gathercontent.admin_gathercontent
   weight: 5
-
-gathercontent_ui.update_select_form:
-  title: 'Update content from GatherContent'
-  route_name: gathercontent_ui.update_select_form
-  parent: system.admin_content
-  weight: 99

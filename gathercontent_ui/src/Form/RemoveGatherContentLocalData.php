@@ -121,10 +121,6 @@ class RemoveGatherContentLocalData extends FormBase {
       $context['sandbox']['current_id'] = $entity_id;
       /** @var \Drupal\Core\Entity\ContentEntityInterface $entity */
       $entity = \Drupal::entityTypeManager()->getStorage($entity_type_id)->load($entity_id);
-      $entity->set('gc_id', NULL);
-      if ($entity->hasField('gc_mapping_id')) {
-        $entity->set('gc_mapping_id', NULL);
-      }
       $entity->save();
     }
 

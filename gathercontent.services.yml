@@ -4,7 +4,7 @@ services:
     arguments: ['@http_client']
   gathercontent.metatag:
     class: Drupal\gathercontent\MetatagQuery
-    arguments: ['@entity_field.manager']
+    arguments: ['@entity_field.manager', '@config.factory']
   gathercontent.migration_creator:
     class: Drupal\gathercontent\MigrationDefinitionCreator
     arguments: ['@config.factory', '@entity_type.manager']

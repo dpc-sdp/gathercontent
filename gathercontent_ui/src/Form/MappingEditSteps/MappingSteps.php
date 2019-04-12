@@ -50,6 +50,13 @@ abstract class MappingSteps {
   protected $entityReferenceFieldsOptions;
 
   /**
+   * MetatagQuery helper object.
+   *
+   * @var \Drupal\gathercontent\MetatagQuery
+   */
+  protected $metatagQuery;
+
+  /**
    * MappingSteps constructor.
    *
    * @param \Drupal\gathercontent\Entity\MappingInterface $mapping
@@ -60,6 +67,8 @@ abstract class MappingSteps {
   public function __construct(MappingInterface $mapping, Template $template) {
     $this->mapping = $mapping;
     $this->template = $template;
+    /** @var \Drupal\gathercontent\MetatagQuery $metatagQuery */
+    $this->metatagQuery = \Drupal::service('gathercontent.metatag');
   }
 
   /**
@@ -506,22 +515,23 @@ abstract class MappingSteps {
    *
    * @param object $gathercontent_field
    *   Object of field from GatherContent.
+   * @param string $content_type
+   *   Machine name of the content type.
+   * @param string $entity_type
+   *   Machine name of the entity type.
    *
    * @return array
    *   Array of supported metatag fields.
    */
-  protected function filterMetatags($gathercontent_field) {
+  protected function filterMetatags($gathercontent_field, $content_type, $entity_type = 'node') {
     if (
       $gathercontent_field->type === 'text' &&
       isset($gathercontent_field->plainText) &&
       $gathercontent_field->plainText
     ) {
-      return [
-        'title' => t('Title'),
-        'description' => t('Description'),
-        'abstract' => t('Abstract'),
-        'keywords' => t('Keywords'),
-      ];
+      /** @var \Drupal\gathercontent\MetatagQuery $metatagQuery */
+      $metatagQuery = \Drupal::service('gathercontent.metatag');
+      return $metatagQuery->getMetatagFields($entity_type, $content_type);
     }
 
     else {

@@ -35,11 +35,11 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
   protected $templateId;
 
   /**
-   * Item tab ID.
+   * Item tab IDs.
    *
-   * @var int
+   * @var array
    */
-  protected $tabId;
+  protected $tabIds;
 
   /**
    * An array of source fields.
@@ -47,6 +47,13 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
    * @var array
    */
   protected $fields = [];
+
+  /**
+   * An array of metatag source fields.
+   *
+   * @var array
+   */
+  protected $metatagFields = [];
 
   /**
    * Drupal GatherContent Client.
@@ -75,8 +82,9 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
     $configFields = [
       'projectId',
       'templateId',
-      'tabId',
+      'tabIds',
       'fields',
+      'metatagFields',
     ];
 
     foreach ($configFields as $configField) {
@@ -263,6 +271,7 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
     $ret = parent::prepareRow($row);
 
     if ($ret) {
+      $collectedMetaTags = [];
       $gcId = $row->getSourceProperty('id');
       $gcItem = $this->client->itemGet($gcId);
 
@@ -270,47 +279,73 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
         return FALSE;
       }
 
-      $tabData = $this->getTabData($gcItem->config, $this->tabId);
+      foreach ($this->tabIds as $tabId) {
+        $tabData = $this->getTabData($gcItem->config, $tabId);
 
-      if (!$tabData) {
-        return FALSE;
-      }
-
-      $gcFiles = $this->client->itemFilesGet($gcId);
-
-      foreach ($tabData->elements as $field) {
-        $value = $field->getValue();
-
-        if ($field->type == 'files') {
-          $value = $this->getFiles($gcFiles, $field);
+        if (!$tabData) {
+          continue;
         }
 
-        if (
-          $field->type == 'choice_radio' ||
-          $field->type == 'choice_checkbox'
-        ) {
-          $selected = [];
+        $gcFiles = $this->client->itemFilesGet($gcId);
 
-          foreach ($value as $key => $option) {
-            if (!$option) {
-              continue;
-            }
+        foreach ($tabData->elements as $field) {
+          $value = $field->getValue();
 
-            $selected[] = [
-              'gc_id' => $key,
-            ];
+          // Check if the field is for metatags.
+          if (array_key_exists($field->id, $this->metatagFields)) {
+            $collectedMetaTags[$this->metatagFields[$field->id]] = $value;
+            continue;
           }
 
-          $value = $selected;
+          if ($field->type == 'files') {
+            $value = $this->getFiles($gcFiles, $field);
+          }
+
+          if (
+            $field->type == 'choice_radio' ||
+            $field->type == 'choice_checkbox'
+          ) {
+            $selected = [];
+
+            foreach ($value as $key => $option) {
+              if (!$option) {
+                continue;
+              }
+
+              $selected[] = [
+                'gc_id' => $key,
+              ];
+            }
+
+            $value = $selected;
+          }
+
+          $row->setSourceProperty($field->id, $value);
         }
 
-        $row->setSourceProperty($field->id, $value);
+        $row->setSourceProperty('item_title', $gcItem->name);
       }
 
-      $row->setSourceProperty('item_title', $gcItem->name);
+      if (!empty($collectedMetaTags)) {
+        $value = $this->prepareMetatags($collectedMetaTags);
+        $row->setSourceProperty('meta_tags', $value);
+      }
     }
 
     return $ret;
+  }
+
+  /**
+   * Returns the collected metatags values serialized.
+   *
+   * @param array $collectedMetaTags
+   *   The collected metatags.
+   *
+   * @return string
+   *   Serialized string.
+   */
+  protected function prepareMetatags(array $collectedMetaTags) {
+    return serialize($collectedMetaTags);
   }
 
 }
