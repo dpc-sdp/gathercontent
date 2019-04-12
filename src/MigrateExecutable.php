@@ -146,14 +146,14 @@ class MigrateExecutable extends MigrateExecutableBase {
         }
       }
 
-      $this->trackEntities($row, $plugin[1], $source_configuration['templateName']);
+      $this->trackEntities($row, $plugin[1], $source_configuration['templateName'], $migration->id());
     }
   }
 
   /**
    * Tracks the entity changes, to show in a table after the migration run.
    */
-  protected function trackEntities(array $row, string $plugin, string $templateName = '') {
+  protected function trackEntities(array $row, string $plugin, string $templateName, $migrationId) {
     // Ignore sub-entities.
     if (isset($row['destid2'])) {
       return;
@@ -169,6 +169,16 @@ class MigrateExecutable extends MigrateExecutableBase {
     ];
 
     $this->session->set('gathercontent_tracked_entities', $tracked);
+
+    $connection = \Drupal::service('database');
+    $connection->insert('gathercontent_entity_mapping')
+      ->fields([
+        'entity_id' => $row['destid1'],
+        'entity_type' => $plugin,
+        'gc_id' => $row['sourceid1'],
+        'migration_id' => $migrationId,
+      ])
+      ->execute();
   }
 
 }

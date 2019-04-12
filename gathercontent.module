@@ -5,6 +5,7 @@
  * Main module file for GatherContent module.
  */
 
+use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\gathercontent\Entity\MappingInterface;
@@ -29,6 +30,59 @@ function gathercontent_entity_base_field_info(EntityTypeInterface $entity_type) 
   }
 
   return $fields;
+}
+
+/**
+ * Implements hook_entity_delete().
+ */
+function gathercontent_entity_delete(EntityInterface $entity) {
+  $entityId = $entity->id();
+  $entityType = $entity->getEntityTypeId();
+
+  /** @var \Drupal\Core\Database\Connection $connection */
+  $connection = \Drupal::service('database');
+  $result = $connection->select('gathercontent_entity_mapping')
+    ->fields('gathercontent_entity_mapping', [
+      'entity_id',
+      'entity_type',
+      'gc_id',
+      'migration_id',
+    ])
+    ->condition('entity_id', $entityId)
+    ->condition('entity_type', $entityType)
+    ->execute()
+    ->fetchAll();
+
+  if (empty($result)) {
+    return;
+  }
+
+  $connection->delete('gathercontent_entity_mapping')
+    ->condition('entity_id', $entityId)
+    ->condition('entity_type', $entityType)
+    ->execute();
+
+  // Rollback id filtering does not work,
+  // because core Migrate does not support it yet.
+  // After release add the new version to the module dependencies.
+  // TODO: remove comment when Drupal 8.7.0 released.
+  // TODO: Dependency: https://www.drupal.org/project/drupal/issues/2999478
+  // TODO: Dependency 2: https://www.drupal.org/project/migrate_tools/issues/2798363
+  /*
+  $result = reset($result);
+
+  $migration = \Drupal::service('plugin.manager.migration')
+    ->createInstance($result->migration_id);
+
+  if ($migration) {
+    $messages = new MigrateMessageCapture();
+    $executable = new MigrateExecutable($migration, $messages, [
+      'idlist' => $result->gc_id,
+    ]);
+
+    $executable->rollback();
+  }
+   */
 }
 
 /**
@@ -67,7 +121,13 @@ function gathercontent_import_process($gc_ids, array $import_options, MappingInt
           $context['results']['failed'] += $executable->getFailedCount() + $executable->getIgnoredCount();
 
           if ($executable->getFailedCount() + $executable->getIgnoredCount() > 0) {
-            $executable->rollback();
+            // Rollback id filtering does not work,
+            // because core Migrate does not support it yet.
+            // After release add the new version to the module dependencies.
+            // TODO: remove comment when Drupal 8.7.0 released.
+            // TODO: Dependency: https://www.drupal.org/project/drupal/issues/2999478
+            // TODO: Dependency 2: https://www.drupal.org/project/migrate_tools/issues/2798363
+            // $executable->rollback();
           }
         }
         catch (\Exception $e) {
