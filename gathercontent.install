@@ -5,6 +5,7 @@
  * Install and uninstall script for GatherContent module.
  */
 
+use Drupal\Core\Database\Database;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
@@ -32,6 +33,57 @@ function gathercontent_install() {
       ])->save();
     }
   }
+}
+
+/**
+ * Entity mapping schema.
+ *
+ * @return array
+ *   Schema array.
+ */
+function _gathercontent_entity_mapping_spec() {
+  return [
+    'description' => 'Stores entity id with gc_id for migrate rollback process.',
+    'fields' => [
+      'entity_id' => [
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Primary Key: Entity ID.',
+      ],
+      'entity_type' => [
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'description' => 'Entity type.',
+      ],
+      'gc_id' => [
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'description' => "GatherContent import id.",
+      ],
+      'migration_id' => [
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'description' => 'Migration ID.',
+      ],
+    ],
+    'primary key' => ['entity_id'],
+    'indexes' => [
+      'entity_type' => ['entity_type'],
+      'gc_id' => ['gc_id'],
+      'migration_id' => ['migration_id'],
+    ],
+  ];
+}
+
+/**
+ * Implements hook_schema().
+ */
+function gathercontent_schema() {
+  return ['gathercontent_entity_mapping' => _gathercontent_entity_mapping_spec()];
 }
 
 /**
@@ -184,4 +236,12 @@ function gathercontent_update_8502() {
   $fieldStorageDefinitionListener->onFieldStorageDefinitionDelete($definition);
   $definition = $entityFieldManager->getFieldStorageDefinitions('node')['gc_id'];
   $fieldStorageDefinitionListener->onFieldStorageDefinitionDelete($definition);
+}
+
+/**
+ * Create tracking table.
+ */
+function gathercontent_update_8503() {
+  $schema = Database::getConnection()->schema();
+  $schema->createTable('gathercontent_entity_mapping', _gathercontent_entity_mapping_spec());
 }

@@ -330,7 +330,7 @@ class MigrationDefinitionCreator {
     $definition['source']['templateId'] = $this->mapping->getGathercontentTemplateId();
     $definition['source']['templateName'] = $this->mapping->getGathercontentTemplate();
     $definition['source']['tabIds'] = $tabIds;
-    $definition['source']['metatagFields'] = $data['metatag_elements'];
+    $definition['source']['metatagFields'] = $data['metatag_elements'] ?? [];
 
     $definition['process'][$entityDefinition->getKey('bundle')] = [
       'plugin' => 'default_value',
