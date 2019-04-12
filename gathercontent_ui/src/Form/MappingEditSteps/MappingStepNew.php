@@ -88,7 +88,10 @@ class MappingStepNew extends MappingSteps {
             $form['mapping'][$fieldset->id]['#suffix'] = '</div>';
           }
 
-          if (\Drupal::moduleHandler()->moduleExists('metatag')) {
+          if (
+            \Drupal::moduleHandler()->moduleExists('metatag')
+            && $this->metatagQuery->checkMetatag($entityType, $contentType)
+          ) {
             $form['mapping'][$fieldset->id]['type'] = [
               '#type' => 'select',
               '#options' => [
@@ -128,7 +131,7 @@ class MappingStepNew extends MappingSteps {
                   $d_fields = $this->filterFields($gc_field, $contentType, $entityType);
                 }
                 elseif ($formState->getTriggeringElement()['#value'] === 'metatag') {
-                  $d_fields = $this->filterMetatags($gc_field);
+                  $d_fields = $this->filterMetatags($gc_field, $contentType);
                 }
               }
               else {
@@ -136,7 +139,7 @@ class MappingStepNew extends MappingSteps {
                   $d_fields = $this->filterFields($gc_field, $contentType, $entityType);
                 }
                 elseif ($formState->getValue($fieldset->id)['type'] === 'metatag') {
-                  $d_fields = $this->filterMetatags($gc_field);
+                  $d_fields = $this->filterMetatags($gc_field, $contentType);
                 }
               }
             }
@@ -175,9 +178,11 @@ class MappingStepNew extends MappingSteps {
             }
           }
 
-          $form['mapping'][$fieldset->id]['element_text_formats']['#type'] = 'details';
-          $form['mapping'][$fieldset->id]['element_text_formats']['#title'] = t('Text format settings');
-          $form['mapping'][$fieldset->id]['element_text_formats']['#open'] = FALSE;
+          if (!empty($form['mapping'][$fieldset->id]['element_text_formats'])) {
+            $form['mapping'][$fieldset->id]['element_text_formats']['#type'] = 'details';
+            $form['mapping'][$fieldset->id]['element_text_formats']['#title'] = t('Text format settings');
+            $form['mapping'][$fieldset->id]['element_text_formats']['#open'] = FALSE;
+          }
         }
       }
       $form['mapping']['er_mapping_type'] = [

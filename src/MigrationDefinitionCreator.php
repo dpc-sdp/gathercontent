@@ -3,6 +3,8 @@
 namespace Drupal\gathercontent;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\datetime\Plugin\Field\FieldType\DateTimeItemInterface;
 use Drupal\field\Entity\FieldConfig;
@@ -24,8 +26,9 @@ class MigrationDefinitionCreator {
       'projectId' => '',
       'templateId' => '',
       'templateName' => '',
-      'tabId' => '',
+      'tabIds' => [],
       'fields' => [],
+      'metatagFields' => [],
     ],
     'process' => [],
     'destination' => [
@@ -85,6 +88,13 @@ class MigrationDefinitionCreator {
   protected $collectedReferences = [];
 
   /**
+   * MetatagQuery helper object.
+   *
+   * @var \Drupal\gathercontent\MetatagQuery
+   */
+  protected $metatagQuery;
+
+  /**
    * MigrationDefinitionCreator constructor.
    */
   public function __construct(ConfigFactoryInterface $configFactory, EntityTypeManagerInterface $entityTypeManager) {
@@ -95,6 +105,9 @@ class MigrationDefinitionCreator {
       ->configFactory
       ->getEditable('system.site')
       ->get('langcode');
+
+    /** @var \Drupal\gathercontent\MetatagQuery $metatagQuery */
+    $this->metatagQuery = \Drupal::service('gathercontent.metatag');
   }
 
   /**
@@ -123,22 +136,69 @@ class MigrationDefinitionCreator {
   }
 
   /**
-   * Create migration definitions.
+   * Return the concatenated definitions for the given template.
    */
-  public function createMigrationDefinition() {
-    $definitions = [];
+  protected function getGroupedDefinitions() {
+    $groupedData = [];
 
     foreach ($this->mappingData as $tabId => $data) {
+      $language = $this->siteDefaultLangCode;
+
+      if (isset($data['language'])) {
+        $language = $data['language'];
+      }
+
+      if (
+        $data['type'] === 'metatag'
+        && \Drupal::moduleHandler()->moduleExists('metatag')
+        && $this->metatagQuery->checkMetatag(
+          $this->mapping->getMappedEntityType(),
+          $this->mapping->getContentType()
+        )
+      ) {
+        $data['metatag_elements'] = $data['elements'];
+        $data['elements'] = [];
+      }
+
+      if (empty($groupedData[$language]['data'])) {
+        $groupedData[$language]['data'] = [];
+      }
+
+      $groupedData[$language]['tabIds'][] = $tabId;
+      $groupedData[$language]['data'] = $this->arrayMergeRecursiveDistinct($groupedData[$language]['data'], $data);
+    }
+
+    $definitions = $this->getDefinitions($groupedData);
+
+    return $definitions;
+  }
+
+  /**
+   * Return the concatenated definitions created from the grouped data.
+   */
+  protected function getDefinitions(array $groupedData) {
+    $definitions = [];
+
+    foreach ($groupedData as $language => $data) {
       $definition = $this->buildMigrationDefinition([
         'projectId' => $this->mapping->getGathercontentProjectId(),
         'templateId' => $this->mapping->getGathercontentTemplateId(),
         'entityType' => $this->mapping->getMappedEntityType(),
         'contentType' => $this->mapping->getContentType(),
-        'tabId' => $this->formatTabId($tabId),
-      ], $tabId, $data, 'gc_entity');
+        'tabIds' => $this->formatTabIds($data['tabIds']),
+      ], $data['tabIds'], $data['data'], 'gc_entity');
 
       $definitions[$definition['id']] = $definition;
     }
+
+    return $definitions;
+  }
+
+  /**
+   * Create migration definitions.
+   */
+  public function createMigrationDefinition() {
+    $definitions = $this->getGroupedDefinitions();
 
     if (!$definitions) {
       return;
@@ -161,7 +221,7 @@ class MigrationDefinitionCreator {
   /**
    * Set reference migration dependencies and processes.
    */
-  public function setReferenceDependencies(&$definitions) {
+  public function setReferenceDependencies(array &$definitions) {
     if (empty($this->collectedReferences)) {
       return;
     }
@@ -183,7 +243,7 @@ class MigrationDefinitionCreator {
               'templateId' => $reference['base_data']['templateId'],
               'entityType' => $reference['base_data']['entityType'],
               'contentType' => $reference['base_data']['contentType'],
-              'tabId' => $this->formatTabId($reference['base_data']['tabId']),
+              'tabIds' => $this->formatTabIds($reference['base_data']['tabIds']),
             ],
             $reference['base_data']['tabId'],
             $reference['data'],
@@ -247,7 +307,7 @@ class MigrationDefinitionCreator {
   /**
    * Builds the migration definition.
    */
-  public function buildMigrationDefinition(array $baseData, $tabId, $data, $plugin) {
+  public function buildMigrationDefinition(array $baseData, array $tabIds, array $data, string $plugin) {
     $entityDefinition = $this->entityTypeManager->getDefinition($baseData['entityType']);
     $baseDataLabel = [
       $this->mapping->getGathercontentProject(),
@@ -269,7 +329,8 @@ class MigrationDefinitionCreator {
     $definition['source']['projectId'] = $this->mapping->getGathercontentProjectId();
     $definition['source']['templateId'] = $this->mapping->getGathercontentTemplateId();
     $definition['source']['templateName'] = $this->mapping->getGathercontentTemplate();
-    $definition['source']['tabId'] = $tabId;
+    $definition['source']['tabIds'] = $tabIds;
+    $definition['source']['metatagFields'] = $data['metatag_elements'];
 
     $definition['process'][$entityDefinition->getKey('bundle')] = [
       'plugin' => 'default_value',
@@ -278,7 +339,7 @@ class MigrationDefinitionCreator {
 
     $definition['destination']['plugin'] = $plugin . ':' . $baseData['entityType'];
 
-    $this->setDefinitionFieldProperties($definition, $data, $tabId, $entityDefinition);
+    $this->setDefinitionFieldProperties($definition, $data, $tabIds, $entityDefinition);
 
     if (!$this->isNewConfiguration($definition['id'])) {
       $config = $this->configFactory->getEditable('migrate_plus.migration.' . $definition['id']);
@@ -291,7 +352,7 @@ class MigrationDefinitionCreator {
   /**
    * Set the field process and destination properties.
    */
-  protected function setDefinitionFieldProperties(&$definition, $data, $tabId, $entityDefinition) {
+  protected function setDefinitionFieldProperties(array &$definition, array $data, array $tabIds, EntityTypeInterface $entityDefinition) {
     $labelSet = FALSE;
 
     foreach ($data['elements'] as $elementId => $element) {
@@ -328,19 +389,35 @@ class MigrationDefinitionCreator {
       }
 
       $definition['source']['fields'][] = $elementId;
-      $this->setFieldDefinition($definition, $data, $tabId, $elementId, $element, $fieldInfo, $fieldType, $targetFieldInfo, $isTranslatable);
+      $this->setFieldDefinition($definition, $data, $tabIds, $elementId, $element, $fieldInfo, $fieldType, $targetFieldInfo, $isTranslatable);
     }
 
     if (!$labelSet) {
       $definition['source']['fields'][] = 'item_title';
       $definition['process'][$entityDefinition->getKey('label')] = 'item_title';
     }
+
+    if (
+      !empty($data['metatag_elements'])
+      && \Drupal::moduleHandler()->moduleExists('metatag')
+      && $this->metatagQuery->checkMetatag(
+        $this->mapping->getMappedEntityType(),
+        $this->mapping->getContentType()
+      )
+    ) {
+      $metatagField = $this->metatagQuery->getFirstMetatagField(
+        $this->mapping->getMappedEntityType(),
+        $this->mapping->getContentType()
+      );
+      $definition['source']['fields'][] = 'meta_tags';
+      $definition['process'][$metatagField] = 'meta_tags';
+    }
   }
 
   /**
    * Set field definition.
    */
-  private function setFieldDefinition(&$definition, $data, $tabId, $elementId, $element, $fieldInfo, $fieldType, $targetFieldInfo, $isTranslatable) {
+  private function setFieldDefinition(array &$definition, array $data, array $tabIds, string $elementId, string $element, EntityInterface $fieldInfo = NULL, string $fieldType, EntityInterface $targetFieldInfo = NULL, bool $isTranslatable) {
     switch ($fieldType) {
       case 'image':
       case 'file':
@@ -425,7 +502,7 @@ class MigrationDefinitionCreator {
           'templateId' => $this->mapping->getGathercontentTemplateId(),
           'entityType' => $targetFieldInfo->getTargetEntityTypeId(),
           'contentType' => $targetEntityBundle,
-          'tabId' => $tabId,
+          'tabIds' => $tabIds,
         ];
         $this->collectedReferences[$definition['id']][$element][$targetEntityBundle]['reference_data'][] = $elementId;
         break;
@@ -562,8 +639,32 @@ class MigrationDefinitionCreator {
   /**
    * Returns formatted tab ID. Removing the dashes.
    */
-  protected function formatTabId(string $tabId) {
-    return \Drupal::database()->escapeTable($tabId);
+  protected function formatTabIds(array $tabIds) {
+    $formattedTabIds = [];
+
+    foreach ($tabIds as $tabId) {
+      $formattedTabIds[] = \Drupal::database()->escapeTable($tabId);
+    }
+
+    return implode('_', $formattedTabIds);
+  }
+
+  /**
+   * Merge arrays recursively and override existing values.
+   */
+  protected function arrayMergeRecursiveDistinct(array &$array1, array &$array2) {
+    $merged = $array1;
+
+    foreach ($array2 as $key => &$value) {
+      if (is_array($value) && isset($merged[$key]) && is_array($merged[$key])) {
+        $merged[$key] = $this->arrayMergeRecursiveDistinct($merged[$key], $value);
+      }
+      else {
+        $merged[$key] = $value;
+      }
+    }
+
+    return $merged;
   }
 
 }
