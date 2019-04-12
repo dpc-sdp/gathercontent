@@ -5,6 +5,7 @@ namespace Drupal\gathercontent_ui\Form\MappingEditSteps;
 use Cheppers\GatherContent\DataTypes\Element;
 use Cheppers\GatherContent\DataTypes\ElementText;
 use Cheppers\GatherContent\DataTypes\Template;
+use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Form\FormStateInterface;
@@ -20,6 +21,8 @@ use Drupal\gathercontent\Entity\MappingInterface;
 abstract class MappingSteps {
 
   use StringTranslationTrait;
+  // TODO: Use correct dependency injection.
+  use DependencySerializationTrait;
 
   /**
    * Mapping object.
