@@ -307,16 +307,7 @@ abstract class MappingSteps {
    *   Associative array with equivalent fields.
    */
   protected function filterFields(Element $gc_field, $content_type, $entity_type = 'node') {
-    $fields = $this->filterFieldsRecursively($gc_field, $content_type, $entity_type);
-
-    if ($gc_field->type === 'text' &&
-      $gc_field instanceof ElementText &&
-      $gc_field->plainText
-    ) {
-      $fields['title'] = 'Title';
-    }
-
-    return $fields;
+    return $this->filterFieldsRecursively($gc_field, $content_type, $entity_type);
   }
 
   /**
@@ -374,6 +365,8 @@ abstract class MappingSteps {
     ];
     $entityFieldManager = \Drupal::service('entity_field.manager');
     $entityTypeManager = \Drupal::entityTypeManager();
+    $entityDefinition = $entityTypeManager->getDefinition($entity_type);
+    $titleKey = $entityDefinition->getKey('label');
 
     /** @var \Drupal\Core\Field\FieldDefinitionInterface[] $instances */
     $instances = $entityFieldManager->getFieldDefinitions($entity_type, $content_type);
@@ -382,6 +375,14 @@ abstract class MappingSteps {
     // Fields.
     foreach ($instances as $name => $instance) {
       if ($instance instanceof BaseFieldDefinition) {
+        // Set label field.
+        if ($gc_field->type === 'text'
+          && $gc_field instanceof ElementText
+          && $gc_field->plainText
+          && $titleKey == $instance->getName()
+        ) {
+          $fields[$titleKey] = $instance->getLabel();
+        }
         continue;
       }
       if (in_array($instance->getType(), $mapping_array[$gc_field->type])) {
