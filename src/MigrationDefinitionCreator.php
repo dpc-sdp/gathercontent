@@ -149,7 +149,8 @@ class MigrationDefinitionCreator {
       }
 
       if (
-        $data['type'] === 'metatag'
+        !empty($data['type'])
+        && $data['type'] === 'metatag'
         && \Drupal::moduleHandler()->moduleExists('metatag')
         && $this->metatagQuery->checkMetatag(
           $this->mapping->getMappedEntityType(),
@@ -332,10 +333,14 @@ class MigrationDefinitionCreator {
     $definition['source']['tabIds'] = $tabIds;
     $definition['source']['metatagFields'] = $data['metatag_elements'] ?? [];
 
-    $definition['process'][$entityDefinition->getKey('bundle')] = [
-      'plugin' => 'default_value',
-      'default_value' => $baseData['contentType'],
-    ];
+    $bundleKey = $entityDefinition->getKey('bundle');
+
+    if (!empty($bundleKey)) {
+      $definition['process'][$bundleKey] = [
+        'plugin' => 'default_value',
+        'default_value' => $baseData['contentType'],
+      ];
+    }
 
     $definition['destination']['plugin'] = $plugin . ':' . $baseData['entityType'];
 
