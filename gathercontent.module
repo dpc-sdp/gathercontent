@@ -1038,7 +1038,8 @@ function gathercontent_gathercontent_process_choice_radio_field(EntityMetadataWr
  *   Array of remote files.
  */
 function gathercontent_gathercontent_process_files_field(EntityMetadataWrapper &$node, $local_field_name, $gathercontent_field_name, $is_translatable = FALSE, $language = 'und', $files) {
-  $found_files = array();
+  $content_obj = new Content();
+  $files_to_download = array();
   $field_info = field_info_field($local_field_name);
   foreach ($files as $file) {
     if ($file->field === $gathercontent_field_name) {
@@ -1052,20 +1053,12 @@ function gathercontent_gathercontent_process_files_field(EntityMetadataWrapper &
       }
 
       if (!$found) {
-        $local_file = file_save_data(file_get_contents($file->url), 'public://' . $file->filename);
-        $local_file->gathercontent_id = $file->id;
-        file_save($local_file);
-        if ($field_info['type'] === 'file') {
-          $file_data = array('fid' => $local_file->fid, 'display' => TRUE);
-        }
-        else {
-          $file_data = array('fid' => $local_file->fid);
-        }
-
-        $found_files[] = $file_data;
+        $files_to_download[] = $file;
       }
     }
   }
+
+  $found_files = $content_obj->downloadFiles($files_to_download, $field_info);
 
   $is_multiple = $field_info['cardinality'] != 1;
   if (!$is_multiple) {

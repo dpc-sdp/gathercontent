@@ -9,6 +9,7 @@ namespace GatherContent;
 
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Pool;
 use GuzzleHttp\Exception\RequestException;
 
 /**
@@ -223,6 +224,48 @@ class Content {
     }
 
     return $accounts;
+  }
+
+  /**
+   * Downloads all files asynchronously.
+   *
+   * @param array $files
+   *   Files object array.
+   * @param array $fieldInfo
+   *   Field info.
+   *
+   * @return array
+   *   Imported files array.
+   */
+  public function downloadFiles(array $files, $fieldInfo) {
+    $files = array_values($files);
+    $importedFiles = [];
+
+    foreach ($files as $file) {
+      $url = "files/{$file->id}/download";
+      $response = $this->client->get($url);
+
+      if ($response->getStatusCode() === 200) {
+        $importedFile = file_save_data($response->getBody(), 'public://' . $files[$index]->fileName);
+
+        if ($importedFile) {
+          $importedFile->gathercontent_id = $files[$index]->id;
+          file_save($importedFile);
+
+          if ($fieldInfo['type'] === 'file') {
+            $fileData = array('fid' => $importedFile->fid, 'display' => TRUE);
+          }
+          else {
+            $fileData = array('fid' => $importedFile->fid);
+          }
+
+          $importedFiles[$index] = $fileData;
+        }
+      }
+    }
+
+    ksort($importedFiles);
+    return $importedFiles;
   }
 
 }
