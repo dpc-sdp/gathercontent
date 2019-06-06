@@ -246,10 +246,10 @@ class Content {
       $response = $this->client->get($url);
 
       if ($response->getStatusCode() === 200) {
-        $importedFile = file_save_data($response->getBody(), 'public://' . $files[$index]->fileName);
+        $importedFile = file_save_data($response->getBody(), 'public://' . $files[]->fileName);
 
         if ($importedFile) {
-          $importedFile->gathercontent_id = $files[$index]->id;
+          $importedFile->gathercontent_id = $files[]->id;
           file_save($importedFile);
 
           if ($fieldInfo['type'] === 'file') {
@@ -259,7 +259,7 @@ class Content {
             $fileData = array('fid' => $importedFile->fid);
           }
 
-          $importedFiles[$index] = $fileData;
+          $importedFiles[] = $fileData;
         }
       }
     }
