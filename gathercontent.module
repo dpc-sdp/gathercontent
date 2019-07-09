@@ -62,13 +62,6 @@ function gathercontent_entity_delete(EntityInterface $entity) {
     ->condition('entity_type', $entityType)
     ->execute();
 
-  // Rollback id filtering does not work,
-  // because core Migrate does not support it yet.
-  // After release add the new version to the module dependencies.
-  // TODO: remove comment when Drupal 8.7.0 released.
-  // TODO: Dependency: https://www.drupal.org/project/drupal/issues/2999478
-  // TODO: Dependency 2: https://www.drupal.org/project/migrate_tools/issues/2798363
-  /*
   $result = reset($result);
 
   $migration = \Drupal::service('plugin.manager.migration')
@@ -82,7 +75,7 @@ function gathercontent_entity_delete(EntityInterface $entity) {
 
     $executable->rollback();
   }
-   */
+
 }
 
 /**
