@@ -376,6 +376,7 @@ class ContentImportSelectForm extends FormBase {
         '#type' => 'checkbox',
         '#title' => $this->t('Create new revision'),
         '#default_value' => $import_config->get('node_create_new_revision'),
+        '#description' => $this->t('If the "Content update method" is any other than "Always update existing Content" then this setting won\'t take effect, because the entity will always be new.'),
       ];
 
       $form['actions']['#type'] = 'actions';
