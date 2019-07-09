@@ -579,7 +579,7 @@ class MigrationDefinitionCreator {
     }
 
     $definition['process'][$element] = [
-      'plugin' => 'get',
+      'plugin' => 'gather_content_get',
       'source' => $elementId,
     ];
   }
