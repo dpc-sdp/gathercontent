@@ -210,7 +210,7 @@ class ContentProcessor implements ContainerInjectionInterface {
    * @throws \Exception
    */
   public function processContentPane(EntityInterface &$entity, $local_field_id, $field, $is_translatable, $language, array $files, $local_field_text_format, $parent_field_type = '') {
-    if (empty(trim($field->value)) && $field->type !== 'files') {
+    if (empty(trim($field->value)) && empty($field->options) && $field->type !== 'files') {
       return;
     }
 
