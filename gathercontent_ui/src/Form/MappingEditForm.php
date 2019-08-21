@@ -5,6 +5,7 @@ namespace Drupal\gathercontent_ui\Form;
 use Cheppers\GatherContent\GatherContentClientInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageInterface;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\gathercontent\MigrationDefinitionCreator;
 use Drupal\gathercontent_ui\Form\MappingEditSteps\MappingStepService;
@@ -16,6 +17,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * @package Drupal\gathercontent\Form
  */
 class MappingEditForm extends MappingEditFormBase {
+
+  use StringTranslationTrait;
 
   /**
    * GatherContent client.
@@ -38,15 +41,20 @@ class MappingEditForm extends MappingEditFormBase {
    */
   protected $mappingService;
 
+  /**
+   * @var \Drupal\gathercontent\MigrationDefinitionCreator
+   */
   protected $migrationDefinitionCreator;
 
   /**
-   * MappingImportForm constructor.
+   * MappingEditForm constructor.
    *
    * @param \Cheppers\GatherContent\GatherContentClientInterface $client
    *   GatherContent client.
    * @param \Drupal\gathercontent_ui\Form\MappingEditSteps\MappingStepService $mapping_service
    *   MappingStepService.
+   * @param \Drupal\gathercontent\MigrationDefinitionCreator $migrationDefinitionCreator
+   *   MigrationDefinitionCreator.
    */
   public function __construct(GatherContentClientInterface $client, MappingStepService $mapping_service, MigrationDefinitionCreator $migrationDefinitionCreator) {
     $this->client = $client;
@@ -178,7 +186,7 @@ class MappingEditForm extends MappingEditFormBase {
         $mapping->save();
 
         // We need to modify field for checkboxes and field instance for radios.
-        foreach ($template->config as $i => $fieldset) {
+        foreach ($template->config as $fieldset) {
           if ($fieldset->hidden === FALSE) {
             foreach ($fieldset->elements as $gc_field) {
               $local_field_id = $this->mappingData[$fieldset->id]['elements'][$gc_field->id];
@@ -274,10 +282,10 @@ class MappingEditForm extends MappingEditFormBase {
         }
 
         if ($this->new) {
-          drupal_set_message(t('Mapping has been created.'));
+          $this->messenger()->addMessage($this->t('Mapping has been created.'));
         }
         else {
-          drupal_set_message(t('Mapping has been updated.'));
+          $this->messenger()->addMessage($this->t('Mapping has been updated.'));
         }
 
         $this
@@ -287,7 +295,7 @@ class MappingEditForm extends MappingEditFormBase {
           ->createMigrationDefinition();
 
         if (!empty($this->entityReferenceFields)) {
-          drupal_set_message($this->formatPlural($this->erImported, '@count term was imported', '@count terms were imported'));
+          $this->messenger()->addMessage($this->formatPlural($this->erImported, '@count term was imported', '@count terms were imported'));
         }
 
         $form_state->setRedirect('entity.gathercontent_mapping.collection');
@@ -303,7 +311,7 @@ class MappingEditForm extends MappingEditFormBase {
     $actions['submit']['#value'] = ($this->new ? $this->t('Create mapping') : $this->t('Update mapping'));
     $actions['close'] = [
       '#type' => 'submit',
-      '#value' => t('Cancel'),
+      '#value' => $this->t('Cancel'),
     ];
     unset($actions['delete']);
     return $actions;

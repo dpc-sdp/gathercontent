@@ -121,14 +121,14 @@ abstract class MappingSteps {
     $form['form_description'] = [
       '#type' => 'html_tag',
       '#tag' => 'i',
-      '#value' => t('Please map your GatherContent Template fields to your Drupal
+      '#value' => $this->t('Please map your GatherContent Template fields to your Drupal
       Content Type Fields. Please note that a GatherContent field can only be
       mapped to a single Drupal field. So each field can only be mapped to once.'),
     ];
 
     $form['gathercontent_project'] = [
       '#type' => 'item',
-      '#title' => t('Project name:'),
+      '#title' => $this->t('Project name:'),
       '#markup' => $this->mapping->getGathercontentProject(),
       '#wrapper_attributes' => [
         'class' => [
@@ -143,7 +143,7 @@ abstract class MappingSteps {
 
     $form['gathercontent']['gathercontent_template'] = [
       '#type' => 'item',
-      '#title' => t('GatherContent template:'),
+      '#title' => $this->t('GatherContent template:'),
       '#markup' => $this->mapping->getGathercontentTemplate(),
       '#wrapper_attributes' => [
         'class' => [
@@ -220,7 +220,7 @@ abstract class MappingSteps {
       foreach ($metatag_lang as $lang) {
         $metatag_fields[$lang] = [];
       }
-      $content_fields['und'] = $metatag_fields['und'] = [];
+      $content_fields[LanguageInterface::LANGCODE_NOT_SPECIFIED] = $metatag_fields[LanguageInterface::LANGCODE_NOT_SPECIFIED] = [];
     }
 
     foreach ($mapping_data as $tab_id => $tab) {
@@ -270,22 +270,22 @@ abstract class MappingSteps {
 
     // Validate if at least one field in mapped.
     if (!$translatable && empty($content_fields) && empty($metatag_fields)) {
-      $formState->setErrorByName('form', t('You need to map at least one field to create mapping.'));
+      $formState->setErrorByName('form', $this->t('You need to map at least one field to create mapping.'));
     }
     elseif ($translatable &&
       count($content_fields) === 1
-      && empty($content_fields['und'])
-      && empty($metatag_fields['und'])
+      && empty($content_fields[LanguageInterface::LANGCODE_NOT_SPECIFIED])
+      && empty($metatag_fields[LanguageInterface::LANGCODE_NOT_SPECIFIED])
       && count($metatag_fields) === 1
     ) {
-      $formState->setErrorByName('form', t('You need to map at least one field to create mapping.'));
+      $formState->setErrorByName('form', $this->t('You need to map at least one field to create mapping.'));
     }
 
     // Validate if title is mapped for translatable content.
     if ($translatable) {
       foreach ($content_fields as $k => $lang_fields) {
         if (!in_array('title', $lang_fields) && $k != 'und') {
-          $formState->setErrorByName('form', t('You have to map Drupal Title field for translatable content.'));
+          $formState->setErrorByName('form', $this->t('You have to map Drupal Title field for translatable content.'));
         }
       }
     }
@@ -373,7 +373,7 @@ abstract class MappingSteps {
 
     $fields = [];
     // Fields.
-    foreach ($instances as $name => $instance) {
+    foreach ($instances as $instance) {
       if ($instance instanceof BaseFieldDefinition) {
         // Set label field.
         if ($gc_field->type === 'text'
@@ -605,4 +605,5 @@ abstract class MappingSteps {
 
     return $response;
   }
+
 }

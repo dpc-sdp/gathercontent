@@ -3,6 +3,8 @@
 namespace Drupal\gathercontent_ui\Form;
 
 use Cheppers\GatherContent\DataTypes\Template;
+use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
+use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\field\Entity\FieldConfig;
@@ -11,13 +13,14 @@ use Drupal\taxonomy\Entity\Term;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
 use Drupal\Core\Language\LanguageInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Class MappingEditFormBase.
  *
  * @package Drupal\gathercontent_ui\Form
  */
-class MappingEditFormBase extends EntityForm {
+class MappingEditFormBase extends EntityForm implements ContainerInjectionInterface {
 
   /**
    * Flag for mapping if it's new.
@@ -107,6 +110,27 @@ class MappingEditFormBase extends EntityForm {
   protected $entityReferenceFieldsOptions;
 
   /**
+   * @var \Drupal\Core\Entity\EntityFieldManagerInterface
+   */
+  protected $entityFieldManager;
+
+  /**
+   * {@inheritdoc}
+   */
+  public function __construct(EntityFieldManagerInterface $entityFieldManager) {
+    $this->entityFieldManager = $entityFieldManager;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container) {
+    return new static(
+      $container->get('entity_field.manager')
+    );
+  }
+
+  /**
    * Sets entityReferenceFields variable.
    *
    * @param array|null $value
@@ -179,7 +203,7 @@ class MappingEditFormBase extends EntityForm {
     $this->gcOptionIdsFieldExists($vid);
 
     foreach ($localOptions as $id => $localOption) {
-      $query = \Drupal::entityQuery('taxonomy_term');
+      $query = $this->entityTypeManager->getStorage('taxonomy_term')->getQuery();
       $group = $query->orConditionGroup()
         ->condition('gathercontent_option_ids', $id)
         ->condition('name', $localOption);
@@ -189,7 +213,7 @@ class MappingEditFormBase extends EntityForm {
         ->execute();
       $term_id = array_shift($term_ids);
       if (!empty($term_id)) {
-        $term = Term::load($term_id);
+        $term = $this->entityTypeManager->getStorage('taxonomy_term')->load($term_id);
         if ($langcode === LanguageInterface::LANGCODE_NOT_SPECIFIED) {
           if ($term->label() !== $localOption) {
             $term->setName($localOption);
@@ -246,8 +270,8 @@ class MappingEditFormBase extends EntityForm {
    */
   public function prepareOptions(Template $template) {
     $options = [];
-    foreach ($this->entityReferenceFields as $field => $gcMapping) {
-      foreach ($gcMapping as $lang => $fieldSettings) {
+    foreach ($this->entityReferenceFields as $gcMapping) {
+      foreach ($gcMapping as $fieldSettings) {
         foreach ($template->config as $tab) {
           if ($tab->id === $fieldSettings['tab']) {
             foreach ($tab->elements as $element) {
@@ -276,8 +300,7 @@ class MappingEditFormBase extends EntityForm {
    */
   public function gcOptionIdsFieldExists($vid) {
     if ($this->entityTypeManager->hasDefinition('taxonomy_term')) {
-      $entityFieldManager = \Drupal::service('entity_field.manager');
-      $definitions = $entityFieldManager->getFieldStorageDefinitions('taxonomy_term');
+      $definitions = $this->entityFieldManager->getFieldStorageDefinitions('taxonomy_term');
       if (!isset($definitions['gathercontent_option_ids'])) {
         FieldStorageConfig::create([
           'field_name' => 'gathercontent_option_ids',
@@ -344,7 +367,7 @@ class MappingEditFormBase extends EntityForm {
       }
 
       // Set new values to correct term.
-      $term = Term::load($row['terms']);
+      $term = $this->entityTypeManager->getStorage('taxonomy_term')->load($row['terms']);
       if (!empty($languages)) {
         foreach ($languages as $language) {
           $term->getTranslation($language)
@@ -375,7 +398,7 @@ class MappingEditFormBase extends EntityForm {
           }
         }
         // Set new values to correct term.
-        $term = Term::load($row['terms']);
+        $term = $this->entityTypeManager->getStorage('taxonomy_term')->load($row['terms']);
         $term->set('gathercontent_option_ids', $und_lang_value);
         $term->save();
         $this->erImported++;

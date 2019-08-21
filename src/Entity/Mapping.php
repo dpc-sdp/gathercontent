@@ -3,6 +3,7 @@
 namespace Drupal\gathercontent\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 
 /**
  * Defines the GatherContent Mapping entity.
@@ -18,6 +19,8 @@ use Drupal\Core\Config\Entity\ConfigEntityBase;
  * )
  */
 class Mapping extends ConfigEntityBase implements MappingInterface {
+
+  use StringTranslationTrait;
 
   /**
    * The GatherContent Mapping ID.
@@ -234,7 +237,7 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
       return $content_type;
     }
     else {
-      return t('None');
+      return $this->t('None');
     }
   }
 
@@ -248,7 +251,7 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
         ->format($updated_drupal, 'custom', 'M d, Y - H:i');
     }
     else {
-      return t('Never');
+      return $this->t('Never');
     }
   }
 

@@ -10,6 +10,9 @@ use Drupal\gathercontent\DrupalGatherContentClient;
  */
 class MockDrupalGatherContentClient extends DrupalGatherContentClient {
 
+  /**
+   * @var null|int
+   */
   public static $choosenStatus = NULL;
 
   /**

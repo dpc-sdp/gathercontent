@@ -7,4 +7,4 @@ services:
     arguments: ['@entity_field.manager', '@config.factory']
   gathercontent.migration_creator:
     class: Drupal\gathercontent\MigrationDefinitionCreator
-    arguments: ['@config.factory', '@entity_type.manager']
+    arguments: ['@config.factory', '@entity_type.manager', '@module_handler', '@database']

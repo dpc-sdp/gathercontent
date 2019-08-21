@@ -2,8 +2,8 @@
 
 namespace Drupal\gathercontent_ui\Form\MappingEditSteps;
 
-use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 
 /**
  * Class MappingStepNew.
@@ -11,6 +11,8 @@ use Drupal\Core\Form\FormStateInterface;
  * @package Drupal\gathercontent_ui\Form\MappingEditSteps
  */
 class MappingStepNew extends MappingSteps {
+
+  use StringTranslationTrait;
 
   /**
    * {@inheritdoc}
@@ -25,9 +27,11 @@ class MappingStepNew extends MappingSteps {
       $filterFormatOptions[$key] = $filterFormat->label();
     }
 
+    $mappingData = unserialize($this->mapping->getData());
+
     $form['gathercontent']['entity_type'] = [
       '#type' => 'select',
-      '#title' => t('Drupal entity type'),
+      '#title' => $this->t('Drupal entity type'),
       '#options' => $this->getEntityTypes(),
       '#required' => TRUE,
       '#wrapper_attributes' => [
@@ -46,7 +50,7 @@ class MappingStepNew extends MappingSteps {
 
     $form['gathercontent']['content_type'] = [
       '#type' => 'select',
-      '#title' => t('Drupal bundle type'),
+      '#title' => $this->t('Drupal bundle type'),
       '#options' => $this->getBundles($formState->getValue('entity_type')),
       '#required' => TRUE,
       '#wrapper_attributes' => [
@@ -95,10 +99,10 @@ class MappingStepNew extends MappingSteps {
             $form['mapping'][$fieldset->id]['type'] = [
               '#type' => 'select',
               '#options' => [
-                'content' => t('Content'),
-                'metatag' => t('Metatag'),
+                'content' => $this->t('Content'),
+                'metatag' => $this->t('Metatag'),
               ],
-              '#title' => t('Type'),
+              '#title' => $this->t('Type'),
               '#default_value' => $formState->hasValue($fieldset->id)['type'] ? $formState->getValue($fieldset->id)['type'] : 'content',
               '#ajax' => [
                 'callback' => '::getMappingTable',
@@ -116,8 +120,8 @@ class MappingStepNew extends MappingSteps {
 
             $form['mapping'][$fieldset->id]['language'] = [
               '#type' => 'select',
-              '#options' => ['und' => t('None')] + $this->getLanguageList(),
-              '#title' => t('Language'),
+              '#options' => ['und' => $this->t('None')] + $this->getLanguageList(),
+              '#title' => $this->t('Language'),
               '#default_value' => $formState->hasValue($fieldset->id)['language'] ? $formState->getValue($fieldset->id)['language'] : 'und',
             ];
           }
@@ -150,7 +154,7 @@ class MappingStepNew extends MappingSteps {
               '#type' => 'select',
               '#options' => $d_fields,
               '#title' => (!empty($gc_field->label) ? $gc_field->label : $gc_field->title),
-              '#empty_option' => t("Don't map"),
+              '#empty_option' => $this->t("Don't map"),
               '#default_value' => $formState->hasValue($fieldset->id)['elements'][$gc_field->id] ? $formState->getValue($fieldset->id)['elements'][$gc_field->id] : NULL,
               '#attributes' => [
                 'class' => [
@@ -168,7 +172,7 @@ class MappingStepNew extends MappingSteps {
                 '#options' => $filterFormatOptions,
                 '#title' => (!empty($gc_field->label) ? $gc_field->label : $gc_field->title),
                 '#default_value' => isset($mappingData[$fieldset->id]['element_text_formats'][$gc_field->id]) ? $mappingData[$fieldset->id]['element_text_formats'][$gc_field->id] : NULL,
-                '#empty_option' => t("Choose text format"),
+                '#empty_option' => $this->t("Choose text format"),
                 '#attributes' => [
                   'class' => [
                     'gathercontent-ct-element',
@@ -180,23 +184,23 @@ class MappingStepNew extends MappingSteps {
 
           if (!empty($form['mapping'][$fieldset->id]['element_text_formats'])) {
             $form['mapping'][$fieldset->id]['element_text_formats']['#type'] = 'details';
-            $form['mapping'][$fieldset->id]['element_text_formats']['#title'] = t('Text format settings');
+            $form['mapping'][$fieldset->id]['element_text_formats']['#title'] = $this->t('Text format settings');
             $form['mapping'][$fieldset->id]['element_text_formats']['#open'] = FALSE;
           }
         }
       }
       $form['mapping']['er_mapping_type'] = [
         '#type' => 'radios',
-        '#title' => t('Taxonomy terms mapping type'),
+        '#title' => $this->t('Taxonomy terms mapping type'),
         '#options' => [
-          'automatic' => t('Automatic'),
-          'semiautomatic' => t('Semi-automatic'),
-          'manual' => t('Manual'),
+          'automatic' => $this->t('Automatic'),
+          'semiautomatic' => $this->t('Semi-automatic'),
+          'manual' => $this->t('Manual'),
         ],
         '#attributes' => [
           'class' => ['gathercontent-er-mapping-type'],
         ],
-        '#description' => t("<strong>Automatic</strong> - taxonomy terms will be automatically created in predefined vocabulary. You cannot select translations. Field should be set as translatable for correct functionality.<br>
+        '#description' => $this->t("<strong>Automatic</strong> - taxonomy terms will be automatically created in predefined vocabulary. You cannot select translations. Field should be set as translatable for correct functionality.<br>
 <strong>Semi-automatic</strong> - taxonomy terms will be imported into predefined vocabulary in the first language and we will offer you possibility to select their translations from other languages. For single language mapping this option will execute same action as 'Automatic' importField should not be set as translatable for correct functionality.<br>
 <strong>Manual</strong> - you can map existing taxonomy terms from predefined vocabulary to translations in all languages."),
       ];
@@ -204,4 +208,5 @@ class MappingStepNew extends MappingSteps {
 
     return $form;
   }
+
 }

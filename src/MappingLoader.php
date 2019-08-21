@@ -10,6 +10,9 @@ use Drupal\gathercontent\Entity\Mapping;
  */
 class MappingLoader {
 
+  /**
+   * @var array
+   */
   protected static $mappings = [];
 
   /**

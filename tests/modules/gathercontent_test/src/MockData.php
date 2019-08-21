@@ -23,6 +23,9 @@ class MockData {
   const TRANSLATED_TAB = 'tab1503302417527';
   const METATAG_TAB = 'tab1503403907382';
 
+  /**
+   * @var string
+   */
   public static $drupalRoot = '';
 
   /**

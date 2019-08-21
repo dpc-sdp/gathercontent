@@ -8,6 +8,7 @@ use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\gathercontent\DrupalGatherContentClient;
 
@@ -16,6 +17,11 @@ use Drupal\gathercontent\DrupalGatherContentClient;
  */
 class MappingListBuilder extends ConfigEntityListBuilder {
 
+  use StringTranslationTrait;
+
+  /**
+   * @var array
+   */
   protected $templates;
 
   /**
@@ -117,7 +123,7 @@ class MappingListBuilder extends ConfigEntityListBuilder {
     $row['gathercontent_template'] = $entity->getGathercontentTemplate();
     $row['content_type'] = $entity->getFormattedContentType();
     $row['updated_gathercontent'] = ($exists ? \Drupal::service('date.formatter')
-      ->format($this->templates[$entity->getGathercontentTemplateId()], 'custom', 'M d, Y - H:i') : t("Deleted"));
+      ->format($this->templates[$entity->getGathercontentTemplateId()], 'custom', 'M d, Y - H:i') : $this->t("Deleted"));
     $row['updated_drupal'] = $entity->getFormatterUpdatedDrupal();
     if ($exists) {
       $row = $row + parent::buildRow($entity);
