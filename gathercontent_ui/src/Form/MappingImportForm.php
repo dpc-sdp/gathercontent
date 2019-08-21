@@ -5,6 +5,7 @@ namespace Drupal\gathercontent_ui\Form;
 use Cheppers\GatherContent\GatherContentClientInterface;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\gathercontent\DrupalGatherContentClient;
 use Drupal\gathercontent\Entity\Mapping;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -15,6 +16,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * @package Drupal\gathercontent\Form
  */
 class MappingImportForm extends EntityForm {
+
+  use StringTranslationTrait;
 
   /**
    * GatherContent client.
@@ -58,7 +61,7 @@ class MappingImportForm extends EntityForm {
     $form['description'] = [
       '#type' => 'html_tag',
       '#tag' => 'div',
-      '#value' => t("Please select the GatherContent Templates you'd like to map. Only Templates you've not selected will be listed."),
+      '#value' => $this->t("Please select the GatherContent Templates you'd like to map. Only Templates you've not selected will be listed."),
       '#attributes' => [
         'class' => ['description'],
       ],
@@ -156,7 +159,7 @@ class MappingImportForm extends EntityForm {
             'template' => serialize($templateBody),
           ];
 
-          $mapping = \Drupal::entityManager()
+          $mapping = $this->entityTypeManager
             ->getStorage('gathercontent_mapping')
             ->create($mapping_values);
           if (is_object($mapping)) {
@@ -177,7 +180,7 @@ class MappingImportForm extends EntityForm {
     $actions['submit']['#value'] = $this->t('Select');
     $actions['close'] = [
       '#type' => 'submit',
-      '#value' => t('Close'),
+      '#value' => $this->t('Close'),
     ];
     return $actions;
   }

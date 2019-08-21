@@ -3,7 +3,6 @@
 namespace Drupal\gathercontent\Plugin\migrate\destination;
 
 use Drupal\Component\Datetime\TimeInterface;
-use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Field\FieldTypePluginManagerInterface;

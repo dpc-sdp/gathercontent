@@ -8,6 +8,7 @@ use Drupal\migrate\Row;
 
 /**
  * Perform custom value transformation.
+ *
  * Converts simple arrays to multidimensional so we can use extract plugin.
  *
  * @MigrateProcessPlugin(

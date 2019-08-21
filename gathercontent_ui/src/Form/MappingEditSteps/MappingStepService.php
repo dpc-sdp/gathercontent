@@ -12,10 +12,19 @@ use Drupal\gathercontent\Entity\MappingInterface;
  */
 class MappingStepService {
 
+  /**
+   * @var null|object
+   */
   protected $newStep;
 
+  /**
+   * @var null|object
+   */
   protected $editStep;
 
+  /**
+   * @var null|object
+   */
   protected $entityReferenceStep;
 
   /**

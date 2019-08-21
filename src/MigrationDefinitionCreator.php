@@ -3,9 +3,11 @@
 namespace Drupal\gathercontent;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Database\Connection;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\datetime\Plugin\Field\FieldType\DateTimeItemInterface;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\gathercontent\Entity\MappingInterface;
@@ -95,11 +97,30 @@ class MigrationDefinitionCreator {
   protected $metatagQuery;
 
   /**
-   * MigrationDefinitionCreator constructor.
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface
    */
-  public function __construct(ConfigFactoryInterface $configFactory, EntityTypeManagerInterface $entityTypeManager) {
+  protected $moduleHandler;
+
+  /**
+   * @var \Drupal\Core\Database\Connection
+   */
+  protected $database;
+
+  /**
+   * MigrationDefinitionCreator constructor.
+   *
+   * {@inheritdoc}
+   */
+  public function __construct(
+    ConfigFactoryInterface $configFactory,
+    EntityTypeManagerInterface $entityTypeManager,
+    ModuleHandlerInterface $moduleHandler,
+    Connection $database
+  ) {
     $this->configFactory = $configFactory;
     $this->entityTypeManager = $entityTypeManager;
+    $this->moduleHandler = $moduleHandler;
+    $this->database = $database;
 
     $this->siteDefaultLangCode = $this
       ->configFactory
@@ -151,7 +172,7 @@ class MigrationDefinitionCreator {
       if (
         !empty($data['type'])
         && $data['type'] === 'metatag'
-        && \Drupal::moduleHandler()->moduleExists('metatag')
+        && $this->moduleHandler->moduleExists('metatag')
         && $this->metatagQuery->checkMetatag(
           $this->mapping->getMappedEntityType(),
           $this->mapping->getContentType()
@@ -180,7 +201,7 @@ class MigrationDefinitionCreator {
   protected function getDefinitions(array $groupedData) {
     $definitions = [];
 
-    foreach ($groupedData as $language => $data) {
+    foreach ($groupedData as $data) {
       $definition = $this->buildMigrationDefinition([
         'projectId' => $this->mapping->getGathercontentProjectId(),
         'templateId' => $this->mapping->getGathercontentTemplateId(),
@@ -404,7 +425,7 @@ class MigrationDefinitionCreator {
 
     if (
       !empty($data['metatag_elements'])
-      && \Drupal::moduleHandler()->moduleExists('metatag')
+      && $this->moduleHandler->moduleExists('metatag')
       && $this->metatagQuery->checkMetatag(
         $this->mapping->getMappedEntityType(),
         $this->mapping->getContentType()
@@ -648,7 +669,7 @@ class MigrationDefinitionCreator {
     $formattedTabIds = [];
 
     foreach ($tabIds as $tabId) {
-      $formattedTabIds[] = \Drupal::database()->escapeTable($tabId);
+      $formattedTabIds[] = $this->database->escapeTable($tabId);
     }
 
     return implode('_', $formattedTabIds);

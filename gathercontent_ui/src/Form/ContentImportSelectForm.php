@@ -3,12 +3,14 @@
 namespace Drupal\gathercontent_ui\Form;
 
 use Cheppers\GatherContent\GatherContentClientInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Menu\MenuParentFormSelectorInterface;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\gathercontent\Entity\Mapping;
 use Drupal\gathercontent\Import\ImportOptions;
 use Drupal\gathercontent\MappingLoader;
-use Drupal\node\Entity\NodeType;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -18,25 +20,64 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 class ContentImportSelectForm extends FormBase {
 
+  use StringTranslationTrait;
+
+  /**
+   * @var int
+   */
   protected $step;
 
+  /**
+   * @var int|string
+   */
   protected $projectId;
 
+  /**
+   * @var mixed|object
+   */
   protected $nodes;
 
+  /**
+   * @var string
+   */
   protected $menu;
 
+  /**
+   * @var array|string
+   */
   protected $items;
 
+  /**
+   * @var mixed
+   */
   protected $drupalStatus;
 
+  /**
+   * @var \Cheppers\GatherContent\GatherContentClientInterface
+   */
   protected $client;
+
+  /**
+   * @var \Drupal\Core\Menu\MenuParentFormSelectorInterface
+   */
+  protected $menuParentFormSelector;
+
+  /**
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected $entityTypeManager;
 
   /**
    * {@inheritdoc}
    */
-  public function __construct(GatherContentClientInterface $client) {
+  public function __construct(
+    GatherContentClientInterface $client,
+    MenuParentFormSelectorInterface $menuParentFormSelector,
+    EntityTypeManagerInterface $entityTypeManager
+  ) {
     $this->client = $client;
+    $this->menuParentFormSelector = $menuParentFormSelector;
+    $this->entityTypeManager = $entityTypeManager;
   }
 
   /**
@@ -44,7 +85,9 @@ class ContentImportSelectForm extends FormBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('gathercontent.client')
+      $container->get('gathercontent.client'),
+      $container->get('menu.parent_form_selector'),
+      $container->get('entity_type.manager')
     );
   }
 
@@ -90,9 +133,9 @@ class ContentImportSelectForm extends FormBase {
 
       $form['project'] = [
         '#type' => 'select',
-        '#title' => t('Select project'),
+        '#title' => $this->t('Select project'),
         '#options' => $projects,
-        '#empty_option' => t('- Select -'),
+        '#empty_option' => $this->t('- Select -'),
         '#required' => TRUE,
         '#ajax' => [
           'callback' => '::getContentTable',
@@ -101,7 +144,7 @@ class ContentImportSelectForm extends FormBase {
           'effect' => 'fade',
         ],
         '#default_value' => !empty($this->projectId) ? $this->projectId : 0,
-        '#description' => t('You can only see projects with mapped templates in the dropdown.'),
+        '#description' => $this->t('You can only see projects with mapped templates in the dropdown.'),
       ];
 
       $form['import'] = [
@@ -181,7 +224,7 @@ class ContentImportSelectForm extends FormBase {
             && isset($mapping_array[$item->templateId])
           ) {
             if ($entity_types[$item->templateId] == 'node') {
-              $node_type = NodeType::load($content_types[$item->templateId]);
+              $node_type = $this->entityTypeManager->getStorage('node_type')->load($content_types[$item->templateId]);
               $selected_boxes = $node_type->getThirdPartySetting('menu_ui', 'available_menus', ['main']);
               $available_menus = [];
               foreach ($selected_boxes as $selected_box) {
@@ -273,10 +316,10 @@ class ContentImportSelectForm extends FormBase {
                 '#default_value' => $node_type->getThirdPartySetting('menu_ui', 'parent'),
                 '#empty_option' => $this->t("- Don't create menu item -"),
                 '#empty_value' => 0,
-                '#options' => [-1 => t("Parent being imported")]
-                + \Drupal::service('menu.parent_form_selector')
+                '#options' => [-1 => $this->t("Parent being imported")]
+                + $this->menuParentFormSelector
                   ->getParentSelectOptions('', $available_menus),
-                '#title' => t('Menu'),
+                '#title' => $this->t('Menu'),
                 '#title_display' => 'invisible',
                 '#states' => [
                   'disabled' => [
@@ -308,7 +351,7 @@ class ContentImportSelectForm extends FormBase {
         'form_title' => [
           '#type' => 'html_tag',
           '#tag' => 'h2',
-          '#value' => \Drupal::translation()->formatPlural(count($this->nodes),
+          '#value' => $this->formatPlural(count($this->nodes),
             'Confirm import selection (@count item)',
             'Confirm import selection (@count items)'
           ),
@@ -316,14 +359,14 @@ class ContentImportSelectForm extends FormBase {
         'form_description' => [
           '#type' => 'html_tag',
           '#tag' => 'p',
-          '#value' => t('Please review your import selection before importing.'),
+          '#value' => $this->t('Please review your import selection before importing.'),
         ],
       ];
 
       $header = [
-        'status' => t('Status'),
-        'title' => t('Item name'),
-        'template' => t('GatherContent Template'),
+        'status' => $this->t('Status'),
+        'title' => $this->t('Item name'),
+        'template' => $this->t('GatherContent Template'),
       ];
 
       $options = [];
@@ -366,8 +409,8 @@ class ContentImportSelectForm extends FormBase {
       $form['status'] = [
         '#type' => 'select',
         '#options' => $options,
-        '#title' => t('After successful import change status to:'),
-        '#empty_option' => t("- Don't change status -"),
+        '#title' => $this->t('After successful import change status to:'),
+        '#empty_option' => $this->t("- Don't change status -"),
       ];
 
       $import_config = $this->configFactory()->get('gathercontent.import');
@@ -440,7 +483,7 @@ class ContentImportSelectForm extends FormBase {
               array_push($import_content, $current);
               $num_of_repeats++;
               if ($num_of_repeats >= ($size * $size)) {
-                $form_state->setErrorByName('form', t("Please check your menu selection, some of items don't have parent in import."));
+                $form_state->setErrorByName('form', $this->t("Please check your menu selection, some of items don't have parent in import."));
                 $import_content = [];
               }
             }
@@ -567,13 +610,13 @@ class ContentImportSelectForm extends FormBase {
         }
 
         $batch = [
-          'title' => t('Importing content ...'),
+          'title' => $this->t('Importing content ...'),
           'operations' => $operations,
           'finished' => 'gathercontent_ui_import_finished',
           'file' => drupal_get_path('module', 'gathercontent') . '/gathercontent.module',
-          'init_message' => t('Import is starting ...'),
-          'progress_message' => t('Processed @current out of @total.'),
-          'error_message' => t('An error occurred during processing'),
+          'init_message' => $this->t('Import is starting ...'),
+          'progress_message' => $this->t('Processed @current out of @total.'),
+          'error_message' => $this->t('An error occurred during processing'),
         ];
 
         batch_set($batch);

@@ -23,7 +23,7 @@ use Drupal\gathercontent\MigrateMessageCapture;
 function gathercontent_entity_base_field_info(EntityTypeInterface $entity_type) {
   $fields = [];
   if ($entity_type->id() === 'file') {
-    $fields['gc_id'] = $storage_definition = BaseFieldDefinition::create('integer')
+    $fields['gc_id'] = BaseFieldDefinition::create('integer')
       ->setLabel(t('GC ID'))
       ->setDescription(t('The ID of GatherContent content.'))
       ->setReadOnly(TRUE);
