@@ -189,6 +189,33 @@ class MappingStepNew extends MappingSteps {
           }
         }
       }
+
+      $entityReferenceRevisionsFields = $this->filterEntityReferenceRevisions($contentType, $entityType);
+
+      if (!empty($entityReferenceRevisionsFields)) {
+        $form['mapping']['entity_reference_revisions_fields'] = [
+          '#type' => 'details',
+          '#title' => $this->t('Entity reference revisions'),
+          '#open' => TRUE,
+          '#tree' => TRUE,
+        ];
+
+        foreach ($entityReferenceRevisionsFields as $fieldId => $entityReferenceRevisionsField) {
+          $form['mapping']['entity_reference_revisions_fields'][$fieldId] = [
+            '#type' => 'select',
+            '#options' => $entityReferenceRevisionsField['options'],
+            '#title' => $entityReferenceRevisionsField['label'],
+            '#empty_option' => $this->t("Don't map"),
+            '#default_value' => $formState->hasValue('entity_reference_revisions_fields')['entity_reference_revisions_fields'][$fieldId] ? $formState->getValue('entity_reference_revisions_fields')['entity_reference_revisions_fields'][$fieldId] : NULL,
+            '#attributes' => [
+              'class' => [
+                'gathercontent-ct-element',
+              ],
+            ],
+          ];
+        }
+      }
+
       $form['mapping']['er_mapping_type'] = [
         '#type' => 'radios',
         '#title' => $this->t('Taxonomy terms mapping type'),

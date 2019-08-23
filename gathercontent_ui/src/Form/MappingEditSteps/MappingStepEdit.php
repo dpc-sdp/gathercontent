@@ -158,6 +158,9 @@ class MappingStepEdit extends MappingSteps {
         }
       }
     }
+
+    $this->filterEntityReferenceRevisions($contentType, $entityType);
+
     $form['mapping']['er_mapping_type'] = [
       '#type' => 'radios',
       '#title' => $this->t('Taxonomy terms mapping type'),
