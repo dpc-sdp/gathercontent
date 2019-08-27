@@ -228,7 +228,6 @@ class ContentImportSelectForm extends FormBase {
             }
 
             if ($entity_types[$item->templateId] == 'node') {
-              var_dump($item->templateId, $entity_types[$item->templateId], $content_types[$item->templateId]);
               $node_type = $this->entityTypeManager->getStorage('node_type')->load($content_types[$item->templateId]);
               $selected_boxes = $node_type->getThirdPartySetting('menu_ui', 'available_menus', ['main']);
               $available_menus = [];
