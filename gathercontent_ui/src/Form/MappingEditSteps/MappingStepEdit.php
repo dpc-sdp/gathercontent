@@ -159,7 +159,31 @@ class MappingStepEdit extends MappingSteps {
       }
     }
 
-    $this->filterEntityReferenceRevisions($contentType, $entityType);
+    $entityReferenceRevisionsFields = $this->filterEntityReferenceRevisions($contentType, $entityType);
+
+    if (!empty($entityReferenceRevisionsFields)) {
+      $form['mapping']['entity_reference_revisions_fields'] = [
+        '#type' => 'details',
+        '#title' => $this->t('Entity reference revisions'),
+        '#open' => FALSE,
+        '#tree' => TRUE,
+      ];
+
+      foreach ($entityReferenceRevisionsFields as $fieldId => $entityReferenceRevisionsField) {
+        $form['mapping']['entity_reference_revisions_fields'][$fieldId] = [
+          '#type' => 'select',
+          '#options' => $entityReferenceRevisionsField['options'],
+          '#title' => $entityReferenceRevisionsField['label'],
+          '#empty_option' => $this->t("Don't map"),
+          '#default_value' => isset($mappingData['entity_reference_revisions_fields'][$fieldId]) ? $mappingData['entity_reference_revisions_fields'][$fieldId] : NULL,
+          '#attributes' => [
+            'class' => [
+              'gathercontent-ct-element',
+            ],
+          ],
+        ];
+      }
+    }
 
     $form['mapping']['er_mapping_type'] = [
       '#type' => 'radios',

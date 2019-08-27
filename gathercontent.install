@@ -233,9 +233,14 @@ function gathercontent_update_8502() {
   $fieldStorageDefinitionListener = \Drupal::service('field_storage_definition.listener');
 
   $definition = $entityFieldManager->getFieldStorageDefinitions('node')['gc_mapping_id'];
-  $fieldStorageDefinitionListener->onFieldStorageDefinitionDelete($definition);
+  if (!empty($definition)) {
+    $fieldStorageDefinitionListener->onFieldStorageDefinitionDelete($definition);
+  }
+
   $definition = $entityFieldManager->getFieldStorageDefinitions('node')['gc_id'];
-  $fieldStorageDefinitionListener->onFieldStorageDefinitionDelete($definition);
+  if (!empty($definition)) {
+    $fieldStorageDefinitionListener->onFieldStorageDefinitionDelete($definition);
+  }
 }
 
 /**

@@ -176,6 +176,7 @@ abstract class MappingSteps {
       'er_mapping_type',
       'submit',
       'close',
+      'entity_reference_revisions_fields',
     ]);
 
     $mapping_data = [];
@@ -409,10 +410,15 @@ abstract class MappingSteps {
 
           if ($mappingData) {
             foreach ($mappingData as $tabName => $tab) {
+              if (empty($tab['elements'])) {
+                continue;
+              }
+
               $gcField = array_search($key, $tab['elements']);
               if (empty($gcField)) {
                 continue;
               }
+
               if (isset($tab['language'])) {
                 $this->entityReferenceFields[$key][$tab['language']]['name'] = $gcField;
                 $this->entityReferenceFields[$key][$tab['language']]['tab'] = $tabName;
@@ -498,6 +504,7 @@ abstract class MappingSteps {
             ->getSetting('target_type');
 
           foreach ($bundles as $bundle) {
+            /** @var MappingInterface $mapping */
             $mapping = $entityTypeManager
               ->getStorage('gathercontent_mapping')
               ->loadByProperties([
@@ -509,8 +516,12 @@ abstract class MappingSteps {
               continue;
             }
 
+
             $mapping = reset($mapping);
-            $options[$mapping->id()] = $mapping->getGathercontentProject() . ' - ' . $mapping->getGathercontentTemplate();
+            $migration = $mapping->getMigrations();
+            $migration = reset($migration);
+
+            $options[$migration] = $mapping->getGathercontentProject() . ' - ' . $mapping->getGathercontentTemplate();
           }
         }
 
