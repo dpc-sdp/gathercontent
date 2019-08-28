@@ -282,6 +282,7 @@ class MigrationDefinitionCreator {
           ],
         ];
       }
+      $definitions[$definitionId]['source']['fields'][] = 'children';
     }
   }
 

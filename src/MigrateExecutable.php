@@ -4,7 +4,6 @@ namespace Drupal\gathercontent;
 
 use Drupal\gathercontent\Import\MenuCreator;
 use Drupal\migrate\Event\MigrateImportEvent;
-use Drupal\migrate\MigrateSkipRowException;
 use Drupal\migrate_tools\MigrateExecutable as MigrateExecutableBase;
 use Drupal\migrate\MigrateMessageInterface;
 use Drupal\migrate\Plugin\MigrationInterface;
@@ -85,13 +84,11 @@ class MigrateExecutable extends MigrateExecutableBase {
     /** @var \Drupal\gathercontent\Import\ImportOptions $options */
     $options = $this->importOptions[$source_id['id']];
 
-    if (empty($options)) {
-      throw new MigrateSkipRowException(NULL, FALSE);
+    if (!empty($options)) {
+      // TODO: change to use entity specific status field if exists.
+      $row->setDestinationProperty('status', $options->getPublish());
+      $row->setDestinationProperty('gc_import_options/new_revision', $options->getCreateNewRevision());
     }
-
-    // TODO: change to use entity specific status field if exists.
-    $row->setDestinationProperty('status', $options->getPublish());
-    $row->setDestinationProperty('gc_import_options/new_revision', $options->getCreateNewRevision());
   }
 
   /**
@@ -115,6 +112,10 @@ class MigrateExecutable extends MigrateExecutableBase {
     }
 
     foreach ($rows as $row) {
+      if (empty($row)) {
+        continue;
+      }
+
       // Ignore sub-entities.
       if (isset($row['destid2'])) {
         continue;
@@ -122,27 +123,30 @@ class MigrateExecutable extends MigrateExecutableBase {
 
       /** @var \Drupal\gathercontent\Import\ImportOptions $options */
       $options = $this->importOptions[$row['sourceid1']];
-      $parent_menu_item = $options->getParentMenuItem();
 
-      if (!empty($parent_menu_item) && $parent_menu_item != '0') {
-        // TODO: Use the entity type from the mapping, not the node!
-        $entity = Node::load($row['destid1']);
+      if (!empty($options)) {
+        $parent_menu_item = $options->getParentMenuItem();
 
-        // TODO: Rewrite menu creator to support none node entities too.
-        MenuCreator::createMenu($entity, $parent_menu_item);
-      }
+        if (!empty($parent_menu_item) && $parent_menu_item != '0') {
+          // TODO: Use the entity type from the mapping, not the node!
+          $entity = Node::load($row['destid1']);
 
-      $new_gc_status = $options->getNewStatus();
+          // TODO: Rewrite menu creator to support none node entities too.
+          MenuCreator::createMenu($entity, $parent_menu_item);
+        }
 
-      if ($new_gc_status && is_int($new_gc_status)) {
-        $status = $this->client->projectStatusGet($source_configuration['projectId'], $new_gc_status);
+        $new_gc_status = $options->getNewStatus();
 
-        // Update only if status exists.
-        if ($status !== NULL) {
-          // Update status on GC.
-          $this->client->itemChooseStatusPost($row['sourceid1'], $new_gc_status);
+        if ($new_gc_status && is_int($new_gc_status)) {
+          $status = $this->client->projectStatusGet($source_configuration['projectId'], $new_gc_status);
 
-          $this->latestGcStatus = $status;
+          // Update only if status exists.
+          if ($status !== NULL) {
+            // Update status on GC.
+            $this->client->itemChooseStatusPost($row['sourceid1'], $new_gc_status);
+
+            $this->latestGcStatus = $status;
+          }
         }
       }
 

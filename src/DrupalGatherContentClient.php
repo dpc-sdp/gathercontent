@@ -193,7 +193,7 @@ class DrupalGatherContentClient extends GatherContentClient {
     $items = $this->itemsGet($projectId);
 
     foreach ($items as $item) {
-      if ($item->parentId !== $parentId) {
+      if ($item->parentId != $parentId) {
         continue;
       }
 
@@ -220,16 +220,14 @@ class DrupalGatherContentClient extends GatherContentClient {
 
     foreach ($currentLevelChildrenIds as $childrenId) {
       $collectedChildrenIds = $this->getAllChildrenIds($projectId, $childrenId);
-      array_unique(array_merge(
+      $deeperChildrenIds = array_unique(array_merge(
         $deeperChildrenIds, $collectedChildrenIds
       ), SORT_REGULAR);
     }
 
-    array_unique(array_merge(
+    return array_unique(array_merge(
       $currentLevelChildrenIds, $deeperChildrenIds
     ), SORT_REGULAR);
-
-    return $currentLevelChildrenIds;
   }
 
 }
