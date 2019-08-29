@@ -116,11 +116,6 @@ class MigrateExecutable extends MigrateExecutableBase {
         continue;
       }
 
-      // Ignore sub-entities.
-      if (isset($row['destid2'])) {
-        continue;
-      }
-
       /** @var \Drupal\gathercontent\Import\ImportOptions $options */
       $options = $this->importOptions[$row['sourceid1']];
 
@@ -158,11 +153,6 @@ class MigrateExecutable extends MigrateExecutableBase {
    * Tracks the entity changes, to show in a table after the migration run.
    */
   protected function trackEntities(array $row, string $plugin, string $templateName, $migrationId) {
-    // Ignore sub-entities.
-    if (isset($row['destid2'])) {
-      return;
-    }
-
     $tracked = $this->session->get('gathercontent_tracked_entities', []);
 
     $tracked[$row['sourceid1']] = [
