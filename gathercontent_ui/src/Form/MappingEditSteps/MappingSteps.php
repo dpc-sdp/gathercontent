@@ -176,6 +176,7 @@ abstract class MappingSteps {
       'er_mapping_type',
       'submit',
       'close',
+      'entity_reference_revisions_fields',
     ]);
 
     $mapping_data = [];
@@ -292,8 +293,6 @@ abstract class MappingSteps {
   }
 
   /**
-   * Wrapper function for filterFieldsRecursively.
-   *
    * Use for filtering only equivalent fields.
    *
    * @param \Cheppers\GatherContent\DataTypes\Element $gc_field
@@ -305,40 +304,17 @@ abstract class MappingSteps {
    *
    * @return array
    *   Associative array with equivalent fields.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
   protected function filterFields(Element $gc_field, $content_type, $entity_type = 'node') {
-    return $this->filterFieldsRecursively($gc_field, $content_type, $entity_type);
-  }
-
-  /**
-   * Helper function.
-   *
-   * Use for filtering only equivalent fields.
-   *
-   * @param object $gc_field
-   *   Type of field in GatherContent.
-   * @param string $content_type
-   *   Name of Drupal content type.
-   * @param string $entity_type
-   *   Name of Drupal Entity type.
-   * @param array $nested_ids
-   *   Nested ID array.
-   * @param string $bundle_label
-   *   Bundle label string.
-   *
-   * @return array
-   *   Associative array with equivalent fields.
-   */
-  protected function filterFieldsRecursively($gc_field, $content_type, $entity_type = 'node', array $nested_ids = [], $bundle_label = '') {
     $mapping_array = [
       'files' => [
         'file',
         'image',
-        'entity_reference_revisions',
       ],
       'section' => [
         'text_long',
-        'entity_reference_revisions',
       ],
       'text' => [
         'text',
@@ -350,17 +326,14 @@ abstract class MappingSteps {
         'telephone',
         'date',
         'datetime',
-        'entity_reference_revisions',
       ],
       'choice_radio' => [
         'string',
         'entity_reference',
-        'entity_reference_revisions',
       ],
       'choice_checkbox' => [
         'list_string',
         'entity_reference',
-        'entity_reference_revisions',
       ],
     ];
     $entityFieldManager = \Drupal::service('entity_field.manager');
@@ -428,84 +401,37 @@ abstract class MappingSteps {
             break;
         }
 
-        if ($instance->getType() === 'entity_reference_revisions') {
-          $settings = $instance->getSetting('handler_settings');
+        $key = $instance->id();
 
-          if (!empty($settings['target_bundles'])) {
-            $bundles = $settings['target_bundles'];
+        $fields[$key] = $instance->getLabel();
 
-            if (!empty($settings['negate']) && !empty($settings['target_bundles_drag_drop'])) {
-              $negated_bundles = array_filter(
-                $settings['target_bundles_drag_drop'],
-                function ($v) {
-                  return !$v['enabled'];
-                }
-              );
+        if ($instance->getType() === 'entity_reference' && $instance->getSetting('handler') === 'default:taxonomy_term') {
+          $mappingData = unserialize($this->mapping->getData());
 
-              $bundles = array_combine(array_keys($negated_bundles), array_keys($negated_bundles));
-            }
+          if ($mappingData) {
+            foreach ($mappingData as $tabName => $tab) {
+              if (empty($tab['elements'])) {
+                continue;
+              }
 
-            $target_type = $instance->getFieldStorageDefinition()
-              ->getSetting('target_type');
-            $bundle_entity_type = $entityTypeManager
-              ->getStorage($target_type)
-              ->getEntityType()
-              ->get('bundle_entity_type');
+              $gcField = array_search($key, $tab['elements']);
+              if (empty($gcField)) {
+                continue;
+              }
 
-            $new_nested_ids = $nested_ids;
-            $new_nested_ids[] = $instance->id();
-
-            foreach ($bundles as $bundle) {
-              $new_bundle_label = ((!empty($bundle_label)) ? $bundle_label . ' - ' : '') . $instance->getLabel();
-              $bundle_name = $entityTypeManager
-                ->getStorage($bundle_entity_type)
-                ->load($bundle)
-                ->label();
-
-              $new_bundle_label .= ' (bundle: ' . $bundle_name . ')';
-
-              $targetFields = $this->filterFieldsRecursively($gc_field, $bundle, $target_type, $new_nested_ids, $new_bundle_label);
-
-              if (!empty($targetFields)) {
-                $fields = $fields + $targetFields;
+              if (isset($tab['language'])) {
+                $this->entityReferenceFields[$key][$tab['language']]['name'] = $gcField;
+                $this->entityReferenceFields[$key][$tab['language']]['tab'] = $tabName;
+              }
+              else {
+                $this->entityReferenceFields[$key][LanguageInterface::LANGCODE_NOT_SPECIFIED]['name'] = $gcField;
+                $this->entityReferenceFields[$key][LanguageInterface::LANGCODE_NOT_SPECIFIED]['tab'] = $tabName;
               }
             }
           }
-        }
-        else {
-          $key = $instance->id();
 
-          if (!empty($nested_ids)) {
-            $new_nested_ids = $nested_ids;
-            $new_nested_ids[] = $instance->id();
-            $key = implode('||', $new_nested_ids);
-          }
-
-          $fields[$key] = ((!empty($bundle_label)) ? $bundle_label . ' - ' : '') . $instance->getLabel();
-
-          if ($instance->getType() === 'entity_reference' && $instance->getSetting('handler') === 'default:taxonomy_term') {
-            $mappingData = unserialize($this->mapping->getData());
-
-            if ($mappingData) {
-              foreach ($mappingData as $tabName => $tab) {
-                $gcField = array_search($key, $tab['elements']);
-                if (empty($gcField)) {
-                  continue;
-                }
-                if (isset($tab['language'])) {
-                  $this->entityReferenceFields[$key][$tab['language']]['name'] = $gcField;
-                  $this->entityReferenceFields[$key][$tab['language']]['tab'] = $tabName;
-                }
-                else {
-                  $this->entityReferenceFields[$key][LanguageInterface::LANGCODE_NOT_SPECIFIED]['name'] = $gcField;
-                  $this->entityReferenceFields[$key][LanguageInterface::LANGCODE_NOT_SPECIFIED]['tab'] = $tabName;
-                }
-              }
-            }
-
-            if (empty($this->entityReferenceFieldsOptions) || !in_array($key, $this->entityReferenceFieldsOptions)) {
-              $this->entityReferenceFieldsOptions[] = $key;
-            }
+          if (empty($this->entityReferenceFieldsOptions) || !in_array($key, $this->entityReferenceFieldsOptions)) {
+            $this->entityReferenceFieldsOptions[] = $key;
           }
         }
       }
@@ -533,14 +459,80 @@ abstract class MappingSteps {
       isset($gathercontent_field->plainText) &&
       $gathercontent_field->plainText
     ) {
-      /** @var \Drupal\gathercontent\MetatagQuery $metatagQuery */
-      $metatagQuery = \Drupal::service('gathercontent.metatag');
-      return $metatagQuery->getMetatagFields($entity_type, $content_type);
+      return $this->metatagQuery->getMetatagFields($entity_type, $content_type);
     }
 
     else {
       return [];
     }
+  }
+
+  protected function filterEntityReferenceRevisions($content_type, $entity_type = 'node') {
+    $entityTypeManager = \Drupal::entityTypeManager();
+    $entityFieldManager = \Drupal::service('entity_field.manager');
+
+    /** @var \Drupal\Core\Field\FieldDefinitionInterface[] $instances */
+    $instances = $entityFieldManager->getFieldDefinitions($entity_type, $content_type);
+    $fields = [];
+
+    foreach ($instances as $instance) {
+      if ($instance instanceof BaseFieldDefinition) {
+        continue;
+      }
+
+      if ($instance->getType() === 'entity_reference_revisions') {
+        $key = $instance->id();
+        $label = $instance->getLabel();
+        $settings = $instance->getSetting('handler_settings');
+        $options = [];
+
+        if (!empty($settings['target_bundles'])) {
+          $bundles = $settings['target_bundles'];
+
+          if (!empty($settings['negate']) && !empty($settings['target_bundles_drag_drop'])) {
+            $negated_bundles = array_filter(
+              $settings['target_bundles_drag_drop'],
+              function ($v) {
+                return !$v['enabled'];
+              }
+            );
+
+            $bundles = array_combine(array_keys($negated_bundles), array_keys($negated_bundles));
+          }
+
+          $target_type = $instance->getFieldStorageDefinition()
+            ->getSetting('target_type');
+
+          foreach ($bundles as $bundle) {
+            /** @var MappingInterface $mapping */
+            $mapping = $entityTypeManager
+              ->getStorage('gathercontent_mapping')
+              ->loadByProperties([
+                'entity_type' => $target_type,
+                'content_type' => $bundle,
+              ]);
+
+            if (!$mapping) {
+              continue;
+            }
+
+
+            $mapping = reset($mapping);
+            $migration = $mapping->getMigrations();
+            $migration = reset($migration);
+
+            $options[$migration] = $mapping->getGathercontentProject() . ' - ' . $mapping->getGathercontentTemplate();
+          }
+        }
+
+        $fields[$key] = [
+          'label' => $label,
+          'options' => $options,
+        ];
+      }
+    }
+
+    return $fields;
   }
 
   /**
