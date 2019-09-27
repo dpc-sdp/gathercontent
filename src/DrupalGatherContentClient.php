@@ -178,22 +178,73 @@ class DrupalGatherContentClient extends GatherContentClient {
   }
 
   /**
+   * Returns the collected folder UUIDs.
+   *
+   * @param $projectId
+   *   Project ID.
+   * @param $gcId
+   *   GatherContent Item ID.
+   *
+   * @return array
+   *   Array containing the collected folder ids.
+   */
+  public function getSubFolderIds($projectId, $gcId) {
+    $item = $this->itemGet($gcId);
+
+    if (!$item) {
+      return [];
+    }
+
+    $folders = $this->foldersGet($projectId);
+
+    if (!$folders) {
+      return [];
+    }
+
+    $parentFolderUuid = 0;
+    foreach ($folders as $folder) {
+      if ($item->folderUuid == $folder->id && $folder->type !== 'project-root') {
+        $parentFolderUuid = $folder->id;
+      }
+    }
+
+    if (!$parentFolderUuid) {
+      return [];
+    }
+
+    $folderIds = [];
+    foreach ($folders as $folder) {
+      if ($parentFolderUuid == $folder->parentUuid) {
+        $folderIds[] = $folder->id;
+      }
+    }
+
+    return $folderIds;
+  }
+
+  /**
    * Returns the first level children IDs for a given item.
    *
    * @param $projectId
    *   Project ID.
    * @param $parentId
-   *   Parent item ID.
+   *   Parent GatherContent Item ID.
    *
    * @return array
    *   Collected children IDs.
    */
   public function getChildrenIds($projectId, $parentId) {
+    $folderIds = $this->getSubFolderIds($projectId, $parentId);
+
+    if (!$folderIds) {
+      return [];
+    }
+
     $collectedChildrenIds = [];
     $items = $this->itemsGet($projectId);
 
     foreach ($items as $item) {
-      if ($item->parentId != $parentId) {
+      if (!in_array($item->folderUuid, $folderIds)) {
         continue;
       }
 

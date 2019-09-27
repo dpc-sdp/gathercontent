@@ -223,7 +223,10 @@ class ContentImportSelectForm extends FormBase {
             && $item->templateId != 'null'
             && isset($mapping_array[$item->templateId])
           ) {
-            if ($entity_types[$item->templateId] == 'paragraph') {
+            if (
+              $entity_types[$item->templateId] == 'paragraph'
+              || $entity_types[$item->templateId] == 'media'
+            ) {
               continue;
             }
 
