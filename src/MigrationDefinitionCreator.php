@@ -281,24 +281,37 @@ class MigrationDefinitionCreator {
         'plugin' => 'sub_process',
         'source' => 'children',
         'process' => [
-          'collect_' . $subDefinitionId => [
+          'target_id' => [
             'plugin' => 'migration_lookup',
             'migration' => $subDefinitionId,
             'source' => 'id',
-          ],
-          'target_id' => [
-            'plugin' => 'extract',
-            'source' => '@collect_' . $subDefinitionId,
-            'index' => [0],
+            'no_stub' => TRUE,
           ],
         ],
       ];
 
       if ($hasRevision) {
-        $config['process']['target_revision_id'] = [
-          'plugin' => 'extract',
-          'source' => '@collect_' . $subDefinitionId,
-          'index' => [1],
+        $config = [
+          'plugin' => 'sub_process',
+          'source' => 'children',
+          'process' => [
+            'collect_' . $subDefinitionId => [
+              'plugin' => 'migration_lookup',
+              'migration' => $subDefinitionId,
+              'source' => 'id',
+              'no_stub' => TRUE,
+            ],
+            'target_id' => [
+              'plugin' => 'gather_content_extract',
+              'source' => '@collect_' . $subDefinitionId,
+              'index' => [0],
+            ],
+            'target_revision_id' => [
+              'plugin' => 'gather_content_extract',
+              'source' => '@collect_' . $subDefinitionId,
+              'index' => [1],
+            ],
+          ],
         ];
       }
 
@@ -599,6 +612,7 @@ class MigrationDefinitionCreator {
           'plugin' => 'migration_lookup',
           'source' => 'id',
           'migration' => $defaultLangMigrationId,
+          'no_stub' => TRUE,
         ];
         $definitions[$definitionId]['process']['langcode'] = [
           'plugin' => 'default_value',

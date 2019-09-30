@@ -87,13 +87,13 @@ class GatherContentEntity extends EntityContentBase {
   protected function getEntity(Row $row, array $old_destination_id_values) {
     $entity = parent::getEntity($row, $old_destination_id_values);
     $destination = $row->getDestination();
-    $options = $destination['gc_import_options'];
 
     // Create new revision according to the import options.
     if (
-      $entity->getEntityType()->isRevisionable()
+      !empty($destination['gc_import_options'])
+      && $entity->getEntityType()->isRevisionable()
       && !$entity->isNew()
-      && $options['new_revision']
+      && $destination['gc_import_options']['new_revision']
     ) {
       $entity->setNewRevision(TRUE);
       $entity->setRevisionLogMessage('Created revision for entity ID: ' . $entity->id());
