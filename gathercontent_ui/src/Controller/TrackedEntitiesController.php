@@ -79,7 +79,10 @@ class TrackedEntitiesController extends ControllerBase {
     $rows = [];
 
     foreach ($tracked as $gcID => $item) {
-      if ($item['entity_type'] === 'paragraph') {
+      if (
+        $item['entity_type'] === 'paragraph'
+        || $item['entity_type'] === 'media'
+      ) {
         continue;
       }
 

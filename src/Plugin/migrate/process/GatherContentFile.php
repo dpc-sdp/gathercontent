@@ -65,6 +65,10 @@ class GatherContentFile extends ProcessPluginBase implements ContainerFactoryPlu
    * {@inheritdoc}
    */
   public function transform($value, MigrateExecutableInterface $migrate_executable, Row $row, $destination_property) {
+    if (empty($value)) {
+      return $value;
+    }
+
     $language = $this->configuration['language'];
     $fileDir = PlainTextOutput::renderFromHtml(\Drupal::token()->replace($this->configuration['file_dir'], []));
     $create_dir = $this->fileSystem->realpath($this->configuration['uri_scheme']) . '/' . $fileDir;

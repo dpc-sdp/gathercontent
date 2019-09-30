@@ -4,9 +4,10 @@
   "description": "GatherContent for Drupal",
   "license": "GPL-2.0+",
   "require": {
-    "cheppers/gathercontent-client": "*",
+    "cheppers/gathercontent-client": "dev-master",
     "drupal/core": "^8.7",
-    "drupal/migrate_plus": "^4.2",
-    "drupal/migrate_tools": "^4.1"
-  }
+    "drupal/migrate_plus": "^4",
+    "drupal/migrate_tools": "^4"
+  },
+  "minimum-stability": "dev"
 }

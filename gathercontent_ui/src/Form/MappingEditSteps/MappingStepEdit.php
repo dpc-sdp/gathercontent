@@ -185,6 +185,32 @@ class MappingStepEdit extends MappingSteps {
       }
     }
 
+    $entityReferenceMediaFields = $this->filterEntityReferenceMedia($contentType, $entityType);
+
+    if (!empty($entityReferenceMediaFields)) {
+      $form['mapping']['entity_reference_media_fields'] = [
+        '#type' => 'details',
+        '#title' => $this->t('Media fields'),
+        '#open' => FALSE,
+        '#tree' => TRUE,
+      ];
+
+      foreach ($entityReferenceMediaFields as $fieldId => $entityReferenceMediaField) {
+        $form['mapping']['entity_reference_media_fields'][$fieldId] = [
+          '#type' => 'select',
+          '#options' => $entityReferenceMediaField['options'],
+          '#title' => $entityReferenceMediaField['label'],
+          '#empty_option' => $this->t("Don't map"),
+          '#default_value' => isset($mappingData['entity_reference_media_fields'][$fieldId]) ? $mappingData['entity_reference_media_fields'][$fieldId] : NULL,
+          '#attributes' => [
+            'class' => [
+              'gathercontent-ct-element',
+            ],
+          ],
+        ];
+      }
+    }
+
     $form['mapping']['er_mapping_type'] = [
       '#type' => 'radios',
       '#title' => $this->t('Taxonomy terms mapping type'),

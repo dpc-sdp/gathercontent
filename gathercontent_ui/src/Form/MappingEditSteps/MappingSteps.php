@@ -177,6 +177,7 @@ abstract class MappingSteps {
       'submit',
       'close',
       'entity_reference_revisions_fields',
+      'entity_reference_media_fields',
     ]);
 
     $mapping_data = [];
@@ -467,6 +468,20 @@ abstract class MappingSteps {
     }
   }
 
+  /**
+   * Returns field with possible entity reference revision options.
+   *
+   * @param string $content_type
+   *   Bundle string.
+   * @param string $entity_type
+   *   Entity type string.
+   *
+   * @return array
+   *   Returns field with possible entity reference revision options.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
+   */
   protected function filterEntityReferenceRevisions($content_type, $entity_type = 'node') {
     $entityTypeManager = \Drupal::entityTypeManager();
     $entityFieldManager = \Drupal::service('entity_field.manager');
@@ -516,6 +531,75 @@ abstract class MappingSteps {
               continue;
             }
 
+            $mapping = reset($mapping);
+            $migration = $mapping->getMigrations();
+            $migration = reset($migration);
+
+            $options[$migration] = $mapping->getGathercontentProject() . ' - ' . $mapping->getGathercontentTemplate();
+          }
+        }
+
+        $fields[$key] = [
+          'label' => $label,
+          'options' => $options,
+        ];
+      }
+    }
+
+    return $fields;
+  }
+
+  /**
+   * Returns field with possible entity reference media options.
+   *
+   * @param string $content_type
+   *   Bundle string.
+   * @param string $entity_type
+   *   Entity type string.
+   *
+   * @return array
+   *   Returns field with possible entity reference media options.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
+   */
+  protected function filterEntityReferenceMedia($content_type, $entity_type = 'node') {
+    $entityTypeManager = \Drupal::entityTypeManager();
+    $entityFieldManager = \Drupal::service('entity_field.manager');
+
+    /** @var \Drupal\Core\Field\FieldDefinitionInterface[] $instances */
+    $instances = $entityFieldManager->getFieldDefinitions($entity_type, $content_type);
+    $fields = [];
+
+    foreach ($instances as $instance) {
+      if ($instance instanceof BaseFieldDefinition) {
+        continue;
+      }
+
+      if ($instance->getType() === 'entity_reference' && $instance->getSetting('handler') === 'default:media') {
+        $key = $instance->id();
+        $label = $instance->getLabel();
+        $settings = $instance->getSetting('handler_settings');
+        $options = [];
+
+        if (!empty($settings['target_bundles'])) {
+          $bundles = $settings['target_bundles'];
+
+          $target_type = $instance->getFieldStorageDefinition()
+            ->getSetting('target_type');
+
+          foreach ($bundles as $bundle) {
+            /** @var MappingInterface $mapping */
+            $mapping = $entityTypeManager
+              ->getStorage('gathercontent_mapping')
+              ->loadByProperties([
+                'entity_type' => $target_type,
+                'content_type' => $bundle,
+              ]);
+
+            if (!$mapping) {
+              continue;
+            }
 
             $mapping = reset($mapping);
             $migration = $mapping->getMigrations();
