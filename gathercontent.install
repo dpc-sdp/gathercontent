@@ -53,7 +53,7 @@ function _gathercontent_entity_mapping_spec() {
       ],
       'entity_type' => [
         'type' => 'varchar',
-        'length' => 255,
+        'length' => 32,
         'not null' => TRUE,
         'description' => 'Entity type.',
       ],
@@ -70,7 +70,7 @@ function _gathercontent_entity_mapping_spec() {
         'description' => 'Migration ID.',
       ],
     ],
-    'primary key' => ['entity_id'],
+    'primary key' => ['entity_id', 'entity_type'],
     'indexes' => [
       'entity_type' => ['entity_type'],
       'gc_id' => ['gc_id'],

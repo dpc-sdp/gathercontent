@@ -164,6 +164,20 @@ class MigrateExecutable extends MigrateExecutableBase {
     $this->session->set('gathercontent_tracked_entities', $tracked);
 
     $connection = \Drupal::service('database');
+    $result = $connection->select('gathercontent_entity_mapping')
+      ->fields('gathercontent_entity_mapping', [
+        'entity_id',
+        'entity_type',
+      ])
+      ->condition('entity_id', $row['destid1'])
+      ->condition('entity_type', $plugin)
+      ->execute()
+      ->fetchAll();
+
+    if (!empty($result)) {
+      return;
+    }
+
     $connection->insert('gathercontent_entity_mapping')
       ->fields([
         'entity_id' => $row['destid1'],

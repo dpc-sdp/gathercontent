@@ -122,6 +122,10 @@ class GatherContentGet extends Get implements ContainerFactoryPluginInterface {
       return $text;
     }
 
+    if (!is_array($collectedUrls[0])) {
+      $collectedUrls[0] = [$collectedUrls[0]];
+    }
+
     $gcUrls = array_unique(array_combine($collectedUrls[2], $collectedUrls[0]));
 
     $query = $this->database->select('gathercontent_entity_mapping')

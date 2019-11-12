@@ -49,7 +49,7 @@ class ImportConfigForm extends ConfigFormBase {
       '#type' => 'checkbox',
       '#title' => $this->t('Create new revision'),
       '#default_value' => $config->get('node_create_new_revision'),
-      '#description' => $this->t('If the "Content update method" is any other than "Always update existing Content" then this setting won\'t take effect, because the entity will always be new.'),
+      '#description' => $this->t('If this option is set, then the updated entity will be created as a new revision.'),
     ];
 
     return parent::buildForm($form, $form_state);

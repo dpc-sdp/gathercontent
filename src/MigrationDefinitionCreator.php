@@ -481,6 +481,7 @@ class MigrationDefinitionCreator {
         break;
 
       case 'text':
+      case 'text_long':
       case 'text_with_summary':
         $this->setTextFieldDefinition($definition, $element, $elementId);
         $this->setTextFormat($definition, $data, $elementId, $element);
