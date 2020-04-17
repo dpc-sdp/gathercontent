@@ -3,6 +3,7 @@
 namespace Drupal\gathercontent\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
+use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 
 /**
@@ -308,6 +309,27 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
    */
   public function getMigrations() {
     return $this->get('migration_definitions');
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function postDelete(EntityStorageInterface $storage, array $entities) {
+    parent::postDelete($storage, $entities);
+
+    // Delete the related migration definitions.
+    $entityTypeManager = \Drupal::service('entity_type.manager');
+    $migrationStorage = $entityTypeManager->getStorage('migration');
+
+    foreach ($entities as $entity) {
+      $migrationIds = $entity->getMigrations();
+
+      foreach ($migrationIds as $migrationId) {
+        /** @var \Drupal\migrate_plus\Entity\MigrationInterface $migration */
+        $migration = $migrationStorage->load($migrationId);
+        $migration->delete();
+      }
+    }
   }
 
 }

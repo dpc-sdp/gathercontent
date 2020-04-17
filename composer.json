@@ -6,8 +6,7 @@
   "require": {
     "cheppers/gathercontent-client": "dev-master",
     "drupal/core": "^8.7",
-    "drupal/migrate_plus": "^4",
-    "drupal/migrate_tools": "^4"
+    "drupal/migrate_tools": "^4.4"
   },
   "minimum-stability": "dev"
 }
