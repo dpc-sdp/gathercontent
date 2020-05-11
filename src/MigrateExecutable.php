@@ -81,10 +81,10 @@ class MigrateExecutable extends MigrateExecutableBase {
     $source_id = array_merge(array_flip(array_keys($migration->getSourcePlugin()
       ->getIds())), $row->getSourceIdValues());
 
-    if (!empty($this->importOptions[$source_id['id']])) {
-      /** @var \Drupal\gathercontent\Import\ImportOptions $options */
-      $options = $this->importOptions[$source_id['id']];
+    /** @var \Drupal\gathercontent\Import\ImportOptions $options */
+    $options = $this->importOptions[$source_id['id']];
 
+    if (!empty($options)) {
       // TODO: change to use entity specific status field if exists.
       $row->setDestinationProperty('status', $options->getPublish());
       $row->setDestinationProperty('gc_import_options/new_revision', $options->getCreateNewRevision());
@@ -112,13 +112,19 @@ class MigrateExecutable extends MigrateExecutableBase {
     }
 
     foreach ($rows as $row) {
-      if (empty($row) || empty($row['destid1'])) {
+      if (empty($row)) {
         continue;
       }
 
-      if (!empty($this->importOptions[$row['sourceid1']])) {
-        /** @var \Drupal\gathercontent\Import\ImportOptions $options */
-        $options = $this->importOptions[$row['sourceid1']];
+      // Ignore sub-entities.
+      if (isset($row['destid2'])) {
+        continue;
+      }
+
+      /** @var \Drupal\gathercontent\Import\ImportOptions $options */
+      $options = $this->importOptions[$row['sourceid1']];
+
+      if (!empty($options)) {
         $parent_menu_item = $options->getParentMenuItem();
 
         if (!empty($parent_menu_item) && $parent_menu_item != '0') {
@@ -152,6 +158,11 @@ class MigrateExecutable extends MigrateExecutableBase {
    * Tracks the entity changes, to show in a table after the migration run.
    */
   protected function trackEntities(array $row, string $plugin, string $templateName, $migrationId) {
+    // Ignore sub-entities.
+    if (isset($row['destid2'])) {
+      return;
+    }
+
     $tracked = $this->session->get('gathercontent_tracked_entities', []);
 
     $tracked[$row['sourceid1']] = [
@@ -164,20 +175,6 @@ class MigrateExecutable extends MigrateExecutableBase {
     $this->session->set('gathercontent_tracked_entities', $tracked);
 
     $connection = \Drupal::service('database');
-    $result = $connection->select('gathercontent_entity_mapping')
-      ->fields('gathercontent_entity_mapping', [
-        'entity_id',
-        'entity_type',
-      ])
-      ->condition('entity_id', $row['destid1'])
-      ->condition('entity_type', $plugin)
-      ->execute()
-      ->fetchAll();
-
-    if (!empty($result)) {
-      return;
-    }
-
     $connection->insert('gathercontent_entity_mapping')
       ->fields([
         'entity_id' => $row['destid1'],

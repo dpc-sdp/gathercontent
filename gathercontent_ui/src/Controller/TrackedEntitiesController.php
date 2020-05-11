@@ -79,13 +79,6 @@ class TrackedEntitiesController extends ControllerBase {
     $rows = [];
 
     foreach ($tracked as $gcID => $item) {
-      if (
-        $item['entity_type'] === 'paragraph'
-        || $item['entity_type'] === 'media'
-      ) {
-        continue;
-      }
-
       if (!isset($storages[$item['entity_type']])) {
         $storages[$item['entity_type']] = $this->entityTypeManager->getStorage($item['entity_type']);
       }
