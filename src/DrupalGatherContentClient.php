@@ -33,7 +33,7 @@ class DrupalGatherContentClient extends GatherContentClient {
    *
    * If none given, retrieve the first account by default.
    */
-  public static function getAccountId($account_name = NULL) {
+  public static function getAccountId($accountName = NULL) {
     $account = \Drupal::config('gathercontent.settings')
       ->get('gathercontent_account');
     $account = unserialize($account);
@@ -41,14 +41,14 @@ class DrupalGatherContentClient extends GatherContentClient {
       return NULL;
     }
 
-    if (!$account_name) {
+    if (!$accountName) {
       if (reset($account)) {
         return key($account);
       }
     }
 
     foreach ($account as $id => $name) {
-      if ($name === $account_name) {
+      if ($name === $accountName) {
         return $id;
       }
     }
@@ -59,8 +59,8 @@ class DrupalGatherContentClient extends GatherContentClient {
   /**
    * Retrieve all the active projects.
    */
-  public function getActiveProjects($account_id) {
-    $projects = $this->projectsGet($account_id);
+  public function getActiveProjects($accountId) {
+    $projects = $this->projectsGet($accountId);
 
     foreach ($projects as $id => $project) {
       if (!$project->active) {
@@ -80,9 +80,9 @@ class DrupalGatherContentClient extends GatherContentClient {
    * @return array
    *   Return array.
    */
-  public function getTemplatesOptionArray($project_id) {
+  public function getTemplatesOptionArray($projectId) {
     $formatted = [];
-    $templates = $this->templatesGet($project_id);
+    $templates = $this->templatesGet($projectId);
 
     foreach ($templates as $id => $template) {
       $formatted[$id] = $template->name;
@@ -100,10 +100,10 @@ class DrupalGatherContentClient extends GatherContentClient {
    * @return \Psr\Http\Message\StreamInterface
    *   Response body.
    */
-  public function getBody($json_decoded = FALSE) {
+  public function getBody($jsonDecoded = FALSE) {
     $body = $this->getResponse()->getBody();
 
-    if ($json_decoded) {
+    if ($jsonDecoded) {
       return \GuzzleHttp\json_decode($body);
     }
 

@@ -32,17 +32,13 @@ class GatherContentReferenceRevision extends ProcessPluginBase {
       $value = [$value];
     }
 
-    if (is_array($value)) {
-      $return = [];
+    $return = [];
 
-      foreach ($value as $data) {
-        $return[] = ['id' => $data];
-      }
-
-      return $return;
+    foreach ($value as $data) {
+      $return[] = ['id' => $data];
     }
 
-    return $value;
+    return $return;
   }
 
   /**
