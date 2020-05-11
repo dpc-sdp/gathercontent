@@ -3,6 +3,7 @@
 namespace Drupal\gathercontent_ui\Form;
 
 use Cheppers\GatherContent\GatherContentClientInterface;
+use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
@@ -49,6 +50,8 @@ class MappingEditForm extends MappingEditFormBase {
   /**
    * MappingEditForm constructor.
    *
+   * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entityFieldManager
+   *   EntityFieldManagerInterface.
    * @param \Cheppers\GatherContent\GatherContentClientInterface $client
    *   GatherContent client.
    * @param \Drupal\gathercontent_ui\Form\MappingEditSteps\MappingStepService $mapping_service
@@ -56,7 +59,14 @@ class MappingEditForm extends MappingEditFormBase {
    * @param \Drupal\gathercontent\MigrationDefinitionCreator $migrationDefinitionCreator
    *   MigrationDefinitionCreator.
    */
-  public function __construct(GatherContentClientInterface $client, MappingStepService $mapping_service, MigrationDefinitionCreator $migrationDefinitionCreator) {
+  public function __construct(
+    EntityFieldManagerInterface $entityFieldManager,
+    GatherContentClientInterface $client,
+    MappingStepService $mapping_service,
+    MigrationDefinitionCreator $migrationDefinitionCreator
+  ) {
+    parent::__construct($entityFieldManager);
+
     $this->client = $client;
     $this->mappingService = $mapping_service;
     $this->migrationDefinitionCreator = $migrationDefinitionCreator;
@@ -67,6 +77,7 @@ class MappingEditForm extends MappingEditFormBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
+      $container->get('entity_field.manager'),
       $container->get('gathercontent.client'),
       $container->get('gathercontent_ui.mapping_service'),
       $container->get('gathercontent.migration_creator')

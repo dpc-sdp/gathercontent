@@ -189,9 +189,9 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
    */
   protected function clearUnwantedItems() {
     if ($this->items !== NULL) {
-      foreach ($this->items as &$item) {
+      foreach ($this->items as $key => $item) {
         if ($item->templateId !== $this->templateId) {
-          unset($item);
+          unset($this->items[$key]);
         }
       }
     }

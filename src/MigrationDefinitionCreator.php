@@ -267,7 +267,7 @@ class MigrationDefinitionCreator {
               'contentType' => $reference['base_data']['contentType'],
               'tabIds' => $this->formatTabIds($reference['base_data']['tabIds']),
             ],
-            $reference['base_data']['tabId'],
+            $reference['base_data']['tabIds'],
             $reference['data'],
             'entity_reference_revisions'
           );
@@ -485,6 +485,7 @@ class MigrationDefinitionCreator {
         break;
 
       case 'text':
+      case 'text_long':
       case 'text_with_summary':
         $this->setTextFieldDefinition($definition, $element, $elementId);
         $this->setTextFormat($definition, $data, $elementId, $element);
@@ -523,6 +524,7 @@ class MigrationDefinitionCreator {
 
         $this->collectedReferences[$definition['id']][$element][$targetEntityBundle]['data']['language'] = $language;
         $this->collectedReferences[$definition['id']][$element][$targetEntityBundle]['data']['elements'][$elementId] = $data['elements'][$elementId];
+        $this->collectedReferences[$definition['id']][$element][$targetEntityBundle]['data']['element_text_formats'][$elementId] = $data['element_text_formats'][$elementId];
         $this->collectedReferences[$definition['id']][$element][$targetEntityBundle]['base_data'] = [
           'projectId' => $this->mapping->getGathercontentProjectId(),
           'templateId' => $this->mapping->getGathercontentTemplateId(),
