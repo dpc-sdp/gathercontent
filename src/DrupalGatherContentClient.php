@@ -178,73 +178,22 @@ class DrupalGatherContentClient extends GatherContentClient {
   }
 
   /**
-   * Returns the collected folder UUIDs.
-   *
-   * @param $projectId
-   *   Project ID.
-   * @param $gcId
-   *   GatherContent Item ID.
-   *
-   * @return array
-   *   Array containing the collected folder ids.
-   */
-  public function getSubFolderIds($projectId, $gcId) {
-    $item = $this->itemGet($gcId);
-
-    if (!$item) {
-      return [];
-    }
-
-    $folders = $this->foldersGet($projectId);
-
-    if (!$folders) {
-      return [];
-    }
-
-    $parentFolderUuid = 0;
-    foreach ($folders as $folder) {
-      if ($item->folderUuid == $folder->id && $folder->type !== 'project-root') {
-        $parentFolderUuid = $folder->id;
-      }
-    }
-
-    if (!$parentFolderUuid) {
-      return [];
-    }
-
-    $folderIds = [];
-    foreach ($folders as $folder) {
-      if ($parentFolderUuid == $folder->parentUuid) {
-        $folderIds[] = $folder->id;
-      }
-    }
-
-    return $folderIds;
-  }
-
-  /**
    * Returns the first level children IDs for a given item.
    *
    * @param $projectId
    *   Project ID.
    * @param $parentId
-   *   Parent GatherContent Item ID.
+   *   Parent item ID.
    *
    * @return array
    *   Collected children IDs.
    */
   public function getChildrenIds($projectId, $parentId) {
-    $folderIds = $this->getSubFolderIds($projectId, $parentId);
-
-    if (!$folderIds) {
-      return [];
-    }
-
     $collectedChildrenIds = [];
     $items = $this->itemsGet($projectId);
 
     foreach ($items as $item) {
-      if (!in_array($item->folderUuid, $folderIds)) {
+      if ($item->parentId !== $parentId) {
         continue;
       }
 
@@ -271,14 +220,16 @@ class DrupalGatherContentClient extends GatherContentClient {
 
     foreach ($currentLevelChildrenIds as $childrenId) {
       $collectedChildrenIds = $this->getAllChildrenIds($projectId, $childrenId);
-      $deeperChildrenIds = array_unique(array_merge(
+      array_unique(array_merge(
         $deeperChildrenIds, $collectedChildrenIds
       ), SORT_REGULAR);
     }
 
-    return array_unique(array_merge(
+    array_unique(array_merge(
       $currentLevelChildrenIds, $deeperChildrenIds
     ), SORT_REGULAR);
+
+    return $currentLevelChildrenIds;
   }
 
 }

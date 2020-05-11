@@ -163,10 +163,7 @@ class MigrationDefinitionCreator {
     $groupedData = [];
 
     foreach ($this->mappingData as $tabId => $data) {
-      if (
-        $tabId === 'entity_reference_revisions_fields'
-        || $tabId === 'entity_reference_media_fields'
-      ) {
+      if ($tabId === 'entity_reference_revisions_fields') {
         continue;
       }
       $language = $this->siteDefaultLangCode;
@@ -250,81 +247,42 @@ class MigrationDefinitionCreator {
    * Set reference migration dependencies and processes.
    */
   public function setReferenceDependencies(array &$definitions) {
-    if (
-      empty($this->mappingData['entity_reference_revisions_fields'])
-      && empty($this->mappingData['entity_reference_media_fields'])
-    ) {
+    if (empty($this->mappingData['entity_reference_revisions_fields'])) {
       return;
     }
 
     foreach ($definitions as $definitionId => $definition) {
-      if (!empty($this->mappingData['entity_reference_revisions_fields'])) {
-        $this->setEntityReferenceRevisionFields($definitions, $definitionId);
-      }
+      foreach ($this->mappingData['entity_reference_revisions_fields'] as $element => $subDefinitionId) {
+        $element = $this->getElementLastPart($element);
 
-      if (!empty($this->mappingData['entity_reference_media_fields'])) {
-        $this->setEntityReferenceMediaFields($definitions, $definitionId);
-      }
+        $this->migrationDefinitionIds[] = $subDefinitionId;
 
-      $definitions[$definitionId]['source']['fields'][] = 'children';
-    }
-  }
-
-  protected function setMigrateLookup(array &$definitions, $definitionId, $key, $hasRevision = FALSE) {
-    foreach ($this->mappingData[$key] as $element => $subDefinitionId) {
-      $element = $this->getElementLastPart($element);
-
-      $this->migrationDefinitionIds[] = $subDefinitionId;
-
-      $definitions[$definitionId]['migration_dependencies']['optional'][] = $subDefinitionId;
-      $config = [
-        'plugin' => 'sub_process',
-        'source' => 'children',
-        'process' => [
-          'target_id' => [
-            'plugin' => 'migration_lookup',
-            'migration' => $subDefinitionId,
-            'source' => 'id',
-            'no_stub' => TRUE,
-          ],
-        ],
-      ];
-
-      if ($hasRevision) {
-        $config = [
-          'plugin' => 'sub_process',
-          'source' => 'children',
-          'process' => [
-            'collect_' . $subDefinitionId => [
-              'plugin' => 'migration_lookup',
-              'migration' => $subDefinitionId,
-              'source' => 'id',
-              'no_stub' => TRUE,
-            ],
-            'target_id' => [
-              'plugin' => 'gather_content_extract',
-              'source' => '@collect_' . $subDefinitionId,
-              'index' => [0],
-            ],
-            'target_revision_id' => [
-              'plugin' => 'gather_content_extract',
-              'source' => '@collect_' . $subDefinitionId,
-              'index' => [1],
+        $definitions[$definitionId]['migration_dependencies']['optional'][] = $subDefinitionId;
+        $definitions[$definitionId]['process'][$element] = [
+          [
+            'plugin' => 'sub_process',
+            'source' => 'children',
+            'process' => [
+              'collect_' . $subDefinitionId => [
+                'plugin' => 'migration_lookup',
+                'migration' => $subDefinitionId,
+                'source' => 'id',
+              ],
+              'target_id' => [
+                'plugin' => 'extract',
+                'source' => '@collect_' . $subDefinitionId,
+                'index' => [0],
+              ],
+              'target_revision_id' => [
+                'plugin' => 'extract',
+                'source' => '@collect_' . $subDefinitionId,
+                'index' => [1],
+              ],
             ],
           ],
         ];
       }
-
-      $definitions[$definitionId]['process'][$element] = [$config];
     }
-  }
-
-  protected function setEntityReferenceRevisionFields(array &$definitions, $definitionId) {
-    $this->setMigrateLookup($definitions, $definitionId, 'entity_reference_revisions_fields', TRUE);
-  }
-
-  protected function setEntityReferenceMediaFields(array &$definitions, $definitionId) {
-    $this->setMigrateLookup($definitions, $definitionId, 'entity_reference_media_fields');
   }
 
   /**
@@ -481,7 +439,6 @@ class MigrationDefinitionCreator {
         break;
 
       case 'text':
-      case 'text_long':
       case 'text_with_summary':
         $this->setTextFieldDefinition($definition, $element, $elementId);
         $this->setTextFormat($definition, $data, $elementId, $element);
@@ -613,7 +570,6 @@ class MigrationDefinitionCreator {
           'plugin' => 'migration_lookup',
           'source' => 'id',
           'migration' => $defaultLangMigrationId,
-          'no_stub' => TRUE,
         ];
         $definitions[$definitionId]['process']['langcode'] = [
           'plugin' => 'default_value',

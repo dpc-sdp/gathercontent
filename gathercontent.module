@@ -92,11 +92,11 @@ function gathercontent_import_process($gc_ids, array $import_options, MappingInt
       $gc_id
     );
 
-    $childrenIds = array_unique(array_merge(
+    array_unique(array_merge(
       $childrenIds, $collectedChildrenIds
     ), SORT_REGULAR);
   }
-  $gc_ids = array_unique(array_merge(
+  array_unique(array_merge(
     $gc_ids, $childrenIds
   ), SORT_REGULAR);
 

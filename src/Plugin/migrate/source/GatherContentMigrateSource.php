@@ -189,9 +189,9 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
    */
   protected function clearUnwantedItems() {
     if ($this->items !== NULL) {
-      foreach ($this->items as $key => $item) {
+      foreach ($this->items as &$item) {
         if ($item->templateId !== $this->templateId) {
-          unset($this->items[$key]);
+          unset($item);
         }
       }
     }
@@ -359,16 +359,7 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
    *   Collected children ID list.
    */
   protected function prepareChildren(string $parentId) {
-    $prepared = [];
-    $children = $this->client->getChildrenIds($this->projectId, $parentId);
-
-    foreach ($children as $child) {
-      $prepared[] = [
-        'id' => $child,
-      ];
-    }
-
-    return $prepared;
+    return $this->client->getChildrenIds($this->projectId, $parentId);
   }
 
 }
