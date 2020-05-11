@@ -196,7 +196,7 @@ class MappingStepNew extends MappingSteps {
         $form['mapping']['entity_reference_revisions_fields'] = [
           '#type' => 'details',
           '#title' => $this->t('Entity reference revisions'),
-          '#open' => FALSE,
+          '#open' => TRUE,
           '#tree' => TRUE,
         ];
 
@@ -206,7 +206,7 @@ class MappingStepNew extends MappingSteps {
             '#options' => $entityReferenceRevisionsField['options'],
             '#title' => $entityReferenceRevisionsField['label'],
             '#empty_option' => $this->t("Don't map"),
-            '#default_value' => $formState->hasValue('entity_reference_revisions_fields')[$fieldId] ? $formState->getValue('entity_reference_revisions_fields')[$fieldId] : NULL,
+            '#default_value' => $formState->hasValue('entity_reference_revisions_fields')['entity_reference_revisions_fields'][$fieldId] ? $formState->getValue('entity_reference_revisions_fields')['entity_reference_revisions_fields'][$fieldId] : NULL,
             '#attributes' => [
               'class' => [
                 'gathercontent-ct-element',

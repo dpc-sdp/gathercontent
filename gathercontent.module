@@ -81,24 +81,8 @@ function gathercontent_entity_delete(EntityInterface $entity) {
  * Batch operation callback for importing items.
  */
 function gathercontent_import_process($gc_ids, array $import_options, MappingInterface $mapping, &$context = []) {
-  /** @var \Drupal\gathercontent\DrupalGatherContentClient $client */
   $client = \Drupal::service('gathercontent.client');
   $migrationIds = $mapping->getMigrations();
-
-  $childrenIds = [];
-  foreach ($gc_ids as $gc_id) {
-    $collectedChildrenIds = $client->getAllChildrenIds(
-      $mapping->getGathercontentProjectId(),
-      $gc_id
-    );
-
-    array_unique(array_merge(
-      $childrenIds, $collectedChildrenIds
-    ), SORT_REGULAR);
-  }
-  array_unique(array_merge(
-    $gc_ids, $childrenIds
-  ), SORT_REGULAR);
 
   if (!isset($context['results']['success'])) {
     $context['results']['success'] = 0;
@@ -129,7 +113,13 @@ function gathercontent_import_process($gc_ids, array $import_options, MappingInt
           $context['results']['failed'] += $executable->getFailedCount() + $executable->getIgnoredCount();
 
           if ($executable->getFailedCount() + $executable->getIgnoredCount() > 0) {
-            $executable->rollback();
+            // Rollback id filtering does not work,
+            // because core Migrate does not support it yet.
+            // After release add the new version to the module dependencies.
+            // TODO: remove comment when Drupal 8.7.0 released.
+            // TODO: Dependency: https://www.drupal.org/project/drupal/issues/2999478
+            // TODO: Dependency 2: https://www.drupal.org/project/migrate_tools/issues/2798363
+            // $executable->rollback();
           }
         }
         catch (\Exception $e) {

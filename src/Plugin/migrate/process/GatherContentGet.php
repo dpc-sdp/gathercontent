@@ -89,10 +89,6 @@ class GatherContentGet extends Get implements ContainerFactoryPluginInterface {
    *   Returns the replaced string or array.
    */
   protected function replaceUrls($data) {
-    if (empty($data)) {
-      return $data;
-    }
-
     if (!is_array($data)) {
       return $this->gcUrlToDrupal($data);
     }

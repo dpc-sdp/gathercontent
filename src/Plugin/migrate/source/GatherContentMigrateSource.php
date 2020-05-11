@@ -324,7 +324,6 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
         }
 
         $row->setSourceProperty('item_title', $gcItem->name);
-        $row->setSourceProperty('children', $this->prepareChildren($gcId));
       }
 
       if (!empty($collectedMetaTags)) {
@@ -347,19 +346,6 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
    */
   protected function prepareMetatags(array $collectedMetaTags) {
     return serialize($collectedMetaTags);
-  }
-
-  /**
-   * Returns the collected children IDs.
-   *
-   * @param string $parentId
-   *   The parent GC ID.
-   *
-   * @return array
-   *   Collected children ID list.
-   */
-  protected function prepareChildren(string $parentId) {
-    return $this->client->getChildrenIds($this->projectId, $parentId);
   }
 
 }

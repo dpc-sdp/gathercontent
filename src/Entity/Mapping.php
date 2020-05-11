@@ -245,19 +245,6 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
   /**
    * {@inheritdoc}
    */
-  public function getFormattedEntityType() {
-    $entity_type = $this->get('entity_type');
-    if (!empty($entity_type)) {
-      return ucfirst($entity_type);
-    }
-    else {
-      return $this->t('None');
-    }
-  }
-
-  /**
-   * {@inheritdoc}
-   */
   public function getFormatterUpdatedDrupal() {
     $updated_drupal = $this->get('updated_drupal');
     if (!empty($updated_drupal)) {

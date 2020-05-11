@@ -146,14 +146,6 @@ interface MappingInterface extends ConfigEntityInterface {
   public function getFormattedContentType();
 
   /**
-   * Formatter for entity type property.
-   *
-   * @return string
-   *   If not empty return human name for entity type, else return None string.
-   */
-  public function getFormattedEntityType();
-
-  /**
    * Formatter for updated drupal property.
    *
    * @return string

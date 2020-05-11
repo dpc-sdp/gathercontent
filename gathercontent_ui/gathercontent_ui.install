@@ -52,8 +52,5 @@ function gathercontent_ui_requirements($phase) {
  */
 function gathercontent_ui_update_8501() {
   $view = Views::getView('result_pages');
-
-  if (!empty($view->storage)) {
-    $view->storage->delete();
-  }
+  $view->storage->delete();
 }

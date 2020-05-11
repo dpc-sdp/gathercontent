@@ -97,13 +97,8 @@ class MappingListBuilder extends ConfigEntityListBuilder {
         'field' => 'gathercontent_template',
         'specifier' => 'gathercontent_template',
       ],
-      'entity_type' => [
-        'data' => $this->t('Entity type'),
-        'field' => 'entity_type',
-        'specifier' => 'entity_type',
-      ],
       'content_type_name' => [
-        'data' => $this->t('Bundle'),
+        'data' => $this->t('Content type'),
         'field' => 'content_type_name',
         'specifier' => 'content_type_name',
       ],
@@ -126,7 +121,6 @@ class MappingListBuilder extends ConfigEntityListBuilder {
     $exists = isset($this->templates[$entity->getGathercontentTemplateId()]);
     $row['project'] = $entity->getGathercontentProject();
     $row['gathercontent_template'] = $entity->getGathercontentTemplate();
-    $row['entity_type'] = $entity->getFormattedEntityType();
     $row['content_type'] = $entity->getFormattedContentType();
     $row['updated_gathercontent'] = ($exists ? \Drupal::service('date.formatter')
       ->format($this->templates[$entity->getGathercontentTemplateId()], 'custom', 'M d, Y - H:i') : $this->t("Deleted"));
