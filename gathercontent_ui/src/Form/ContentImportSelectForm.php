@@ -168,7 +168,6 @@ class ContentImportSelectForm extends FormBase {
         ];
 
         $project_id = $form_state->hasValue('project') ? $form_state->getValue('project') : $this->projectId;
-        /** @var \Cheppers\GatherContent\DataTypes\Item[] $content */
         $content = $this->client->itemsGet($project_id);
         $import_config = $this->configFactory()->get('gathercontent.import');
 
@@ -216,7 +215,7 @@ class ContentImportSelectForm extends FormBase {
           ],
         ];
 
-        foreach ($content as $item) {
+        foreach ($content['data'] as $item) {
           // If template is not empty, we have mapped template and item
           // isn't synced yet.
           if (!is_null($item->templateId)

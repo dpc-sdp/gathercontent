@@ -62,9 +62,9 @@ class DrupalGatherContentClient extends GatherContentClient {
   public function getActiveProjects($accountId) {
     $projects = $this->projectsGet($accountId);
 
-    foreach ($projects as $id => $project) {
+    foreach ($projects['data'] as $id => $project) {
       if (!$project->active) {
-        unset($projects[$id]);
+        unset($projects['data'][$id]);
       }
     }
 
