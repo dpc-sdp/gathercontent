@@ -169,6 +169,7 @@ class ContentImportSelectForm extends FormBase {
 
         $project_id = $form_state->hasValue('project') ? $form_state->getValue('project') : $this->projectId;
         $content = $this->client->itemsGet($project_id);
+        $statuses = $this->client->projectStatusesGet($project_id);
         $import_config = $this->configFactory()->get('gathercontent.import');
 
         $form['import']['items'] = [
@@ -232,8 +233,8 @@ class ContentImportSelectForm extends FormBase {
             }
 
             $this->items[$item->id] = [
-              'color' => $item->status->color,
-              'label' => $item->status->name,
+              'color' => $statuses['data'][$item->statusId]->color,
+              'label' => $statuses['data'][$item->statusId]->name,
               'template' => $mapping_array[$item->templateId]['gc_template'],
               'title' => $item->name,
             ];
@@ -257,11 +258,11 @@ class ContentImportSelectForm extends FormBase {
                   '#tag' => 'div',
                   '#value' => ' ',
                   '#attributes' => [
-                    'style' => 'width:20px; height: 20px; float: left; margin-right: 5px; background: ' . $item->status->color,
+                    'style' => 'width:20px; height: 20px; float: left; margin-right: 5px; background: ' . $statuses['data'][$item->statusId]->color,
                   ],
                 ],
                 'label' => [
-                  '#plain_text' => $item->status->name,
+                  '#plain_text' => $statuses['data'][$item->statusId]->name,
                 ],
               ],
               'title' => [
@@ -401,7 +402,7 @@ class ContentImportSelectForm extends FormBase {
       /** @var \Cheppers\GatherContent\DataTypes\Status[] $statuses */
       $statuses = $this->client->projectStatusesGet($this->projectId);
 
-      foreach ($statuses as $status) {
+      foreach ($statuses['data'] as $status) {
         $options[$status->id] = $status->name;
       }
 

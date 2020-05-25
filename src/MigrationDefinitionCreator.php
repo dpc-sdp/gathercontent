@@ -190,9 +190,7 @@ class MigrationDefinitionCreator {
       $groupedData[$language]['data'] = $this->arrayMergeRecursiveDistinct($groupedData[$language]['data'], $data);
     }
 
-    $definitions = $this->getDefinitions($groupedData);
-
-    return $definitions;
+    return $this->getDefinitions($groupedData);
   }
 
   /**
@@ -329,7 +327,7 @@ class MigrationDefinitionCreator {
   /**
    * Builds the migration definition.
    */
-  public function buildMigrationDefinition(array $baseData, array $tabIds, array $data, string $plugin) {
+  public function buildMigrationDefinition(array $baseData, array $tabIds, array $data, $plugin) {
     $entityDefinition = $this->entityTypeManager->getDefinition($baseData['entityType']);
     $baseDataLabel = [
       $this->mapping->getGathercontentProject(),
@@ -443,7 +441,7 @@ class MigrationDefinitionCreator {
   /**
    * Set field definition.
    */
-  private function setFieldDefinition(array &$definition, array $data, array $tabIds, string $elementId, string $element, EntityInterface $fieldInfo = NULL, string $fieldType, EntityInterface $targetFieldInfo = NULL, bool $isTranslatable) {
+  private function setFieldDefinition(array &$definition, array $data, array $tabIds, $elementId, $element, EntityInterface $fieldInfo = NULL, string $fieldType, EntityInterface $targetFieldInfo = NULL, bool $isTranslatable) {
     switch ($fieldType) {
       case 'image':
       case 'file':
@@ -524,7 +522,11 @@ class MigrationDefinitionCreator {
 
         $this->collectedReferences[$definition['id']][$element][$targetEntityBundle]['data']['language'] = $language;
         $this->collectedReferences[$definition['id']][$element][$targetEntityBundle]['data']['elements'][$elementId] = $data['elements'][$elementId];
-        $this->collectedReferences[$definition['id']][$element][$targetEntityBundle]['data']['element_text_formats'][$elementId] = $data['element_text_formats'][$elementId];
+
+        if (!empty($data['element_text_formats'][$elementId])) {
+          $this->collectedReferences[$definition['id']][$element][$targetEntityBundle]['data']['element_text_formats'][$elementId] = $data['element_text_formats'][$elementId];
+        }
+
         $this->collectedReferences[$definition['id']][$element][$targetEntityBundle]['base_data'] = [
           'projectId' => $this->mapping->getGathercontentProjectId(),
           'templateId' => $this->mapping->getGathercontentTemplateId(),

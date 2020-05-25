@@ -53,21 +53,19 @@ class MappingStepEntityReference extends MappingSteps {
 
       // Prepare options for every language.
       foreach ($gcMapping as $lang => $fieldSettings) {
-        foreach ($this->template->config as $tab) {
-          if ($tab->id === $fieldSettings['tab']) {
-            foreach ($tab->elements as $element) {
-              if ($element->id == $fieldSettings['name']) {
+        foreach ($this->template['related']->structure->groups as $group) {
+          if ($group->id === $fieldSettings['tab']) {
+            foreach ($group->fields as $field) {
+              if ($field->id == $fieldSettings['name']) {
                 $header[$lang] = $this->t('@field (@lang values)', [
-                  '@field' => $element->label,
+                  '@field' => $field->label,
                   '@lang' => strtoupper($lang),
                 ]);
                 if (count($header) === 1 && $this->erImportType === 'manual') {
                   $header['terms'] = $this->t('Terms');
                 }
-                foreach ($element->options as $option) {
-                  if (!isset($option['value'])) {
-                    $options[$lang][$option['name']] = $option['label'];
-                  }
+                foreach ($field->metaData->choiceFields['options'] as $option) {
+                  $options[$lang][$option['optionId']] = $option['label'];
                 }
               }
             }

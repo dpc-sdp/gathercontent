@@ -47,115 +47,124 @@ class MappingStepEdit extends MappingSteps {
       '#suffix' => '</div>',
     ];
 
-    foreach ($this->template->config as $i => $fieldset) {
-      if ($fieldset->hidden === FALSE) {
-        $form['mapping'][$fieldset->id] = [
-          '#type' => 'details',
-          '#title' => $fieldset->label,
-          '#open' => (array_search($i, array_keys($this->template->config)) === 0 ? TRUE : FALSE),
-          '#tree' => TRUE,
+    foreach ($this->template['related']->structure->groups as $i => $group) {
+      $form['mapping'][$group->id] = [
+        '#type' => 'details',
+        '#title' => $group->name,
+        '#open' => array_search(
+          $i,
+          array_keys($this->template['related']->structure->groups)
+        ) === 0,
+        '#tree' => TRUE,
+      ];
+
+      if (
+        \Drupal::moduleHandler()->moduleExists('metatag')
+        && $this->metatagQuery->checkMetatag($entityType, $contentType)
+      ) {
+        $form['mapping'][$group->id]['type'] = [
+          '#type' => 'select',
+          '#options' => [
+            'content' => $this->t('Content'),
+            'metatag' => $this->t('Metatag'),
+          ],
+          '#title' => $this->t('Type'),
+          '#default_value' => (
+            isset($mappingData[$group->id]['type'])
+            || $formState->hasValue($group->id)['type']
+          )
+            ? (
+              $formState->hasValue($group->id)['type']
+                ? $formState->getValue($group->id)['type']
+                : $mappingData[$group->id]['type'])
+            : 'content',
+          '#ajax' => [
+            'callback' => '::getMappingTable',
+            'wrapper' => 'edit-mapping',
+            'method' => 'replace',
+            'effect' => 'fade',
+          ],
         ];
+      }
 
-        if (
-          \Drupal::moduleHandler()->moduleExists('metatag')
-          && $this->metatagQuery->checkMetatag($entityType, $contentType)
-        ) {
-          $form['mapping'][$fieldset->id]['type'] = [
-            '#type' => 'select',
-            '#options' => [
-              'content' => $this->t('Content'),
-              'metatag' => $this->t('Metatag'),
-            ],
-            '#title' => $this->t('Type'),
-            '#default_value' => (isset($mappingData[$fieldset->id]['type']) || $formState->hasValue($fieldset->id)['type']) ? ($formState->hasValue($fieldset->id)['type'] ? $formState->getValue($fieldset->id)['type'] : $mappingData[$fieldset->id]['type']) : 'content',
-            '#ajax' => [
-              'callback' => '::getMappingTable',
-              'wrapper' => 'edit-mapping',
-              'method' => 'replace',
-              'effect' => 'fade',
-            ],
-          ];
-        }
+      if (\Drupal::moduleHandler()->moduleExists('content_translation') &&
+        \Drupal::service('content_translation.manager')
+          ->isEnabled('node', $formState->getValue('content_type'))
+      ) {
 
-        if (\Drupal::moduleHandler()->moduleExists('content_translation') &&
-          \Drupal::service('content_translation.manager')
-            ->isEnabled('node', $formState->getValue('content_type'))
-        ) {
+        $form['mapping'][$group->id]['language'] = [
+          '#type' => 'select',
+          '#options' => ['und' => $this->t('None')] + $this->getLanguageList(),
+          '#title' => $this->t('Language'),
+          '#default_value' => isset($mappingData[$group->id]['language']) ? $mappingData[$group->id]['language'] : 'und',
+        ];
+      }
 
-          $form['mapping'][$fieldset->id]['language'] = [
-            '#type' => 'select',
-            '#options' => ['und' => $this->t('None')] + $this->getLanguageList(),
-            '#title' => $this->t('Language'),
-            '#default_value' => isset($mappingData[$fieldset->id]['language']) ? $mappingData[$fieldset->id]['language'] : 'und',
-          ];
-        }
-
-        foreach ($fieldset->elements as $gc_field) {
-          $d_fields = [];
-          if (isset($formState->getTriggeringElement()['#name'])) {
-            // We need different handling for changed fieldset.
-            if ($formState->getTriggeringElement()['#array_parents'][1] === $fieldset->id) {
-              if ($formState->getTriggeringElement()['#value'] === 'content') {
-                $d_fields = $this->filterFields($gc_field, $contentType, $entityType);
-              }
-              elseif ($formState->getTriggeringElement()['#value'] === 'metatag') {
-                $d_fields = $this->filterMetatags($gc_field, $contentType);
-              }
-            }
-            else {
-              if ($formState->getValue($fieldset->id)['type'] === 'content') {
-                $d_fields = $this->filterFields($gc_field, $contentType, $entityType);
-              }
-              elseif ($formState->getTriggeringElement()['#value'] === 'metatag') {
-                $d_fields = $this->filterMetatags($gc_field, $contentType);
-              }
-            }
-          }
-          else {
-            if ((isset($mappingData[$fieldset->id]['type']) && $mappingData[$fieldset->id]['type'] === 'content') || !isset($mappingData[$fieldset->id]['type'])) {
+      foreach ($group->fields as $gc_field) {
+        $d_fields = [];
+        if (isset($formState->getTriggeringElement()['#name'])) {
+          // We need different handling for changed group.
+          if ($formState->getTriggeringElement()['#array_parents'][1] === $group->id) {
+            if ($formState->getTriggeringElement()['#value'] === 'content') {
               $d_fields = $this->filterFields($gc_field, $contentType, $entityType);
             }
-            else {
+            elseif ($formState->getTriggeringElement()['#value'] === 'metatag') {
               $d_fields = $this->filterMetatags($gc_field, $contentType);
             }
           }
-          $form['mapping'][$fieldset->id]['elements'][$gc_field->id] = [
+          else {
+            if ($formState->getValue($group->id)['type'] === 'content') {
+              $d_fields = $this->filterFields($gc_field, $contentType, $entityType);
+            }
+            elseif ($formState->getTriggeringElement()['#value'] === 'metatag') {
+              $d_fields = $this->filterMetatags($gc_field, $contentType);
+            }
+          }
+        }
+        else {
+          if ((isset($mappingData[$group->id]['type']) && $mappingData[$group->id]['type'] === 'content') || !isset($mappingData[$group->id]['type'])) {
+            $d_fields = $this->filterFields($gc_field, $contentType, $entityType);
+          }
+          else {
+            $d_fields = $this->filterMetatags($gc_field, $contentType);
+          }
+        }
+        $form['mapping'][$group->id]['elements'][$gc_field->id] = [
+          '#type' => 'select',
+          '#options' => $d_fields,
+          '#title' => (!empty($gc_field->label) ? $gc_field->label : $gc_field->title),
+          '#default_value' => isset($mappingData[$group->id]['elements'][$gc_field->id]) ? $mappingData[$group->id]['elements'][$gc_field->id] : NULL,
+          '#empty_option' => $this->t("Don't map"),
+          '#attributes' => [
+            'class' => [
+              'gathercontent-ct-element',
+            ],
+          ],
+        ];
+
+        if (
+          in_array($gc_field->type, ['text', 'guidelines'])
+          && (!isset($gc_field->metaData->isPlain) || !$gc_field->metaData->isPlain)
+        ) {
+          $form['mapping'][$group->id]['element_text_formats'][$gc_field->id] = [
             '#type' => 'select',
-            '#options' => $d_fields,
+            '#options' => $filterFormatOptions,
             '#title' => (!empty($gc_field->label) ? $gc_field->label : $gc_field->title),
-            '#default_value' => isset($mappingData[$fieldset->id]['elements'][$gc_field->id]) ? $mappingData[$fieldset->id]['elements'][$gc_field->id] : NULL,
-            '#empty_option' => $this->t("Don't map"),
+            '#default_value' => isset($mappingData[$group->id]['element_text_formats'][$gc_field->id]) ? $mappingData[$group->id]['element_text_formats'][$gc_field->id] : NULL,
+            '#empty_option' => $this->t("Choose text format"),
             '#attributes' => [
               'class' => [
                 'gathercontent-ct-element',
               ],
             ],
           ];
-
-          if (
-            (!isset($gc_field->plainText) || !$gc_field->plainText) &&
-            in_array($gc_field->type, ['text', 'section'])
-          ) {
-            $form['mapping'][$fieldset->id]['element_text_formats'][$gc_field->id] = [
-              '#type' => 'select',
-              '#options' => $filterFormatOptions,
-              '#title' => (!empty($gc_field->label) ? $gc_field->label : $gc_field->title),
-              '#default_value' => isset($mappingData[$fieldset->id]['element_text_formats'][$gc_field->id]) ? $mappingData[$fieldset->id]['element_text_formats'][$gc_field->id] : NULL,
-              '#empty_option' => $this->t("Choose text format"),
-              '#attributes' => [
-                'class' => [
-                  'gathercontent-ct-element',
-                ],
-              ],
-            ];
-          }
         }
+      }
 
-        if (!empty($form['mapping'][$fieldset->id]['element_text_formats'])) {
-          $form['mapping'][$fieldset->id]['element_text_formats']['#type'] = 'details';
-          $form['mapping'][$fieldset->id]['element_text_formats']['#title'] = $this->t('Text format settings');
-          $form['mapping'][$fieldset->id]['element_text_formats']['#open'] = FALSE;
-        }
+      if (!empty($form['mapping'][$group->id]['element_text_formats'])) {
+        $form['mapping'][$group->id]['element_text_formats']['#type'] = 'details';
+        $form['mapping'][$group->id]['element_text_formats']['#title'] = $this->t('Text format settings');
+        $form['mapping'][$group->id]['element_text_formats']['#open'] = FALSE;
       }
     }
     $form['mapping']['er_mapping_type'] = [

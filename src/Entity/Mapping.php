@@ -324,6 +324,10 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
     foreach ($entities as $entity) {
       $migrationIds = $entity->getMigrations();
 
+      if (!$migrationIds) {
+        continue;
+      }
+
       foreach ($migrationIds as $migrationId) {
         /** @var \Drupal\migrate_plus\Entity\MigrationInterface $migration */
         $migration = $migrationStorage->load($migrationId);
