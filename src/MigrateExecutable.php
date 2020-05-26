@@ -51,6 +51,13 @@ class MigrateExecutable extends MigrateExecutableBase {
   protected $session;
 
   /**
+   * Statuses.
+   *
+   * @var \Cheppers\GatherContent\DataTypes\Status[]
+   */
+  protected $statuses;
+
+  /**
    * {@inheritdoc}
    */
   public function __construct(MigrationInterface $migration, MigrateMessageInterface $message, array $options = []) {
@@ -75,8 +82,6 @@ class MigrateExecutable extends MigrateExecutableBase {
     parent::onPrepareRow($event);
     $row = $event->getRow();
 
-    $this->latestGcStatus = $row->getSourceProperty('status');
-
     $migration = $event->getMigration();
     $source_id = array_merge(array_flip(array_keys($migration->getSourcePlugin()
       ->getIds())), $row->getSourceIdValues());
@@ -89,6 +94,9 @@ class MigrateExecutable extends MigrateExecutableBase {
       $row->setDestinationProperty('status', $options->getPublish());
       $row->setDestinationProperty('gc_import_options/new_revision', $options->getCreateNewRevision());
     }
+
+    $source_configuration = $migration->getSourceConfiguration();
+    $this->latestGcStatus = $this->client->projectStatusGet($source_configuration['projectId'], $row->getSourceProperty('statusId'));
   }
 
   /**
@@ -102,6 +110,7 @@ class MigrateExecutable extends MigrateExecutableBase {
     $destination_configuration = $migration->getDestinationConfiguration();
     $plugin = explode(':', $destination_configuration['plugin']);
     $source_configuration = $migration->getSourceConfiguration();
+    $plugin_definition = $migration->getPluginDefinition();
 
     foreach ($this->idlist as $item) {
       $rows[] = $event->getMigration()->getIdMap()->getRowBySource($item);
@@ -144,14 +153,14 @@ class MigrateExecutable extends MigrateExecutableBase {
         }
       }
 
-      $this->trackEntities($row, $plugin[1], $source_configuration['templateName'], $migration->id());
+      $this->trackEntities($row, $plugin[1], $source_configuration['templateName'], $migration->id(), $plugin_definition['langcode']);
     }
   }
 
   /**
    * Tracks the entity changes, to show in a table after the migration run.
    */
-  protected function trackEntities(array $row, string $plugin, string $templateName, $migrationId) {
+  protected function trackEntities(array $row, string $plugin, string $templateName, $migrationId, string $langcode) {
     $tracked = $this->session->get('gathercontent_tracked_entities', []);
 
     $tracked[$row['sourceid1']] = [
@@ -171,6 +180,7 @@ class MigrateExecutable extends MigrateExecutableBase {
       ])
       ->condition('entity_id', $row['destid1'])
       ->condition('entity_type', $plugin)
+      ->condition('langcode', $langcode)
       ->execute()
       ->fetchAll();
 
@@ -184,6 +194,7 @@ class MigrateExecutable extends MigrateExecutableBase {
         'entity_type' => $plugin,
         'gc_id' => $row['sourceid1'],
         'migration_id' => $migrationId,
+        'langcode' => $langcode,
       ])
       ->execute();
   }

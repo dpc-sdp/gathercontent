@@ -276,13 +276,13 @@ class ContentImportSelectForm extends FormBase {
               ],
               'updated' => [
                 'data' => [
-                  '#markup' => date('F d, Y - H:i', strtotime($item->updatedAt->date)),
+                  '#markup' => date('F d, Y - H:i', strtotime($item->updatedAt)),
                 ],
                 '#wrapper_attributes' => [
                   'class' => ['gc-item', 'gc-item-date'],
                 ],
                 '#attributes' => [
-                  'data-date' => date('Y-m-d.H:i:s', strtotime($item->updatedAt->date)),
+                  'data-date' => date('Y-m-d.H:i:s', strtotime($item->updatedAt)),
                 ],
               ],
               'template' => [

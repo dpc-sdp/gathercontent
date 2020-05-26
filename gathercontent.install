@@ -69,8 +69,14 @@ function _gathercontent_entity_mapping_spec() {
         'not null' => TRUE,
         'description' => 'Migration ID.',
       ],
+      'langcode' => [
+        'type' => 'varchar',
+        'length' => 12,
+        'not null' => TRUE,
+        'description' => 'Language ISO2.',
+      ],
     ],
-    'primary key' => ['entity_id', 'entity_type'],
+    'primary key' => ['entity_id', 'entity_type', 'langcode'],
     'indexes' => [
       'entity_type' => ['entity_type'],
       'gc_id' => ['gc_id'],
@@ -249,4 +255,15 @@ function gathercontent_update_8502() {
 function gathercontent_update_8503() {
   $schema = Database::getConnection()->schema();
   $schema->createTable('gathercontent_entity_mapping', _gathercontent_entity_mapping_spec());
+}
+
+/**
+ * Add langcode field to tracking table.
+ */
+function gathercontent_update_8504() {
+  $spec = _gathercontent_entity_mapping_spec();
+  $schema = Database::getConnection()->schema();
+  $schema->addField('gathercontent_entity_mapping', 'langcode', $spec['fields']['langcode']);
+  $schema->dropPrimaryKey('gathercontent_entity_mapping');
+  $schema->addPrimaryKey('gathercontent_entity_mapping', $spec['primary key']);
 }
