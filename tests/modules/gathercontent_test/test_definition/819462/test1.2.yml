@@ -11,29 +11,32 @@ migration_group: null
 label: 'Andor''s project_simple test template_node_hu'
 source:
   plugin: gathercontent_migration
-  projectId: '86701'
-  templateId: '819462'
-  tabId: tab1503302417527
+  projectId: 86701
+  templateId: 819462
+  templateName: 'simple test template'
+  tabIds:
+    - tab1503302417527
   fields:
     - el1503303744185
     - el1503302429740
     - el1503305613266
     - el1503305649963
     - el1503305751720
+  metatagFields: {  }
 process:
   type:
     plugin: default_value
     default_value: simple_test_type
   title:
-    plugin: get
+    plugin: gather_content_get
     source: el1503303744185
     language: hu
   field_big_text_test:
-    plugin: get
+    plugin: gather_content_get
     source: el1503302429740
     language: hu
   field_long_text_test:
-    plugin: get
+    plugin: gather_content_get
     source: el1503305613266
     language: hu
   nid:
@@ -70,6 +73,7 @@ process:
             - 1
 destination:
   plugin: 'gc_entity:node'
+  translations: true
 migration_dependencies:
   optional:
     - 86701_819462_node_simple_test_type_tab1502870979013

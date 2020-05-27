@@ -11,21 +11,24 @@ migration_group: null
 label: 'Andor''s project_Simple multilang_node_en'
 source:
   plugin: gathercontent_migration
-  projectId: '86701'
-  templateId: '821317'
-  tabId: tab1502959217871
+  projectId: 86701
+  templateId: 821317
+  templateName: 'Simple multilang'
+  tabIds:
+    - tab1502959217871
   fields:
     - el1502959595615
     - el1502959226216
+  metatagFields: {  }
 process:
   type:
     plugin: default_value
     default_value: article
   title:
-    plugin: get
+    plugin: gather_content_get
     source: el1502959595615
   body:
-    plugin: get
+    plugin: gather_content_get
     source: el1502959226216
 destination:
   plugin: 'gc_entity:node'

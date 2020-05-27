@@ -11,9 +11,11 @@ migration_group: null
 label: 'Andor''s project_simple test template_node_en'
 source:
   plugin: gathercontent_migration
-  projectId: '86701'
-  templateId: '819462'
-  tabId: tab1502870979013
+  projectId: 86701
+  templateId: 819462
+  templateName: 'simple test template'
+  tabIds:
+    - tab1502870979013
   fields:
     - el1503303735218
     - el1502871113494
@@ -26,15 +28,16 @@ source:
     - el1503047653432
     - el1503047665992
     - el1503047680564
+  metatagFields: {  }
 process:
   type:
     plugin: default_value
     default_value: simple_test_type
   title:
-    plugin: get
+    plugin: gather_content_get
     source: el1503303735218
   field_big_text_test:
-    plugin: get
+    plugin: gather_content_get
     source: el1502871113494
   field_simple_image_test:
     plugin: gather_content_file
@@ -59,7 +62,7 @@ process:
         bundle: radio_test_taxonomy
         source: gc_id
   field_long_text_test:
-    plugin: get
+    plugin: gather_content_get
     source: el1502871217145
   collect_86701_819462_paragraph_paragraph_test_type_tab1502870979013:
     plugin: migration_lookup

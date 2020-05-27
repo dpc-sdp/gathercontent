@@ -19,6 +19,7 @@ class GcImportTestBase extends KernelTestBase {
     'node', 'text', 'field', 'user', 'image', 'file', 'taxonomy', 'language',
     'content_translation', 'paragraphs', 'entity_reference_revisions', 'system',
     'metatag', 'menu_ui', 'menu_link_content', 'link', 'gathercontent', 'gathercontent_test',
+    'token',
   ];
 
   /**
