@@ -316,8 +316,7 @@ class ContentImportSelectForm extends FormBase {
                 '#default_value' => $node_type->getThirdPartySetting('menu_ui', 'parent'),
                 '#empty_option' => $this->t("- Don't create menu item -"),
                 '#empty_value' => 0,
-                '#options' => [-1 => $this->t("Parent being imported")]
-                + $this->menuParentFormSelector
+                '#options' => $this->menuParentFormSelector
                   ->getParentSelectOptions('', $available_menus),
                 '#title' => $this->t('Menu'),
                 '#title_display' => 'invisible',
@@ -369,9 +368,9 @@ class ContentImportSelectForm extends FormBase {
         'template' => $this->t('GatherContent Template'),
       ];
 
-      $options = [];
+      $rows = [];
       foreach ($this->nodes as $node) {
-        $options[$node] = [
+        $rows[$node] = [
           'status' => [
             'data' => [
               'color' => [
@@ -395,7 +394,7 @@ class ContentImportSelectForm extends FormBase {
       $form['table'] = [
         '#type' => 'table',
         '#header' => $header,
-        '#rows' => $options,
+        '#rows' => $rows,
       ];
 
       $options = [];
@@ -437,60 +436,6 @@ class ContentImportSelectForm extends FormBase {
     }
 
     return $form;
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function validateForm(array &$form, FormStateInterface $form_state) {
-    if ($form_state->getTriggeringElement()['#id'] === 'edit-submit') {
-      if ($this->step === 1) {
-        $stack = [];
-        $import_content = [];
-        $selected_menus = [];
-        foreach ($form_state->getValue('items') as $item_id => $item) {
-          if ($item['selected'] === "1") {
-            $import_content[] = $item_id;
-
-            if (!empty($item['menu'])) {
-              $selected_menus[$item_id] = $item['menu'];
-            }
-          }
-        }
-        foreach ($import_content as $k => $value) {
-          if ((isset($selected_menus[$value]) && $selected_menus[$value] != -1) || !isset($selected_menus[$value])) {
-            $stack[$value] = $value;
-            unset($import_content[$k]);
-          }
-        }
-
-        if (!empty($import_content)) {
-          // Load all by project_id.
-          /** @var \Cheppers\GatherContent\DataTypes\Item[] $content */
-          $content = $this->client->itemsGet($form_state->getValue('project'));
-
-          $num_of_repeats = 0;
-          $size = count($import_content);
-
-          while (!empty($import_content)) {
-            $current = reset($import_content);
-            if (isset($stack[$content[$current]->parentId])) {
-              $stack[$current] = $current;
-              array_shift($import_content);
-            }
-            else {
-              array_shift($import_content);
-              array_push($import_content, $current);
-              $num_of_repeats++;
-              if ($num_of_repeats >= ($size * $size)) {
-                $form_state->setErrorByName('form', $this->t("Please check your menu selection, some of items don't have parent in import."));
-                $import_content = [];
-              }
-            }
-          }
-        }
-      }
-    }
   }
 
   /**
@@ -557,7 +502,6 @@ class ContentImportSelectForm extends FormBase {
           ];
 
           $stack[$value] = $value;
-          unset($import_content[$k]);
         }
 
         $batch = [
