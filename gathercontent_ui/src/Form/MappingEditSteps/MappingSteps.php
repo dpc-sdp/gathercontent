@@ -196,10 +196,10 @@ abstract class MappingSteps {
 
     if ($translatable) {
       foreach ($mapping_data as $groupId => $group) {
-        $tabType = (isset($tab['type']) ? $group['type'] : 'content');
+        $groupType = (isset($group['type']) ? $group['type'] : 'content');
         if ($group['language'] != 'und') {
-          if (!in_array($group['language'], ${$tabType . '_lang'})) {
-            ${$tabType . '_lang'}[] = $group['language'];
+          if (!in_array($group['language'], ${$groupType . '_lang'})) {
+            ${$groupType . '_lang'}[] = $group['language'];
           }
           else {
             $element = $groupId . '[language]';
@@ -487,18 +487,18 @@ abstract class MappingSteps {
             $mappingData = unserialize($this->mapping->getData());
 
             if ($mappingData) {
-              foreach ($mappingData as $tabName => $tab) {
-                $gcField = array_search($key, $tab['elements']);
+              foreach ($mappingData as $groupName => $group) {
+                $gcField = array_search($key, $group['elements']);
                 if (empty($gcField)) {
                   continue;
                 }
-                if (isset($tab['language'])) {
-                  $this->entityReferenceFields[$key][$tab['language']]['name'] = $gcField;
-                  $this->entityReferenceFields[$key][$tab['language']]['tab'] = $tabName;
+                if (isset($group['language'])) {
+                  $this->entityReferenceFields[$key][$group['language']]['name'] = $gcField;
+                  $this->entityReferenceFields[$key][$group['language']]['tab'] = $groupName;
                 }
                 else {
                   $this->entityReferenceFields[$key][LanguageInterface::LANGCODE_NOT_SPECIFIED]['name'] = $gcField;
-                  $this->entityReferenceFields[$key][LanguageInterface::LANGCODE_NOT_SPECIFIED]['tab'] = $tabName;
+                  $this->entityReferenceFields[$key][LanguageInterface::LANGCODE_NOT_SPECIFIED]['tab'] = $groupName;
                 }
               }
             }
@@ -530,8 +530,8 @@ abstract class MappingSteps {
   protected function filterMetatags($gathercontent_field, $content_type, $entity_type = 'node') {
     if (
       $gathercontent_field->type === 'text' &&
-      isset($gathercontent_field->plainText) &&
-      $gathercontent_field->plainText
+      isset($gathercontent_field->metaData->isPlain) &&
+      $gathercontent_field->metaData->isPlain
     ) {
       /** @var \Drupal\gathercontent\MetatagQuery $metatagQuery */
       $metatagQuery = \Drupal::service('gathercontent.metatag');

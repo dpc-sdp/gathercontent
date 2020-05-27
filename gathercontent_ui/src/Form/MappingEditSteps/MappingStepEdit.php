@@ -71,10 +71,10 @@ class MappingStepEdit extends MappingSteps {
           '#title' => $this->t('Type'),
           '#default_value' => (
             isset($mappingData[$group->id]['type'])
-            || $formState->hasValue($group->id)['type']
+            || $formState->hasValue($group->id)
           )
             ? (
-              $formState->hasValue($group->id)['type']
+              $formState->hasValue($group->id)
                 ? $formState->getValue($group->id)['type']
                 : $mappingData[$group->id]['type'])
             : 'content',
