@@ -533,80 +533,31 @@ class ContentImportSelectForm extends FormBase {
           $mapping = MappingLoader::load($gc_item);
           $mappingId = $mapping->id();
 
-          if ((isset($this->menu[$value]) && $this->menu[$value] != -1) || !isset($this->menu[$value])) {
-            $parent_menu_item = isset($this->menu[$value]) ? $this->menu[$value] : NULL;
-            $drupal_status = isset($this->drupalStatus[$value]) ? $this->drupalStatus[$value] : 0;
+          $parent_menu_item = isset($this->menu[$value]) ? $this->menu[$value] : NULL;
+          $drupal_status = isset($this->drupalStatus[$value]) ? $this->drupalStatus[$value] : 0;
 
-            $import_options[$mappingId][$value] = new ImportOptions(
-              $drupal_status,
-              $form_state->getValue('node_create_new_revision'),
-              $form_state->getValue('status'),
-              $parent_menu_item
-            );
+          $import_options[$mappingId][$value] = new ImportOptions(
+            $drupal_status,
+            $form_state->getValue('node_create_new_revision'),
+            $form_state->getValue('status'),
+            $parent_menu_item
+          );
 
-            if (!empty($value) && (!isset($gcIds[$mappingId]) || !array_search($value, $gcIds[$mappingId]))) {
-              $gcIds[$mappingId][] = $value;
-            }
-
-            $operations[$mappingId] = [
-              'gathercontent_import_process',
-              [
-                $gcIds[$mappingId],
-                $import_options[$mappingId],
-                $mapping,
-              ],
-            ];
-
-            $stack[$value] = $value;
-            unset($import_content[$k]);
+          if (!empty($value) && (!isset($gcIds[$mappingId]) || !array_search($value, $gcIds[$mappingId]))) {
+            $gcIds[$mappingId][] = $value;
           }
-        }
 
-        if (!empty($import_content)) {
-          $gcIds = [];
-          // Load all by project_id.
-          /** @var \Cheppers\GatherContent\DataTypes\Item[] $content */
-          $content = $this->client->itemsGet($this->projectId);
+          $operations[$mappingId] = [
+            'gathercontent_import_process',
+            [
+              $gcIds[$mappingId],
+              $import_options[$mappingId],
+              $mapping,
+            ],
+          ];
 
-          while (!empty($import_content)) {
-            $current = reset($import_content);
-
-            if (isset($stack[$content[$current]->parentId])) {
-              /** @var \Drupal\gathercontent\Entity\MappingInterface $mapping */
-              $mapping = MappingLoader::load($current);
-              $mappingId = $mapping->id();
-
-              $parent_menu_item = 'node:' . $content[$current]->parentId;
-              $drupal_status = isset($this->drupalStatus[$current]) ? $this->drupalStatus[$current] : 0;
-
-              $import_options[$mappingId][$current] = new ImportOptions(
-                $drupal_status,
-                $form_state->getValue('node_create_new_revision'),
-                $form_state->getValue('status'),
-                $parent_menu_item
-              );
-
-              if (!empty($current) && (!isset($gcIds[$mappingId]) || !array_search($current, $gcIds[$mappingId]))) {
-                $gcIds[$mappingId][] = $current;
-              }
-
-              $operations[$mappingId] = [
-                'gathercontent_import_process',
-                [
-                  $gcIds[$mappingId],
-                  $import_options[$mappingId],
-                  $mapping,
-                ],
-              ];
-
-              $stack[$current] = $current;
-              array_shift($import_content);
-            }
-            else {
-              array_shift($import_content);
-              array_push($import_content, $current);
-            }
-          }
+          $stack[$value] = $value;
+          unset($import_content[$k]);
         }
 
         $batch = [
