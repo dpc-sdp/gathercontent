@@ -11,22 +11,25 @@ migration_group: null
 label: 'Andor''s project_Simple multilang_node_hu'
 source:
   plugin: gathercontent_migration
-  projectId: '86701'
-  templateId: '821317'
-  tabId: tab1503046938794
+  projectId: 86701
+  templateId: 821317
+  templateName: 'Simple multilang'
+  tabIds:
+    - tab1503046938794
   fields:
     - el1503046938794
     - el1503046938795
+  metatagFields: {  }
 process:
   type:
     plugin: default_value
     default_value: article
   title:
-    plugin: get
+    plugin: gather_content_get
     source: el1503046938794
     language: hu
   body:
-    plugin: get
+    plugin: gather_content_get
     source: el1503046938795
     language: hu
   nid:
@@ -38,6 +41,7 @@ process:
     default_value: hu
 destination:
   plugin: 'gc_entity:node'
+  translations: true
 migration_dependencies:
   optional:
     - 86701_821317_node_article_tab1502959217871
