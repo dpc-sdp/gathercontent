@@ -272,14 +272,12 @@ class MappingEditFormBase extends EntityForm implements ContainerInjectionInterf
     $options = [];
     foreach ($this->entityReferenceFields as $gcMapping) {
       foreach ($gcMapping as $fieldSettings) {
-        foreach ($template->config as $tab) {
-          if ($tab->id === $fieldSettings['tab']) {
-            foreach ($tab->elements as $element) {
-              if ($element->id === $fieldSettings['name']) {
-                foreach ($element->options as $option) {
-                  if (!isset($option['value'])) {
-                    $options[$option['name']] = $option['label'];
-                  }
+        foreach ($template['related']->structure->groups as $group) {
+          if ($group->id === $fieldSettings['tab']) {
+            foreach ($group->fields as $field) {
+              if ($field->id === $fieldSettings['name']) {
+                foreach ($field->metaData->choiceFields['options'] as $option) {
+                  $local_options[$option['optionId']] = $option['label'];
                 }
               }
             }

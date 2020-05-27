@@ -148,10 +148,10 @@ class MappingListBuilder extends ConfigEntityListBuilder {
 
     $projects = $this->client->getActiveProjects($account_id);
 
-    foreach ($projects as $project) {
+    foreach ($projects['data'] as $project) {
       $remote_templates = $this->client->templatesGet($project->id);
-      foreach ($remote_templates as $remote_template) {
-        $this->templates[$remote_template->id] = $remote_template->updatedAt;
+      foreach ($remote_templates['data'] as $remote_template) {
+        $this->templates[$remote_template->id] = strtotime($remote_template->updatedAt);
       }
     }
 

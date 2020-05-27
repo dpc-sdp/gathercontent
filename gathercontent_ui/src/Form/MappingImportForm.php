@@ -93,21 +93,21 @@ class MappingImportForm extends EntityForm {
       $local_templates[$mapping->getGathercontentTemplateId()] = $mapping->getGathercontentTemplate();
     }
 
-    foreach ($projects as $project_id => $project) {
-      $remote_templates = $this->client->getTemplatesOptionArray($project_id);
+    foreach ($projects['data'] as $project) {
+      $remote_templates = $this->client->getTemplatesOptionArray($project->id);
       $templates = array_diff_assoc($remote_templates, $local_templates);
 
       if (empty($templates)) {
         continue;
       }
 
-      $form['p' . $project_id] = [
+      $form['p' . $project->id] = [
         '#type' => 'details',
         '#title' => $project->name,
         '#group' => 'projects',
         '#tree' => TRUE,
       ];
-      $form['p' . $project_id]['templates'] = [
+      $form['p' . $project->id]['templates'] = [
         '#type' => 'checkboxes',
         '#title' => $project->name,
         '#options' => $templates,
@@ -152,10 +152,10 @@ class MappingImportForm extends EntityForm {
 
           $mapping_values = [
             'id' => $template_id,
-            'gathercontent_project_id' => $template->projectId,
-            'gathercontent_project' => $projects[$template->projectId]->name,
+            'gathercontent_project_id' => $template['data']->projectId,
+            'gathercontent_project' => $projects['data'][$template['data']->projectId]->name,
             'gathercontent_template_id' => $template_id,
-            'gathercontent_template' => $template->name,
+            'gathercontent_template' => $template['data']->name,
             'template' => serialize($templateBody),
           ];
 

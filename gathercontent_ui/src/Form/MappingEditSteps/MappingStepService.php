@@ -32,13 +32,13 @@ class MappingStepService {
    *
    * @param \Drupal\gathercontent\Entity\MappingInterface $mapping
    *   Mapping object.
-   * @param \Cheppers\GatherContent\DataTypes\Template $template
-   *   Template object.
+   * @param array $template
+   *   Template array.
    *
    * @return \Drupal\gathercontent_ui\Form\MappingEditSteps\MappingStepNew
    *   MappingStepNew object.
    */
-  public function getNewStep(MappingInterface $mapping, Template $template) {
+  public function getNewStep(MappingInterface $mapping, array $template) {
     if ($this->newStep === NULL) {
       $this->newStep = new MappingStepNew($mapping, $template);
     }
@@ -51,13 +51,13 @@ class MappingStepService {
    *
    * @param \Drupal\gathercontent\Entity\MappingInterface $mapping
    *   Mapping object.
-   * @param \Cheppers\GatherContent\DataTypes\Template $template
-   *   Template object.
+   * @param array $template
+   *   Template array.
    *
    * @return \Drupal\gathercontent_ui\Form\MappingEditSteps\MappingStepEdit
    *   MappingStepEdit object.
    */
-  public function getEditStep(MappingInterface $mapping, Template $template) {
+  public function getEditStep(MappingInterface $mapping, array $template) {
     if ($this->editStep === NULL) {
       $this->editStep = new MappingStepEdit($mapping, $template);
     }
@@ -70,13 +70,13 @@ class MappingStepService {
    *
    * @param \Drupal\gathercontent\Entity\MappingInterface $mapping
    *   Mapping object.
-   * @param \Cheppers\GatherContent\DataTypes\Template $template
-   *   Template object.
+   * @param array $template
+   *   Template array.
    *
    * @return \Drupal\gathercontent_ui\Form\MappingEditSteps\MappingStepEntityReference
    *   MappingStepEntityReference object.
    */
-  public function getEntityReferenceStep(MappingInterface $mapping, Template $template) {
+  public function getEntityReferenceStep(MappingInterface $mapping, array $template) {
     if ($this->entityReferenceStep === NULL) {
       $this->entityReferenceStep = new MappingStepEntityReference($mapping, $template);
     }

@@ -3,6 +3,8 @@
 namespace Drupal\gathercontent\Plugin\migrate\source;
 
 use Cheppers\GatherContent\DataTypes\Element;
+use Cheppers\GatherContent\DataTypes\ElementSimpleChoice;
+use Cheppers\GatherContent\DataTypes\ElementSimpleFile;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\gathercontent\DrupalGatherContentClient;
 use Drupal\migrate\MigrateException;
@@ -176,25 +178,13 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
    */
   protected function getItems() {
     if ($this->items === NULL) {
-      $this->items = $this->client->itemsGet($this->projectId);
+      $this->items = $this->client->itemsGet(
+        $this->projectId,
+        ['template_id' => $this->templateId]
+      );
     }
 
-    $this->clearUnwantedItems();
-
-    return $this->convertItemsToArray($this->items);
-  }
-
-  /**
-   * Remove items which are not connected to the template id.
-   */
-  protected function clearUnwantedItems() {
-    if ($this->items !== NULL) {
-      foreach ($this->items as $key => $item) {
-        if ($item->templateId !== $this->templateId) {
-          unset($this->items[$key]);
-        }
-      }
-    }
+    return $this->convertItemsToArray($this->items['data']);
   }
 
   /**
@@ -210,28 +200,6 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
     }
 
     return $converted;
-  }
-
-  /**
-   * Returns the chosen tab's data.
-   *
-   * @param array $data
-   *   Tabs array.
-   * @param int $tabId
-   *   Tab ID.
-   *
-   * @return \Cheppers\GatherContent\DataTypes\Tab|bool
-   *   Returns tab object or false on failure.
-   */
-  protected function getTabData(array $data, $tabId) {
-    /** @var \Cheppers\GatherContent\DataTypes\Tab $pane */
-    foreach ($data as $tab) {
-      if ($tabId === $tab->id) {
-        return $tab;
-      }
-    }
-
-    return FALSE;
   }
 
   /**
@@ -279,52 +247,19 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
         return FALSE;
       }
 
-      foreach ($this->tabIds as $tabId) {
-        $tabData = $this->getTabData($gcItem->config, $tabId);
+      foreach ($gcItem->content as $fieldId => $field) {
+        $value = $this->getFieldValue($field);
 
-        if (!$tabData) {
+        // Check if the field is for meta tags.
+        if (array_key_exists($fieldId, $this->metatagFields)) {
+          $collectedMetaTags[$this->metatagFields[$fieldId]] = $value;
           continue;
         }
 
-        $gcFiles = $this->client->itemFilesGet($gcId);
-
-        foreach ($tabData->elements as $field) {
-          $value = $field->getValue();
-
-          // Check if the field is for metatags.
-          if (array_key_exists($field->id, $this->metatagFields)) {
-            $collectedMetaTags[$this->metatagFields[$field->id]] = $value;
-            continue;
-          }
-
-          if ($field->type == 'files') {
-            $value = $this->getFiles($gcFiles, $field);
-          }
-
-          if (
-            $field->type == 'choice_radio' ||
-            $field->type == 'choice_checkbox'
-          ) {
-            $selected = [];
-
-            foreach ($value as $key => $option) {
-              if (!$option) {
-                continue;
-              }
-
-              $selected[] = [
-                'gc_id' => $key,
-              ];
-            }
-
-            $value = $selected;
-          }
-
-          $row->setSourceProperty($field->id, $value);
-        }
-
-        $row->setSourceProperty('item_title', $gcItem->name);
+        $row->setSourceProperty($fieldId, $value);
       }
+
+      $row->setSourceProperty('item_title', $gcItem->name);
 
       if (!empty($collectedMetaTags)) {
         $value = $this->prepareMetatags($collectedMetaTags);
@@ -346,6 +281,27 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
    */
   protected function prepareMetatags(array $collectedMetaTags) {
     return serialize($collectedMetaTags);
+  }
+
+  protected function getFieldValue($field) {
+    if (!is_array($field)) {
+      return $field->getValue();
+    }
+
+    $value = [];
+
+    foreach ($field as $item) {
+      if ($item instanceof ElementSimpleChoice) {
+        $value[] = [
+          'gc_id' => $item->id,
+        ];
+      }
+      if ($item instanceof ElementSimpleFile) {
+        $value[] = $item;
+      }
+    }
+
+    return $value;
   }
 
 }
