@@ -111,20 +111,21 @@ class ContentImportSelectForm extends FormBase {
     // Step 1 - select project + select nodes.
     // Step 2 - confirm screen.
     if ($this->step === 1) {
-      $created_mapping_ids = Mapping::loadMultiple();
+      $mappings = Mapping::loadMultiple();
       $projects = [];
-      $mapping_array = [];
-      $content_types = [];
-      $entity_types = [];
-      foreach ($created_mapping_ids as $mapping) {
+      $mappingArray = [];
+      $contentTypes = [];
+      $entityTypes = [];
+
+      foreach ($mappings as $mapping) {
         /** @var \Drupal\gathercontent\Entity\Mapping $mapping */
         if ($mapping->hasMapping()) {
-          if (!array_key_exists($mapping->getGathercontentTemplateId(), $content_types)) {
-            $content_types[$mapping->getGathercontentTemplateId()] = $mapping->getContentType();
-            $entity_types[$mapping->getGathercontentTemplateId()] = $mapping->getMappedEntityType();
+          if (!array_key_exists($mapping->getGathercontentTemplateId(), $contentTypes)) {
+            $contentTypes[$mapping->getGathercontentTemplateId()] = $mapping->getContentType();
+            $entityTypes[$mapping->getGathercontentTemplateId()] = $mapping->getMappedEntityType();
           }
           $projects[$mapping->getGathercontentProjectId()] = $mapping->getGathercontentProject();
-          $mapping_array[$mapping->getGathercontentTemplateId()] = [
+          $mappingArray[$mapping->getGathercontentTemplateId()] = [
             'gc_template' => $mapping->getGathercontentTemplate(),
             'ct' => $mapping->getContentTypeName(),
           ];
@@ -167,10 +168,10 @@ class ContentImportSelectForm extends FormBase {
           '#weight' => 1,
         ];
 
-        $project_id = $form_state->hasValue('project') ? $form_state->getValue('project') : $this->projectId;
-        $content = $this->client->itemsGet($project_id);
-        $statuses = $this->client->projectStatusesGet($project_id);
-        $import_config = $this->configFactory()->get('gathercontent.import');
+        $projectId = $form_state->hasValue('project') ? $form_state->getValue('project') : $this->projectId;
+        $content = $this->client->itemsGet($projectId);
+        $statuses = $this->client->projectStatusesGet($projectId);
+        $importConfig = $this->configFactory()->get('gathercontent.import');
 
         $form['import']['items'] = [
           '#tree' => TRUE,
@@ -221,21 +222,22 @@ class ContentImportSelectForm extends FormBase {
           // isn't synced yet.
           if (!is_null($item->templateId)
             && $item->templateId != 'null'
-            && isset($mapping_array[$item->templateId])
+            && isset($mappingArray[$item->templateId])
           ) {
-            if ($entity_types[$item->templateId] == 'node') {
-              $node_type = $this->entityTypeManager->getStorage('node_type')->load($content_types[$item->templateId]);
-              $selected_boxes = $node_type->getThirdPartySetting('menu_ui', 'available_menus', ['main']);
-              $available_menus = [];
-              foreach ($selected_boxes as $selected_box) {
-                $available_menus[$selected_box] = $selected_box;
+            if ($entityTypes[$item->templateId] == 'node') {
+              $nodeType = $this->entityTypeManager->getStorage('node_type')->load($contentTypes[$item->templateId]);
+              $selectedBoxes = $nodeType->getThirdPartySetting('menu_ui', 'available_menus', ['main']);
+              $availableMenus = [];
+
+              foreach ($selectedBoxes as $selected_box) {
+                $availableMenus[$selected_box] = $selected_box;
               }
             }
 
             $this->items[$item->id] = [
               'color' => $statuses['data'][$item->statusId]->color,
               'label' => $statuses['data'][$item->statusId]->name,
-              'template' => $mapping_array[$item->templateId]['gc_template'],
+              'template' => $mappingArray[$item->templateId]['gc_template'],
               'title' => $item->name,
             ];
             $form['import']['items'][$item->id] = [
@@ -287,7 +289,7 @@ class ContentImportSelectForm extends FormBase {
               ],
               'template' => [
                 'data' => [
-                  '#markup' => $mapping_array[$item->templateId]['gc_template'],
+                  '#markup' => $mappingArray[$item->templateId]['gc_template'],
                 ],
                 '#wrapper_attributes' => [
                   'class' => ['template-name-item'],
@@ -297,7 +299,7 @@ class ContentImportSelectForm extends FormBase {
                 '#type' => 'checkbox',
                 '#title' => $this->t('Publish'),
                 '#title_display' => 'invisible',
-                '#default_value' => isset($this->drupalStatus[$item->id]) ? $this->drupalStatus[$item->id] : $import_config->get('node_default_status'),
+                '#default_value' => isset($this->drupalStatus[$item->id]) ? $this->drupalStatus[$item->id] : $importConfig->get('node_default_status'),
                 '#states' => [
                   'disabled' => [
                     ':input[name="items[' . $item->id . '][selected]"]' => ['checked' => FALSE],
@@ -310,14 +312,14 @@ class ContentImportSelectForm extends FormBase {
               ],
             ];
 
-            if ($entity_types[$item->templateId] == 'node') {
+            if ($entityTypes[$item->templateId] == 'node') {
               $form['import']['items'][$item->id]['menu'] = [
                 '#type' => 'select',
-                '#default_value' => $node_type->getThirdPartySetting('menu_ui', 'parent'),
+                '#default_value' => $nodeType->getThirdPartySetting('menu_ui', 'parent'),
                 '#empty_option' => $this->t("- Don't create menu item -"),
                 '#empty_value' => 0,
                 '#options' => $this->menuParentFormSelector
-                  ->getParentSelectOptions('', $available_menus),
+                  ->getParentSelectOptions('', $availableMenus),
                 '#title' => $this->t('Menu'),
                 '#title_display' => 'invisible',
                 '#states' => [
@@ -412,12 +414,12 @@ class ContentImportSelectForm extends FormBase {
         '#empty_option' => $this->t("- Don't change status -"),
       ];
 
-      $import_config = $this->configFactory()->get('gathercontent.import');
+      $importConfig = $this->configFactory()->get('gathercontent.import');
 
       $form['node_create_new_revision'] = [
         '#type' => 'checkbox',
         '#title' => $this->t('Create new revision'),
-        '#default_value' => $import_config->get('node_create_new_revision'),
+        '#default_value' => $importConfig->get('node_create_new_revision'),
         '#description' => $this->t('If the "Content update method" is any other than "Always update existing Content" then this setting won\'t take effect, because the entity will always be new.'),
       ];
 
@@ -445,47 +447,49 @@ class ContentImportSelectForm extends FormBase {
     if ($form_state->getTriggeringElement()['#id'] === 'edit-submit') {
       if ($this->step === 1) {
         $this->projectId = $form_state->getValue('project');
-        $selected_nodes = [];
-        $selected_menus = [];
-        $selected_statuses = [];
+        $selectedNodes = [];
+        $selectedMenus = [];
+        $selectedStatuses = [];
+
         foreach ($form_state->getValue('items') as $item_id => $item) {
           if ($item['selected'] === "1") {
-            $selected_nodes[] = $item_id;
-            $selected_statuses[$item_id] = $item['drupal_status'];
+            $selectedNodes[] = $item_id;
+            $selectedStatuses[$item_id] = $item['drupal_status'];
 
             if (!empty($item['menu'])) {
-              $selected_menus[$item_id] = $item['menu'];
+              $selectedMenus[$item_id] = $item['menu'];
             }
           }
         }
-        $this->nodes = $selected_nodes;
-        $this->menu = $selected_menus;
-        $this->drupalStatus = $selected_statuses;
+
+        $this->nodes = $selectedNodes;
+        $this->menu = $selectedMenus;
+        $this->drupalStatus = $selectedStatuses;
         $this->step = 2;
         $form_state->setRebuild(TRUE);
       }
       elseif ($this->step === 2) {
         $operations = [];
         $stack = [];
-        $import_content = $this->nodes;
+        $importContent = $this->nodes;
         $gcIds = [];
-        $import_options = [];
+        $importOptions = [];
 
-        foreach ($import_content as $k => $value) {
+        foreach ($importContent as $k => $value) {
           /** @var \Cheppers\GatherContent\DataTypes\Item $item */
-          $gc_item = $this->client->itemGet($value);
+          $gcItem = $this->client->itemGet($value);
           /** @var \Drupal\gathercontent\Entity\MappingInterface $mapping */
-          $mapping = MappingLoader::load($gc_item);
+          $mapping = MappingLoader::load($gcItem);
           $mappingId = $mapping->id();
 
-          $parent_menu_item = isset($this->menu[$value]) ? $this->menu[$value] : NULL;
-          $drupal_status = isset($this->drupalStatus[$value]) ? $this->drupalStatus[$value] : 0;
+          $parentMenuItem = isset($this->menu[$value]) ? $this->menu[$value] : NULL;
+          $drupalStatus = isset($this->drupalStatus[$value]) ? $this->drupalStatus[$value] : 0;
 
-          $import_options[$mappingId][$value] = new ImportOptions(
-            $drupal_status,
+          $importOptions[$mappingId][$value] = new ImportOptions(
+            $drupalStatus,
             $form_state->getValue('node_create_new_revision'),
             $form_state->getValue('status'),
-            $parent_menu_item
+            $parentMenuItem
           );
 
           if (!empty($value) && (!isset($gcIds[$mappingId]) || !array_search($value, $gcIds[$mappingId]))) {
@@ -496,7 +500,7 @@ class ContentImportSelectForm extends FormBase {
             'gathercontent_import_process',
             [
               $gcIds[$mappingId],
-              $import_options[$mappingId],
+              $importOptions[$mappingId],
               $mapping,
             ],
           ];

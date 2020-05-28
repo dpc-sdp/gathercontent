@@ -4,14 +4,13 @@ namespace Drupal\gathercontent_upload\Export;
 
 use Cheppers\GatherContent\DataTypes\Element;
 use Cheppers\GatherContent\DataTypes\Item;
-use Cheppers\GatherContent\DataTypes\Tab;
 use Cheppers\GatherContent\GatherContentClientInterface;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Language\Language;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\field\Entity\FieldConfig;
-use Drupal\gathercontent\Entity\Mapping;
+use Drupal\gathercontent\Entity\MappingInterface;
 use Drupal\gathercontent\MetatagQuery;
 use Drupal\gathercontent_upload\Event\GatherUploadContentEvents;
 use Drupal\gathercontent_upload\Event\PostNodeUploadEvent;
@@ -32,6 +31,11 @@ class Exporter implements ContainerInjectionInterface {
    */
   protected $client;
 
+  /**
+   * Meta tag Query.
+   *
+   * @var \Drupal\gathercontent\MetatagQuery
+   */
   protected $metatag;
 
   /**
@@ -63,164 +67,138 @@ class Exporter implements ContainerInjectionInterface {
   }
 
   /**
-   * Don't forget to add a finished callback and the operations array.
-   */
-  public static function getBasicExportBatch() {
-    return [
-      'title' => t('Uploading content ...'),
-      'init_message' => t('Upload is starting ...'),
-      'error_message' => t('An error occurred during processing'),
-      'progress_message' => t('Processed @current out of @total.'),
-      'progressive' => TRUE,
-    ];
-  }
-
-  /**
    * Exports the changes made in Drupal contents.
    *
-   * @param \Cheppers\GatherContent\DataTypes\Item $gc_item
-   *   Item object.
-   * @param \Drupal\node\NodeInterface $entity
-   *   Node entity object.
+   * @param int $gcId
+   *   GatherContent ID.
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   Entity entity object.
+   * @param \Drupal\gathercontent\Entity\MappingInterface $mapping
+   *   Mapping object.
    *
    * @return int|null|string
    *   Returns entity ID.
    *
    * @throws \Exception
    */
-  public function export(Item $gc_item, NodeInterface $entity) {
-    $gc_item = $this->processPanes($gc_item, $entity);
+  public function export($gcId, EntityInterface $entity, MappingInterface $mapping) {
+    $content = $this->processGroups($entity, $mapping);
 
     $event = \Drupal::service('event_dispatcher')
-      ->dispatch(GatherUploadContentEvents::PRE_NODE_UPLOAD, new PreNodeUploadEvent($entity, $gc_item->config));
+      ->dispatch(GatherUploadContentEvents::PRE_NODE_UPLOAD, new PreNodeUploadEvent($entity, $content));
 
     /** @var \Drupal\gathercontent_upload\Event\PreNodeUploadEvent $event */
-    $config = $event->getGathercontentValues();
-    $this->client->itemSavePost($gc_item->id, $config);
+    $content = $event->getGathercontentValues();
+    $this->client->itemUpdatePost($gcId, $content);
 
     \Drupal::service('event_dispatcher')
-      ->dispatch(GatherUploadContentEvents::POST_NODE_UPLOAD, new PostNodeUploadEvent($entity, $config));
+      ->dispatch(GatherUploadContentEvents::POST_NODE_UPLOAD, new PostNodeUploadEvent($entity, $content));
 
     return $entity->id();
   }
 
   /**
-   * Return the mapping associated with the given Item.
-   */
-  public function getMapping(Item $gc_item) {
-    $mapping_id = \Drupal::entityQuery('gathercontent_mapping')
-      ->condition('gathercontent_project_id', $gc_item->projectId)
-      ->condition('gathercontent_template_id', $gc_item->templateId)
-      ->execute();
-
-    if (empty($mapping_id)) {
-      throw new Exception("Operation failed: Template not mapped.");
-    }
-
-    $mapping_id = reset($mapping_id);
-    $mapping = Mapping::load($mapping_id);
-
-    if ($mapping === NULL) {
-      throw new Exception("No mapping found with id: $mapping_id");
-    }
-
-    return $mapping;
-  }
-
-  /**
    * Manages the panes and changes the Item object values.
    *
-   * @param \Cheppers\GatherContent\DataTypes\Item $gc_item
-   *   Item object.
-   * @param \Drupal\node\NodeInterface $entity
-   *   Node entity object.
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   Entity object.
+   * @param \Drupal\gathercontent\Entity\MappingInterface $mapping
+   *   Mappig object.
    *
-   * @return \Cheppers\GatherContent\DataTypes\Item
-   *   Returns Item object.
+   * @return array
+   *   Returns Content array.
    *
    * @throws \Exception
    */
-  public function processPanes(Item $gc_item, NodeInterface $entity) {
-    $mapping = $this->getMapping($gc_item);
-    $mapping_data = unserialize($mapping->getData());
+  public function processGroups(EntityInterface $entity, MappingInterface $mapping) {
+    $mappingData = unserialize($mapping->getData());
 
-    if (empty($mapping_data)) {
+    if (empty($mappingData)) {
       throw new Exception("Mapping data is empty.");
     }
 
-    foreach ($gc_item->config as &$pane) {
-      $is_translatable = \Drupal::moduleHandler()->moduleExists('content_translation')
+    $templateData = unserialize($mapping->getTemplate());
+    $content = [];
+
+    foreach ($templateData->related->structure->groups as $group) {
+      $isTranslatable = \Drupal::moduleHandler()->moduleExists('content_translation')
         && \Drupal::service('content_translation.manager')
           ->isEnabled('node', $mapping->getContentType())
-        && isset($mapping_data[$pane->id]['language'])
-        && ($mapping_data[$pane->id]['language'] != Language::LANGCODE_NOT_SPECIFIED);
-      if ($is_translatable) {
-        $language = $mapping_data[$pane->id]['language'];
+        && isset($mappingData[$group->uuid]['language'])
+        && ($mappingData[$group->uuid]['language'] != Language::LANGCODE_NOT_SPECIFIED);
+
+      if ($isTranslatable) {
+        $language = $mappingData[$group->uuid]['language'];
       }
       else {
         $language = Language::LANGCODE_NOT_SPECIFIED;
       }
 
-      $pane = $this->processFields($pane, $entity, $mapping_data, $is_translatable, $language);
+      $content += $this->processFields($group, $entity, $mappingData, $isTranslatable, $language);
     }
 
-    return $gc_item;
+    return $content;
   }
 
   /**
    * Processes field data.
    *
-   * @param \Cheppers\GatherContent\DataTypes\Tab $pane
-   *   Pane object.
-   * @param \Drupal\node\NodeInterface $entity
+   * @param $group
+   *   Group object.
+   * @param \Drupal\Core\Entity\EntityInterface $entity
    *   Entity.
-   * @param array $mapping_data
+   * @param array $mappingData
    *   Mapping array.
-   * @param bool $is_translatable
+   * @param bool $isTranslatable
    *   Translatable.
    * @param string $language
    *   Language.
    *
-   * @return mixed
+   * @return array
    *   Returns pane.
    */
-  public function processFields(Tab $pane, NodeInterface $entity, array $mapping_data, $is_translatable, $language) {
+  public function processFields($group, EntityInterface $entity, array $mappingData, $isTranslatable, $language) {
     $exported_fields = [];
-    foreach ($pane->elements as &$field) {
-      if (isset($mapping_data[$pane->id]['elements'][$field->id])
-        && !empty($mapping_data[$pane->id]['elements'][$field->id])
+    foreach ($group->fields as $field) {
+      if (empty($mappingData[$group->uuid]['elements'][$field->uuid])) {
+        continue;
+      }
+
+      $local_field_id = $mappingData[$group->uuid]['elements'][$field->uuid];
+      if ((isset($mappingData[$group->uuid]['type'])
+          && $mappingData[$group->uuid]['type'] === 'content')
+        || !isset($mappingData[$group->uuid]['type'])
       ) {
-        $local_field_id = $mapping_data[$pane->id]['elements'][$field->id];
-        if ((isset($mapping_data[$pane->id]['type']) && $mapping_data[$pane->id]['type'] === 'content') || !isset($mapping_data[$pane->id]['type'])) {
-          $local_id_array = explode('||', $local_field_id);
-          $field_info = FieldConfig::load($local_id_array[0]);
+        $local_id_array = explode('||', $local_field_id);
+        $field_info = FieldConfig::load($local_id_array[0]);
 
-          $current_entity = $entity;
+        $current_entity = $entity;
 
-          $type = '';
-          $bundle = '';
-          if ($local_id_array[0] === 'title') {
-            $current_field_name = $local_id_array[0];
-          }
-          else {
-            $current_field_name = $field_info->getName();
-            $type = $field_info->getType();
-            $bundle = $field_info->getTargetBundle();
-          }
-
-          $this->processTargets($current_entity, $current_field_name, $type, $bundle, $exported_fields, $local_id_array, $is_translatable, $language);
-
-          $field = $this->processSetFields($field, $current_entity, $is_translatable, $language, $current_field_name, $type, $bundle);
+        $type = '';
+        $bundle = '';
+        if ($local_id_array[0] === 'title') {
+          $current_field_name = $local_id_array[0];
         }
-        elseif ($mapping_data[$pane->id]['type'] === 'metatag') {
-          if (\Drupal::moduleHandler()->moduleExists('metatag') && $this->metatag->checkMetatag($entity->getType())) {
-            $field = $this->processMetaTagFields($field, $entity, $local_field_id, $is_translatable, $language);
-          }
+        else {
+          $current_field_name = $field_info->getName();
+          $type = $field_info->getType();
+          $bundle = $field_info->getTargetBundle();
+        }
+
+        $this->processTargets($current_entity, $current_field_name, $type, $bundle, $exported_fields, $local_id_array, $isTranslatable, $language);
+
+        $field = $this->processSetFields($field, $current_entity, $isTranslatable, $language, $current_field_name, $type, $bundle);
+      }
+      elseif ($mappingData[$group->id]['type'] === 'metatag') {
+        if (\Drupal::moduleHandler()->moduleExists('metatag')
+          && $this->metatag->checkMetatag($entity->getType())
+        ) {
+          $field = $this->processMetaTagFields($field, $entity, $local_field_id, $isTranslatable, $language);
         }
       }
     }
 
-    return $pane;
+    return $group;
   }
 
   /**

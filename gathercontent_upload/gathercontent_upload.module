@@ -5,49 +5,39 @@
  * Main module file for GatherContent Upload module.
  */
 
-use Drupal\node\NodeInterface;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\gathercontent\Entity\MappingInterface;
 
 /**
  * Upload batch operation callback.
  *
- * @param \Drupal\node\NodeInterface $entity
+ * @param int $gcId
+ *   GatherContent ID.
+ * @param \Drupal\Core\Entity\EntityInterface $entity
  *   Object of entity we want to upload.
- * @param string $uuid
- *   UUID of \Drupal\gathercontent\Entity\Operation entity.
+ * @param \\Drupal\gathercontent\Entity\MappingInterface $mapping
+ *   Mapping object.
  * @param array $context
  *   Context of operation.
  */
-function gathercontent_upload_process(NodeInterface $entity, $uuid, &$context) {
+function gathercontent_upload_process($gcId, EntityInterface $entity, MappingInterface $mapping, &$context) {
   /** @var \Drupal\gathercontent_upload\Export\Exporter $exporter */
   $exporter = \Drupal::service('gathercontent_upload.exporter');
 
-  $client = $exporter->getClient();
-  /** @var \Cheppers\GatherContent\DataTypes\Item $item */
-  $item = $client->itemGet($entity->get('gc_id')->getValue()[0]['value']);
-  /** @var \Cheppers\GatherContent\DataTypes\Template $template */
-  $template = $client->templateGet($item->templateId);
+  if (!isset($context['results']['success'])) {
+    $context['results']['success'] = 0;
+  }
 
-  $operation_item = \Drupal::entityTypeManager()
-    ->getStorage('gathercontent_operation_item')
-    ->create([
-      'operation_uuid' => $uuid,
-      'item_status' => $item->status->name,
-      'item_status_color' => $item->status->color,
-      'template_name' => $template->name,
-      'item_name' => $item->name,
-      'gc_id' => $entity->get('gc_id'),
-      'nid' => $entity->id(),
-    ]);
+  if (!isset($context['results']['failed'])) {
+    $context['results']['failed'] = 0;
+  }
 
   try {
-    $exporter->export($item, $entity);
-    $operation_item->status = 'Success';
-    $operation_item->save();
+    $exporter->export($gcId, $entity, $mapping);
+    $context['results']['success']++;
   }
   catch (\Exception $e) {
-    $operation_item->status = $e->getMessage();
-    $operation_item->save();
+    $context['results']['messages'][] = $e->getMessage();
+    $context['results']['failed']++;
   }
-
-  $context['results']['uuid'] = $uuid;
 }

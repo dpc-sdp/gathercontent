@@ -33,7 +33,7 @@ class ContentUploadSelectForm extends FormBase {
   /**
    * @var mixed|object
    */
-  protected $nodes;
+  protected $entities;
 
   /**
    * @var array|string
@@ -76,6 +76,7 @@ class ContentUploadSelectForm extends FormBase {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('gathercontent.client'),
+      $container->get('database'),
       $container->get('entity_type.manager')
     );
   }
@@ -96,27 +97,24 @@ class ContentUploadSelectForm extends FormBase {
       $this->step = 1;
     }
 
-    // Step 1 - select project + select nodes.
+    // Step 1 - select project + select entities.
     // Step 2 - confirm screen.
     if ($this->step === 1) {
       $createdMappings = Mapping::loadMultiple();
       $projects = [];
       $mappingArray = [];
-      $contentTypes = [];
-      $entityTypes = [];
+      $migrationIds = [];
 
       foreach ($createdMappings as $mapping) {
         /** @var \Drupal\gathercontent\Entity\Mapping $mapping */
         if ($mapping->hasMapping()) {
-          if (!array_key_exists($mapping->getGathercontentTemplateId(), $contentTypes)) {
-            $contentTypes[$mapping->getGathercontentTemplateId()] = $mapping->getContentType();
-            $entityTypes[$mapping->getGathercontentTemplateId()] = $mapping->getMappedEntityType();
-          }
           $projects[$mapping->getGathercontentProjectId()] = $mapping->getGathercontentProject();
           $mappingArray[$mapping->getGathercontentTemplateId()] = [
             'gc_template' => $mapping->getGathercontentTemplate(),
-            'ct' => $mapping->getContentTypeName(),
+            'id' => $mapping->id(),
           ];
+
+          $migrationIds = array_merge($migrationIds, $mapping->getMigrations());
         }
       }
 
@@ -128,7 +126,7 @@ class ContentUploadSelectForm extends FormBase {
         '#required' => TRUE,
         '#ajax' => [
           'callback' => '::getContentTable',
-          'wrapper' => 'edit-export',
+          'wrapper' => 'edit-upload',
           'method' => 'replace',
           'effect' => 'fade',
         ],
@@ -136,27 +134,27 @@ class ContentUploadSelectForm extends FormBase {
         '#description' => $this->t('You can only see projects with mapped templates in the dropdown.'),
       ];
 
-      $form['export'] = [
-        '#prefix' => '<div id="edit-export">',
+      $form['upload'] = [
+        '#prefix' => '<div id="edit-upload">',
         '#suffix' => '</div>',
       ];
 
       if (($form_state->hasValue('project') || !empty($this->projectId))
         && (!empty($form_state->getValue('project')))
       ) {
-        $form['export']['filter'] = [
+        $form['upload']['filter'] = [
           '#type' => 'markup',
           '#markup' => '<div class="gc-table--filter-wrapper clearfix"></div>',
           '#weight' => 0,
         ];
 
-        $form['export']['counter'] = [
+        $form['upload']['counter'] = [
           '#type' => 'markup',
           '#markup' => '<div class="gc-table--counter"></div>',
           '#weight' => 1,
         ];
 
-        $form['export']['items'] = [
+        $form['upload']['entities'] = [
           '#tree' => TRUE,
           '#type' => 'table',
           '#header' => [
@@ -201,137 +199,113 @@ class ContentUploadSelectForm extends FormBase {
         $results = $this->database->select('gathercontent_entity_mapping')
           ->fields('gathercontent_entity_mapping', [
             'gc_id',
+            'entity_id',
+            'entity_type',
           ])
-          ->condition('migration_id', array_keys($createdMappings), 'IN')
+          ->condition('migration_id', $migrationIds, 'IN')
           ->execute()
-          ->fetchAll();
+          ->fetchAllKeyed(0);
 
         $projectId = $form_state->hasValue('project') ? $form_state->getValue('project') : $this->projectId;
-        $content = $this->client->itemsGet($projectId, ['item_ids' => implode($results)]);
+        $content = $this->client->itemsGet($projectId, ['item_ids' => implode(',', array_keys($results))]);
+        $statuses = $this->client->projectStatusesGet($projectId);
 
         foreach ($content['data'] as $item) {
-          // If template is not empty, we have mapped template and item
-          // isn't synced yet.
-          if (!is_null($item->templateId)
-            && $item->templateId != 'null'
-            && isset($mappingArray[$item->templateId])
-          ) {
-            if ($entityTypes[$item->templateId] == 'node') {
-              $node_type = $this->entityTypeManager->getStorage('node_type')->load($contentTypes[$item->templateId]);
-              $selected_boxes = $node_type->getThirdPartySetting('menu_ui', 'available_menus', ['main']);
-              $available_menus = [];
-              foreach ($selected_boxes as $selected_box) {
-                $available_menus[$selected_box] = $selected_box;
-              }
-            }
+          $entityId = $results[$item->id]['entity_id'];
+          $entityType = $results[$item->id]['entity_type'];
+          $key = $entityType . '_' . $entityId;
 
-            $this->items[$item->id] = [
-              'color' => $statuses['data'][$item->statusId]->color,
-              'label' => $statuses['data'][$item->statusId]->name,
-              'template' => $mappingArray[$item->templateId]['gc_template'],
-              'title' => $item->name,
-            ];
-            $form['import']['items'][$item->id] = [
-              '#tree' => TRUE,
+          $this->items[$key] = [
+            'color' => $statuses['data'][$item->statusId]->color,
+            'label' => $statuses['data'][$item->statusId]->name,
+            'template' => $mappingArray[$item->templateId]['gc_template'],
+            'title' => $item->name,
+          ];
+          $form['upload']['entities'][$key] = [
+            '#tree' => TRUE,
+            'data' => [
               'selected' => [
                 '#type' => 'checkbox',
                 '#title' => $this->t('Selected'),
                 '#title_display' => 'invisible',
-                '#default_value' => !empty($this->nodes[$item->id]),
+                '#default_value' => !empty($this->entities[$key]),
                 '#attributes' => [
                   'class' => ['gathercontent-select-import-items'],
                 ],
               ],
-              'status' => [
-                '#wrapper_attributes' => [
-                  'class' => ['gc-item', 'status-item'],
-                ],
-                'color' => [
-                  '#type' => 'html_tag',
-                  '#tag' => 'div',
-                  '#value' => ' ',
-                  '#attributes' => [
-                    'style' => 'width:20px; height: 20px; float: left; margin-right: 5px; background: ' . $statuses['data'][$item->statusId]->color,
-                  ],
-                ],
-                'label' => [
-                  '#plain_text' => $statuses['data'][$item->statusId]->name,
-                ],
+              'entity_type' => [
+                '#type' => 'hidden',
+                '#value' => $entityType,
               ],
-              'title' => [
-                'data' => [
-                  '#type' => 'markup',
-                  '#markup' => $item->name,
-                ],
-                '#wrapper_attributes' => [
-                  'class' => ['gc-item', 'gc-item--name'],
-                ],
+              'entity_id' => [
+                '#type' => 'hidden',
+                '#value' => $entityId,
               ],
-              'updated' => [
-                'data' => [
-                  '#markup' => date('F d, Y - H:i', strtotime($item->updatedAt)),
-                ],
-                '#wrapper_attributes' => [
-                  'class' => ['gc-item', 'gc-item-date'],
-                ],
+              'gc_id' => [
+                '#type' => 'hidden',
+                '#value' => $item->id,
+              ],
+              'mapping_id' => [
+                '#type' => 'hidden',
+                '#value' => $mappingArray[$item->templateId]['id'],
+              ],
+            ],
+            'status' => [
+              '#wrapper_attributes' => [
+                'class' => ['gc-item', 'status-item'],
+              ],
+              'color' => [
+                '#type' => 'html_tag',
+                '#tag' => 'div',
+                '#value' => ' ',
                 '#attributes' => [
-                  'data-date' => date('Y-m-d.H:i:s', strtotime($item->updatedAt)),
+                  'style' => 'width:20px; height: 20px; float: left; margin-right: 5px; background: ' . $statuses['data'][$item->statusId]->color,
                 ],
               ],
-              'template' => [
-                'data' => [
-                  '#markup' => $mappingArray[$item->templateId]['gc_template'],
-                ],
-                '#wrapper_attributes' => [
-                  'class' => ['template-name-item'],
-                ],
+              'label' => [
+                '#plain_text' => $statuses['data'][$item->statusId]->name,
               ],
-              'drupal_status' => [
-                '#type' => 'checkbox',
-                '#title' => $this->t('Publish'),
-                '#title_display' => 'invisible',
-                '#default_value' => isset($this->drupalStatus[$item->id]) ? $this->drupalStatus[$item->id] : $import_config->get('node_default_status'),
-                '#states' => [
-                  'disabled' => [
-                    ':input[name="items[' . $item->id . '][selected]"]' => ['checked' => FALSE],
-                  ],
-                ],
-              ],
-              'menu' => [
+            ],
+            'title' => [
+              'data' => [
                 '#type' => 'markup',
-                '#markup' => '',
+                '#markup' => $item->name,
               ],
-            ];
-
-            if ($entityTypes[$item->templateId] == 'node') {
-              $form['import']['items'][$item->id]['menu'] = [
-                '#type' => 'select',
-                '#default_value' => $node_type->getThirdPartySetting('menu_ui', 'parent'),
-                '#empty_option' => $this->t("- Don't create menu item -"),
-                '#empty_value' => 0,
-                '#options' => $this->menuParentFormSelector
-                  ->getParentSelectOptions('', $available_menus),
-                '#title' => $this->t('Menu'),
-                '#title_display' => 'invisible',
-                '#states' => [
-                  'disabled' => [
-                    ':input[name="items[' . $item->id . '][selected]"]' => ['checked' => FALSE],
-                  ],
-                ],
-              ];
-            }
-          }
+              '#wrapper_attributes' => [
+                'class' => ['gc-item', 'gc-item--name'],
+              ],
+            ],
+            'updated' => [
+              'data' => [
+                '#markup' => date('F d, Y - H:i', strtotime($item->updatedAt)),
+              ],
+              '#wrapper_attributes' => [
+                'class' => ['gc-item', 'gc-item-date'],
+              ],
+              '#attributes' => [
+                'data-date' => date('Y-m-d.H:i:s', strtotime($item->updatedAt)),
+              ],
+            ],
+            'template' => [
+              'data' => [
+                '#markup' => $mappingArray[$item->templateId]['gc_template'],
+              ],
+              '#wrapper_attributes' => [
+                'class' => ['template-name-item'],
+              ],
+            ],
+          ];
         }
 
-        $form['import']['actions']['#type'] = 'actions';
-        $form['import']['actions']['submit'] = [
+        $form['upload']['actions']['#type'] = 'actions';
+        $form['upload']['actions']['submit'] = [
           '#type' => 'submit',
           '#value' => $this->t('Next'),
           '#button_type' => 'primary',
           '#weight' => 10,
         ];
 
-        $form['import']['actions']['back'] = [
+        $form['upload']['actions']['back'] = [
           '#type' => 'submit',
           '#value' => $this->t('Back'),
           '#weight' => 11,
@@ -343,15 +317,15 @@ class ContentUploadSelectForm extends FormBase {
         'form_title' => [
           '#type' => 'html_tag',
           '#tag' => 'h2',
-          '#value' => $this->formatPlural(count($this->nodes),
-            'Confirm import selection (@count item)',
-            'Confirm import selection (@count items)'
+          '#value' => $this->formatPlural(count($this->entities),
+            'Confirm upload selection (@count item)',
+            'Confirm upload selection (@count items)'
           ),
         ],
         'form_description' => [
           '#type' => 'html_tag',
           '#tag' => 'p',
-          '#value' => $this->t('Please review your import selection before importing.'),
+          '#value' => $this->t('Please review your upload selection before uploading.'),
         ],
       ];
 
@@ -362,8 +336,8 @@ class ContentUploadSelectForm extends FormBase {
       ];
 
       $rows = [];
-      foreach ($this->nodes as $node) {
-        $rows[$node] = [
+      foreach ($this->entities as $key => $data) {
+        $rows[$key] = [
           'status' => [
             'data' => [
               'color' => [
@@ -371,16 +345,16 @@ class ContentUploadSelectForm extends FormBase {
                 '#tag' => 'div',
                 '#value' => ' ',
                 '#attributes' => [
-                  'style' => 'width:20px; height: 20px; float: left; margin-right: 5px; background: ' . $this->items[$node]['color'],
+                  'style' => 'width:20px; height: 20px; float: left; margin-right: 5px; background: ' . $this->items[$key]['color'],
                 ],
               ],
               'label' => [
-                '#plain_text' => $this->items[$node]['label'],
+                '#plain_text' => $this->items[$key]['label'],
               ],
             ],
           ],
-          'title' => $this->items[$node]['title'],
-          'template' => $this->items[$node]['template'],
+          'title' => $this->items[$key]['title'],
+          'template' => $this->items[$key]['template'],
         ];
       }
 
@@ -390,34 +364,10 @@ class ContentUploadSelectForm extends FormBase {
         '#rows' => $rows,
       ];
 
-      $options = [];
-      /** @var \Cheppers\GatherContent\DataTypes\Status[] $statuses */
-      $statuses = $this->client->projectStatusesGet($this->projectId);
-
-      foreach ($statuses['data'] as $status) {
-        $options[$status->id] = $status->name;
-      }
-
-      $form['status'] = [
-        '#type' => 'select',
-        '#options' => $options,
-        '#title' => $this->t('After successful import change status to:'),
-        '#empty_option' => $this->t("- Don't change status -"),
-      ];
-
-      $import_config = $this->configFactory()->get('gathercontent.import');
-
-      $form['node_create_new_revision'] = [
-        '#type' => 'checkbox',
-        '#title' => $this->t('Create new revision'),
-        '#default_value' => $import_config->get('node_create_new_revision'),
-        '#description' => $this->t('If the "Content update method" is any other than "Always update existing Content" then this setting won\'t take effect, because the entity will always be new.'),
-      ];
-
       $form['actions']['#type'] = 'actions';
       $form['actions']['submit'] = [
         '#type' => 'submit',
-        '#value' => $this->t('Import'),
+        '#value' => $this->t('Upload'),
         '#button_type' => 'primary',
         '#weight' => 10,
       ];
@@ -435,7 +385,78 @@ class ContentUploadSelectForm extends FormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $form_state->setRedirect('gathercontent_upload_ui.upload_confirm_form');
+    if ($form_state->getTriggeringElement()['#id'] === 'edit-submit') {
+      if ($this->step === 1) {
+        $this->projectId = $form_state->getValue('project');
+        $selectedEntities = [];
+
+        foreach ($form_state->getValue('entities') as $key => $data) {
+          if ($data['data']['selected'] === '1') {
+            $selectedEntities[$key] = [
+              'id' => $data['data']['entity_id'],
+              'entity_type' => $data['data']['entity_type'],
+              'gc_id' => $data['data']['gc_id'],
+              'mapping_id' => $data['data']['mapping_id'],
+            ];
+          }
+        }
+
+        $this->entities = $selectedEntities;
+        $this->step = 2;
+        $form_state->setRebuild(TRUE);
+      }
+      elseif ($this->step === 2) {
+        $operations = [];
+        $uploadContent = $this->entities;
+
+        foreach ($uploadContent as $data) {
+          /** @var \Drupal\gathercontent\Entity\MappingInterface $mapping */
+          $mapping = Mapping::load($data['mapping_id']);
+          $storage = $this->entityTypeManager->getStorage($data['entity_type']);
+          $entity = $storage->load($data['id']);
+
+          $operations[] = [
+            'gathercontent_upload_process',
+            [
+              $data['gc_id'],
+              $entity,
+              $mapping,
+            ],
+          ];
+        }
+
+        $batch = [
+          'title' => $this->t('Uploading content ...'),
+          'operations' => $operations,
+          'finished' => 'gathercontent_upload_finished',
+          'file' => drupal_get_path('module', 'gathercontent_upload_ui') . '/gathercontent_upload_ui.module',
+          'init_message' => $this->t('Upload is starting ...'),
+          'progress_message' => $this->t('Processed @current out of @total.'),
+          'error_message' => $this->t('An error occurred during processing'),
+          'progressive' => TRUE,
+        ];
+
+        batch_set($batch);
+      }
+    }
+    elseif ($form_state->getTriggeringElement()['#id'] === 'edit-back') {
+      if ($this->step === 1) {
+        return $form_state->setRedirect('gathercontent_upload_ui.upload_select_form');
+      }
+      $this->step = 1;
+      $form_state->setRebuild(TRUE);
+    }
+    return TRUE;
+  }
+
+  /**
+   * Ajax callback for project dropdown.
+   *
+   * {@inheritdoc}
+   */
+  public function getContentTable(array &$form, FormStateInterface $form_state) {
+    $form_state->setRebuild(TRUE);
+    return $form['upload'];
   }
 
 }
