@@ -185,10 +185,11 @@ abstract class MappingSteps {
       }
     }
     // Check if is translatable.
+    $entity_type = (empty($this->mapping->getMappedEntityType()) ? $formState->getValue('entity_type') : $this->mapping->getMappedEntityType());
     $content_type = (empty($this->mapping->getContentType()) ? $formState->getValue('content_type') : $this->mapping->getContentType());
     $translatable = \Drupal::moduleHandler()->moduleExists('content_translation')
       && \Drupal::service('content_translation.manager')
-        ->isEnabled('node', $content_type);
+        ->isEnabled($entity_type, $content_type);
     // Validate if each language is used only once
     // for translatable content types.
     $content_lang = [];
@@ -283,8 +284,9 @@ abstract class MappingSteps {
 
     // Validate if title is mapped for translatable content.
     if ($translatable) {
+      $titleField = $entity_type . '.' . $content_type . '.title';
       foreach ($content_fields as $k => $lang_fields) {
-        if (!in_array('title', $lang_fields) && $k != 'und') {
+        if (!in_array($titleField, $lang_fields) && $k !== LanguageInterface::LANGCODE_NOT_SPECIFIED) {
           $formState->setErrorByName('form', $this->t('You have to map Drupal Title field for translatable content.'));
         }
       }

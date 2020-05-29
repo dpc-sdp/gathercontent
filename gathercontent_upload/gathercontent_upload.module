@@ -15,7 +15,7 @@ use Drupal\gathercontent\Entity\MappingInterface;
  *   GatherContent ID.
  * @param \Drupal\Core\Entity\EntityInterface $entity
  *   Object of entity we want to upload.
- * @param \\Drupal\gathercontent\Entity\MappingInterface $mapping
+ * @param \Drupal\gathercontent\Entity\MappingInterface $mapping
  *   Mapping object.
  * @param array $context
  *   Context of operation.

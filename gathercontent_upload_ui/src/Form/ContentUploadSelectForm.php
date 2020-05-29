@@ -9,6 +9,7 @@ use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\gathercontent\Entity\Mapping;
+use PDO;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -204,7 +205,7 @@ class ContentUploadSelectForm extends FormBase {
           ])
           ->condition('migration_id', $migrationIds, 'IN')
           ->execute()
-          ->fetchAllKeyed(0);
+          ->fetchAllAssoc('gc_id', PDO::FETCH_ASSOC);
 
         $projectId = $form_state->hasValue('project') ? $form_state->getValue('project') : $this->projectId;
         $content = $this->client->itemsGet($projectId, ['item_ids' => implode(',', array_keys($results))]);
