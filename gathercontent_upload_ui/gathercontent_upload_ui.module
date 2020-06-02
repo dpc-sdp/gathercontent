@@ -17,44 +17,30 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
  */
 function gathercontent_upload_finished($success, $results, $operations) {
   if ($success) {
-    // Select all items with uuid.
-    $result = \Drupal::entityQuery('gathercontent_operation_item')
-      ->condition('operation_uuid', $results['uuid'])
-      ->execute();
-    if (!empty($result)) {
-      $operation_items = OperationItem::loadMultiple($result);
-      $success_counter = 0;
-      $nids = ['success' => [], 'failed' => []];
-      foreach ($operation_items as $operation_item) {
-        /** @var \Drupal\gathercontent\Entity\OperationItem $operation_item */
-        if ($operation_item->getStatus() === 'Success') {
-          $success_counter++;
-          $nids['success'][] = [
-            'nid' => $operation_item->get('nid')->value,
-            'gc_id' => $operation_item->get('gc_id')->value,
-          ];
-        }
-        else {
-          $nids['failed'][] = [
-            'nid' => $operation_item->get('nid')->value,
-            'gc_id' => $operation_item->get('gc_id')->value,
-          ];
-        }
-      }
-      $unsuccessful = count($result) - $success_counter;
+    if ($results['success'] > 0) {
       drupal_set_message(\Drupal::translation()
-        ->formatPlural($success_counter, '1 item was uploaded successfully.', '@count items were uploaded successfully.'));
-      if ($unsuccessful > 0) {
-        drupal_set_message(\Drupal::translation()
-          ->formatPlural($unsuccessful, '1 item was not uploaded. Check errors below.', '@count items were not uploaded. Check errors below.'), 'error');
-      }
-      \Drupal::service('event_dispatcher')
-        ->dispatch(GatherUploadContentEvents::POST_UPLOAD, new PostUploadEvent($nids['success'], $nids['failed'], $results['uuid']));
+        ->formatPlural($results['success'], '1 item was uploaded successfully.', '@count items were uploaded successfully.'));
     }
-    return new RedirectResponse('admin/config/gathercontent/upload/result/' . $results['uuid']);
+
+    if ($results['failed'] > 0) {
+      drupal_set_message(\Drupal::translation()
+        ->formatPlural($results['failed'], '1 item could not be uploaded. Check errors below.', '@count items could not be uploaded. Check errors below.'), 'error');
+    }
+
+    if ($results['failed'] == 0 && $results['success'] == 0) {
+      drupal_set_message(\Drupal::translation()
+        ->translate('Nothing was uploaded.'));
+    }
+
+    if (isset($results['messages']) && count($results['messages']) > 0) {
+      foreach ($results['messages'] as $message) {
+        drupal_set_message($message, 'error');
+      }
+    }
   }
   else {
     $error_operation = reset($operations);
+
     drupal_set_message(
       t('An error occurred while processing @operation with arguments : @args',
         [

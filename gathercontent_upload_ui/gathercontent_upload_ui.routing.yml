@@ -7,13 +7,3 @@ gathercontent_upload_ui.upload_select_form:
     _permission: 'administer gathercontent'
   options:
     _admin_route: TRUE
-
-gathercontent_upload_ui.upload_confirm_form:
-  path: '/admin/content/upload/confirm'
-  defaults:
-    _form: '\Drupal\gathercontent_upload_ui\Form\ContentUploadConfirmForm'
-    _title: 'Confirm upload selection'
-  requirements:
-    _permission: 'administer gathercontent'
-  options:
-    _admin_route: TRUE

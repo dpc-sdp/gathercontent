@@ -2,21 +2,18 @@
 
 namespace Drupal\gathercontent_upload\Export;
 
-use Cheppers\GatherContent\DataTypes\Element;
-use Cheppers\GatherContent\DataTypes\Item;
-use Cheppers\GatherContent\DataTypes\Tab;
 use Cheppers\GatherContent\GatherContentClientInterface;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Language\Language;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\field\Entity\FieldConfig;
-use Drupal\gathercontent\Entity\Mapping;
+use Drupal\gathercontent\Entity\MappingInterface;
 use Drupal\gathercontent\MetatagQuery;
 use Drupal\gathercontent_upload\Event\GatherUploadContentEvents;
 use Drupal\gathercontent_upload\Event\PostNodeUploadEvent;
 use Drupal\gathercontent_upload\Event\PreNodeUploadEvent;
-use Drupal\node\NodeInterface;
 use Exception;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -32,17 +29,31 @@ class Exporter implements ContainerInjectionInterface {
    */
   protected $client;
 
+  /**
+   * Meta tag Query.
+   *
+   * @var \Drupal\gathercontent\MetatagQuery
+   */
   protected $metatag;
+
+  /**
+   * Entity type manager.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected $entityTypeManager;
 
   /**
    * DI GatherContent Client.
    */
   public function __construct(
     GatherContentClientInterface $client,
-    MetatagQuery $metatag
+    MetatagQuery $metatag,
+    EntityTypeManagerInterface $entityTypeManager
   ) {
     $this->client = $client;
     $this->metatag = $metatag;
+    $this->entityTypeManager = $entityTypeManager;
   }
 
   /**
@@ -51,7 +62,8 @@ class Exporter implements ContainerInjectionInterface {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('gathercontent.client'),
-      $container->get('gathercontent.metatag')
+      $container->get('gathercontent.metatag'),
+      $container->get('entity_type.manager')
     );
   }
 
@@ -63,232 +75,218 @@ class Exporter implements ContainerInjectionInterface {
   }
 
   /**
-   * Don't forget to add a finished callback and the operations array.
-   */
-  public static function getBasicExportBatch() {
-    return [
-      'title' => t('Uploading content ...'),
-      'init_message' => t('Upload is starting ...'),
-      'error_message' => t('An error occurred during processing'),
-      'progress_message' => t('Processed @current out of @total.'),
-      'progressive' => TRUE,
-    ];
-  }
-
-  /**
    * Exports the changes made in Drupal contents.
    *
-   * @param \Cheppers\GatherContent\DataTypes\Item $gc_item
-   *   Item object.
-   * @param \Drupal\node\NodeInterface $entity
-   *   Node entity object.
+   * @param int $gcId
+   *   GatherContent ID.
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   Entity entity object.
+   * @param \Drupal\gathercontent\Entity\MappingInterface $mapping
+   *   Mapping object.
    *
    * @return int|null|string
    *   Returns entity ID.
    *
    * @throws \Exception
    */
-  public function export(Item $gc_item, NodeInterface $entity) {
-    $gc_item = $this->processPanes($gc_item, $entity);
+  public function export($gcId, EntityInterface $entity, MappingInterface $mapping) {
+    $content = $this->processGroups($entity, $mapping);
 
     $event = \Drupal::service('event_dispatcher')
-      ->dispatch(GatherUploadContentEvents::PRE_NODE_UPLOAD, new PreNodeUploadEvent($entity, $gc_item->config));
+      ->dispatch(GatherUploadContentEvents::PRE_NODE_UPLOAD, new PreNodeUploadEvent($entity, $content));
 
     /** @var \Drupal\gathercontent_upload\Event\PreNodeUploadEvent $event */
-    $config = $event->getGathercontentValues();
-    $this->client->itemSavePost($gc_item->id, $config);
+    $content = $event->getGathercontentValues();
+    $this->client->itemUpdatePost($gcId, $content);
 
     \Drupal::service('event_dispatcher')
-      ->dispatch(GatherUploadContentEvents::POST_NODE_UPLOAD, new PostNodeUploadEvent($entity, $config));
+      ->dispatch(GatherUploadContentEvents::POST_NODE_UPLOAD, new PostNodeUploadEvent($entity, $content));
 
     return $entity->id();
   }
 
   /**
-   * Return the mapping associated with the given Item.
-   */
-  public function getMapping(Item $gc_item) {
-    $mapping_id = \Drupal::entityQuery('gathercontent_mapping')
-      ->condition('gathercontent_project_id', $gc_item->projectId)
-      ->condition('gathercontent_template_id', $gc_item->templateId)
-      ->execute();
-
-    if (empty($mapping_id)) {
-      throw new Exception("Operation failed: Template not mapped.");
-    }
-
-    $mapping_id = reset($mapping_id);
-    $mapping = Mapping::load($mapping_id);
-
-    if ($mapping === NULL) {
-      throw new Exception("No mapping found with id: $mapping_id");
-    }
-
-    return $mapping;
-  }
-
-  /**
    * Manages the panes and changes the Item object values.
    *
-   * @param \Cheppers\GatherContent\DataTypes\Item $gc_item
-   *   Item object.
-   * @param \Drupal\node\NodeInterface $entity
-   *   Node entity object.
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   Entity object.
+   * @param \Drupal\gathercontent\Entity\MappingInterface $mapping
+   *   Mappig object.
    *
-   * @return \Cheppers\GatherContent\DataTypes\Item
-   *   Returns Item object.
+   * @return array
+   *   Returns Content array.
    *
    * @throws \Exception
    */
-  public function processPanes(Item $gc_item, NodeInterface $entity) {
-    $mapping = $this->getMapping($gc_item);
-    $mapping_data = unserialize($mapping->getData());
+  public function processGroups(EntityInterface $entity, MappingInterface $mapping) {
+    $mappingData = unserialize($mapping->getData());
 
-    if (empty($mapping_data)) {
+    if (empty($mappingData)) {
       throw new Exception("Mapping data is empty.");
     }
 
-    foreach ($gc_item->config as &$pane) {
-      $is_translatable = \Drupal::moduleHandler()->moduleExists('content_translation')
+    $templateData = unserialize($mapping->getTemplate());
+    $content = [];
+
+    foreach ($templateData->related->structure->groups as $group) {
+      $isTranslatable = \Drupal::moduleHandler()->moduleExists('content_translation')
         && \Drupal::service('content_translation.manager')
           ->isEnabled('node', $mapping->getContentType())
-        && isset($mapping_data[$pane->id]['language'])
-        && ($mapping_data[$pane->id]['language'] != Language::LANGCODE_NOT_SPECIFIED);
-      if ($is_translatable) {
-        $language = $mapping_data[$pane->id]['language'];
+        && isset($mappingData[$group->uuid]['language'])
+        && ($mappingData[$group->uuid]['language'] != Language::LANGCODE_NOT_SPECIFIED);
+
+      if ($isTranslatable) {
+        $language = $mappingData[$group->uuid]['language'];
       }
       else {
         $language = Language::LANGCODE_NOT_SPECIFIED;
       }
 
-      $pane = $this->processFields($pane, $entity, $mapping_data, $is_translatable, $language);
+      $content += $this->processFields($group, $entity, $mappingData, $isTranslatable, $language);
     }
 
-    return $gc_item;
+    return $content;
   }
 
   /**
    * Processes field data.
    *
-   * @param \Cheppers\GatherContent\DataTypes\Tab $pane
-   *   Pane object.
-   * @param \Drupal\node\NodeInterface $entity
+   * @param $group
+   *   Group object.
+   * @param \Drupal\Core\Entity\EntityInterface $entity
    *   Entity.
-   * @param array $mapping_data
+   * @param array $mappingData
    *   Mapping array.
-   * @param bool $is_translatable
+   * @param bool $isTranslatable
    *   Translatable.
    * @param string $language
    *   Language.
    *
-   * @return mixed
+   * @return array
    *   Returns pane.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
-  public function processFields(Tab $pane, NodeInterface $entity, array $mapping_data, $is_translatable, $language) {
-    $exported_fields = [];
-    foreach ($pane->elements as &$field) {
-      if (isset($mapping_data[$pane->id]['elements'][$field->id])
-        && !empty($mapping_data[$pane->id]['elements'][$field->id])
+  public function processFields($group, EntityInterface $entity, array $mappingData, $isTranslatable, $language) {
+    $exportedFields = [];
+    $values = [];
+
+    foreach ($group->fields as $field) {
+      // Skip field if it is not mapped.
+      if (empty($mappingData[$group->uuid]['elements'][$field->uuid])) {
+        continue;
+      }
+
+      $localFieldId = $mappingData[$group->uuid]['elements'][$field->uuid];
+      if ((isset($mappingData[$group->uuid]['type'])
+          && $mappingData[$group->uuid]['type'] === 'content')
+        || !isset($mappingData[$group->uuid]['type'])
       ) {
-        $local_field_id = $mapping_data[$pane->id]['elements'][$field->id];
-        if ((isset($mapping_data[$pane->id]['type']) && $mapping_data[$pane->id]['type'] === 'content') || !isset($mapping_data[$pane->id]['type'])) {
-          $local_id_array = explode('||', $local_field_id);
-          $field_info = FieldConfig::load($local_id_array[0]);
+        $localIdArray = explode('||', $localFieldId);
+        $fieldInfo = FieldConfig::load($localIdArray[0]);
+        $currentEntity = $entity;
+        $type = '';
+        $bundle = '';
+        $titleField = $currentEntity->getEntityTypeId() . '.' . $currentEntity->bundle() . '.title';
 
-          $current_entity = $entity;
-
-          $type = '';
-          $bundle = '';
-          if ($local_id_array[0] === 'title') {
-            $current_field_name = $local_id_array[0];
-          }
-          else {
-            $current_field_name = $field_info->getName();
-            $type = $field_info->getType();
-            $bundle = $field_info->getTargetBundle();
-          }
-
-          $this->processTargets($current_entity, $current_field_name, $type, $bundle, $exported_fields, $local_id_array, $is_translatable, $language);
-
-          $field = $this->processSetFields($field, $current_entity, $is_translatable, $language, $current_field_name, $type, $bundle);
+        if ($localIdArray[0] === $titleField) {
+          $currentFieldName = 'title';
         }
-        elseif ($mapping_data[$pane->id]['type'] === 'metatag') {
-          if (\Drupal::moduleHandler()->moduleExists('metatag') && $this->metatag->checkMetatag($entity->getType())) {
-            $field = $this->processMetaTagFields($field, $entity, $local_field_id, $is_translatable, $language);
-          }
+        else {
+          $currentFieldName = $fieldInfo->getName();
+          $type = $fieldInfo->getType();
+          $bundle = $fieldInfo->getTargetBundle();
+        }
+
+        // Get the deepest field's value, we need tih sto collect the referenced entities values.
+        $this->processTargets($currentEntity, $currentFieldName, $type, $bundle, $exportedFields, $localIdArray, $isTranslatable, $language);
+
+        $values[$field->uuid] = $this->processSetFields($field, $currentEntity, $isTranslatable, $language, $currentFieldName, $bundle);
+      }
+      elseif ($mappingData[$group->id]['type'] === 'metatag') {
+        if (\Drupal::moduleHandler()->moduleExists('metatag')
+          && $this->metatag->checkMetatag($entity->getEntityTypeId(), $entity->bundle())
+        ) {
+          $values[$field->uuid] = $this->processMetaTagFields($entity, $localFieldId, $isTranslatable, $language);
         }
       }
     }
 
-    return $pane;
+    return $values;
   }
 
   /**
    * Processes the target ids for a field.
    *
-   * @param \Drupal\Core\Entity\EntityInterface $current_entity
+   * @param \Drupal\Core\Entity\EntityInterface $currentEntity
    *   Entity object.
-   * @param string $current_field_name
+   * @param string $currentFieldName
    *   Current field name.
    * @param string $type
    *   Current type name.
    * @param string $bundle
    *   Current bundle name.
-   * @param array $exported_fields
+   * @param array $exportedFields
    *   Array of exported fields, preventing duplications.
-   * @param array $local_id_array
+   * @param array $localIdArray
    *   Array of mapped embedded field id array.
-   * @param bool $is_translatable
+   * @param bool $isTranslatable
    *   Translatable.
    * @param string $language
    *   Language.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
-  public function processTargets(EntityInterface &$current_entity, &$current_field_name, &$type, &$bundle, array &$exported_fields, array $local_id_array, $is_translatable, $language) {
-    $id_count = count($local_id_array);
-    $entityTypeManager = \Drupal::entityTypeManager();
+  public function processTargets(EntityInterface &$currentEntity, &$currentFieldName, &$type, &$bundle, array &$exportedFields, array $localIdArray, $isTranslatable, $language) {
+    $idCount = count($localIdArray);
 
-    for ($i = 0; $i < $id_count - 1; $i++) {
-      $local_id = $local_id_array[$i];
-      $field_info = FieldConfig::load($local_id);
-      $current_field_name = $field_info->getName();
-      $type = $field_info->getType();
-      $bundle = $field_info->getTargetBundle();
+    // Loop through the references, going deeper and deeper.
+    for ($i = 0; $i < $idCount - 1; $i++) {
+      $localId = $localIdArray[$i];
+      $fieldInfo = FieldConfig::load($localId);
+      $currentFieldName = $fieldInfo->getName();
+      $type = $fieldInfo->getType();
+      $bundle = $fieldInfo->getTargetBundle();
 
-      if ($is_translatable) {
-        $target_field_value = $current_entity->getTranslation($language)->get($current_field_name)->getValue();
+      if ($isTranslatable) {
+        $targetFieldValue = $currentEntity->getTranslation($language)->get($currentFieldName)->getValue();
       }
       else {
-        $target_field_value = $current_entity->get($current_field_name)->getValue();
+        $targetFieldValue = $currentEntity->get($currentFieldName)->getValue();
       }
 
-      if (!empty($target_field_value)) {
-        $field_target_info = FieldConfig::load($local_id_array[$i + 1]);
-        $entityStorage = $entityTypeManager
-          ->getStorage($field_target_info->getTargetEntityTypeId());
-        $child_field_name = $field_target_info->getName();
-        $child_type = $field_info->getType();
-        $child_bundle = $field_info->getTargetBundle();
+      // Load the targeted entity and process the data.
+      if (!empty($targetFieldValue)) {
+        $fieldTargetInfo = FieldConfig::load($localIdArray[$i + 1]);
+        $entityStorage = $this->entityTypeManager
+          ->getStorage($fieldTargetInfo->getTargetEntityTypeId());
+        $childFieldName = $fieldTargetInfo->getName();
+        $childType = $fieldInfo->getType();
+        $childBundle = $fieldInfo->getTargetBundle();
 
-        foreach ($target_field_value as $target) {
-          $export_key = $target['target_id'] . '_' . $child_field_name;
+        foreach ($targetFieldValue as $target) {
+          $exportKey = $target['target_id'] . '_' . $childFieldName;
 
-          if (!empty($exported_fields[$export_key])) {
+          // The field is already collected.
+          if (!empty($exportedFields[$exportKey])) {
             continue;
           }
 
-          $child_entity = $entityStorage->loadByProperties([
+          $childEntity = $entityStorage->loadByProperties([
             'id' => $target['target_id'],
-            'type' => $field_target_info->getTargetBundle(),
+            'type' => $fieldTargetInfo->getTargetBundle(),
           ]);
 
-          if (!empty($child_entity[$target['target_id']])) {
-            $current_entity = $child_entity[$target['target_id']];
-            $current_field_name = $child_field_name;
-            $type = $child_type;
-            $bundle = $child_bundle;
+          if (!empty($childEntity[$target['target_id']])) {
+            $currentEntity = $childEntity[$target['target_id']];
+            $currentFieldName = $childFieldName;
+            $type = $childType;
+            $bundle = $childBundle;
 
-            if ($i == ($id_count - 2)) {
-              $exported_fields[$export_key] = TRUE;
+            if ($i == ($idCount - 2)) {
+              $exportedFields[$exportKey] = TRUE;
             }
             break;
           }
@@ -300,235 +298,161 @@ class Exporter implements ContainerInjectionInterface {
   /**
    * Processes meta fields.
    *
-   * @param \Cheppers\GatherContent\DataTypes\Element $field
-   *   Field object.
    * @param \Drupal\Core\Entity\EntityInterface $entity
    *   Entity object.
-   * @param string $local_field_name
+   * @param string $localFieldName
    *   Field name.
-   * @param bool $is_translatable
+   * @param bool $isTranslatable
    *   Translatable bool.
    * @param string $language
    *   Language string.
    *
-   * @return \Cheppers\GatherContent\DataTypes\Element
-   *   Returns field.
+   * @return string
+   *   Returns value.
    */
-  public function processMetaTagFields(Element $field, EntityInterface $entity, $local_field_name, $is_translatable, $language) {
-    $metatag_fields = $this->metatag->getMetatagFields($entity->getType());
+  public function processMetaTagFields(EntityInterface $entity, $localFieldName, $isTranslatable, $language) {
+    $metatagFields = $this->metatag->getMetatagFields($entity->getType(), $entity->bundle());
 
-    foreach ($metatag_fields as $metatag_field) {
-      if ($is_translatable) {
-        $current_value = unserialize($entity->getTranslation($language)->{$metatag_field}->value);
+    foreach ($metatagFields as $metatagField) {
+      if ($isTranslatable) {
+        $currentValue = unserialize($entity->getTranslation($language)->{$metatagField}->value);
       }
       else {
-        $current_value = unserialize($entity->{$metatag_field}->value);
+        $currentValue = unserialize($entity->{$metatagField}->value);
       }
 
-      $field->value = $current_value[$local_field_name];
+      return $currentValue[$localFieldName];
     }
 
-    return $field;
+    return '';
   }
 
   /**
    * Set value of the field.
    *
-   * @param \Cheppers\GatherContent\DataTypes\Element $field
+   * @param $field
    *   Field object.
    * @param \Drupal\Core\Entity\EntityInterface $entity
    *   Entity object.
-   * @param bool $is_translatable
+   * @param bool $isTranslatable
    *   Translatable bool.
    * @param string $language
    *   Language string.
-   * @param string $local_field_name
+   * @param string $localFieldName
    *   Field Name.
-   * @param string $type
-   *   Local field Info type string.
    * @param string $bundle
    *   Local field Info bundle string.
    *
-   * @return \Cheppers\GatherContent\DataTypes\Element
-   *   Returns field.
+   * @return array|string
+   *   Returns value.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
-  public function processSetFields(Element $field, EntityInterface $entity, $is_translatable, $language, $local_field_name, $type, $bundle) {
-    switch ($field->type) {
-      case 'files':
-        // There is currently no API for manipulating with files.
+  public function processSetFields($field, EntityInterface $entity, $isTranslatable, $language, $localFieldName, $bundle) {
+    $value = null;
+
+    switch ($field->field_type) {
+      case 'attachment':
+        // TODO: Implement a file tracking method and create the uploading functionality.
         break;
 
       case 'choice_radio':
-        /** @var \Cheppers\GatherContent\DataTypes\ElementRadio $field */
-
-        $option_names = [];
-
-        foreach ($field->options as &$option) {
-          // Set selected to false for each option.
-          $option['selected'] = FALSE;
-          $option_names[] = $option['name'];
+      case 'choice_checkbox':
+        // Fetch local selected option.
+        if ($isTranslatable) {
+          $targets = $entity->getTranslation($language)->{$localFieldName}->getValue();
+        }
+        else {
+          $targets = $entity->{$localFieldName}->getValue();
         }
 
-        $selected = NULL;
+        $value = [];
 
-        // Fetch local selected option.
-        if ($type === 'entity_reference') {
-          if ($is_translatable) {
-            $targets = $entity->getTranslation($language)->{$local_field_name}->getValue();
-          }
-          else {
-            $targets = $entity->{$local_field_name}->getValue();
-          }
-
-          $target = array_shift($targets);
-
-          $condition_array = [
+        foreach ($targets as $target) {
+          $conditionArray = [
             'tid' => $target['target_id'],
           ];
 
           if (
-            $is_translatable &&
+            $isTranslatable &&
             \Drupal::service('content_translation.manager')
               ->isEnabled('taxonomy_term', $bundle) &&
             $language !== LanguageInterface::LANGCODE_NOT_SPECIFIED
           ) {
-            $condition_array['langcode'] = $language;
+            $conditionArray['langcode'] = $language;
           }
 
-          $terms = \Drupal::entityTypeManager()
+          $terms = $this->entityTypeManager
             ->getStorage('taxonomy_term')
-            ->loadByProperties($condition_array);
+            ->loadByProperties($conditionArray);
 
           /** @var \Drupal\taxonomy\Entity\Term $term */
           $term = array_shift($terms);
           if (!empty($term)) {
-            $option_ids = $term->gathercontent_option_ids->getValue();
-            $option_id = array_pop($option_ids);
+            $optionIds = $term->gathercontent_option_ids->getValue();
+            $options = $field->metadata->choice_fields->options;
 
-            $selected = $option_id['value'];
-          }
-        }
-        else {
-          if ($is_translatable) {
-            $selected = $entity->getTranslation($language)->{$local_field_name}->value;
-          }
-          else {
-            $selected = $entity->{$local_field_name}->value;
-          }
-        }
+            foreach ($optionIds as $optionId) {
+              if (!$this->validOptionId(
+                $options,
+                $optionId['value'])
+              ) {
+                continue;
+              }
 
-        if (!in_array($selected, $option_names)) {
-          // If it's other, then find that option in remote.
-          foreach ($field->options as &$option) {
-            if (isset($option['value'])) {
-              $option['selected'] = TRUE;
-              $option['value'] = $selected;
-            }
-          }
-        }
-        else {
-          // If it's checkbox, find it by remote option name,
-          // which should be same.
-          foreach ($field->options as &$option) {
-            if ($option['name'] == $selected) {
-              $option['selected'] = TRUE;
+              $value[] = [
+                'id' => $optionId['value'],
+              ];
             }
           }
         }
         break;
 
-      case 'choice_checkbox':
-        /** @var \Cheppers\GatherContent\DataTypes\ElementCheckbox $field */
-
-        foreach ($field->options as &$option) {
-          // Set selected to false for each option.
-          $option['selected'] = FALSE;
-        }
-
-        $selected = [];
-
-        // Fetch local selected option.
-        if ($type === 'entity_reference') {
-          if ($is_translatable) {
-            $targets = $entity->getTranslation($language)->{$local_field_name}->getValue();
-          }
-          else {
-            $targets = $entity->{$local_field_name}->getValue();
-          }
-
-          foreach ($targets as $target) {
-            $condition_array = [
-              'tid' => $target['target_id'],
-            ];
-
-            if (
-              $is_translatable &&
-              \Drupal::service('content_translation.manager')
-                ->isEnabled('taxonomy_term', $bundle) &&
-              $language !== LanguageInterface::LANGCODE_NOT_SPECIFIED
-            ) {
-              $condition_array['langcode'] = $language;
-            }
-
-            $terms = \Drupal::entityTypeManager()
-              ->getStorage('taxonomy_term')
-              ->loadByProperties($condition_array);
-
-            /** @var \Drupal\taxonomy\Entity\Term $term */
-            $term = array_shift($terms);
-            if (!empty($term)) {
-              $option_ids = $term->gathercontent_option_ids->getValue();
-              $option_id = array_pop($option_ids);
-
-              $selected[$option_id['value']] = TRUE;
-            }
-          }
-        }
-        else {
-          if ($is_translatable) {
-            $selected = $entity->getTranslation($language)->{$local_field_name}->value;
-          }
-          else {
-            $selected = $entity->{$local_field_name}->value;
-          }
-        }
-
-        // If it's checkbox, find it by remote option name,
-        // which should be same.
-        foreach ($field->options as &$option) {
-          if (isset($selected[$option['name']])) {
-            $option['selected'] = TRUE;
-          }
-        }
-        break;
-
-      case 'section':
+      case 'guidelines':
         // We don't upload this because this field shouldn't be
         // edited.
         break;
 
       default:
-        if ($local_field_name === 'title') {
-          if ($is_translatable) {
-            $field->value = $entity->getTranslation($language)
-              ->getTitle();
+        if ($localFieldName === 'title') {
+          if ($isTranslatable) {
+            $value = $entity->getTranslation($language)->getTitle();
           }
           else {
-            $field->value = $entity->getTitle();
+            $value = $entity->getTitle();
           }
         }
         else {
-          if ($is_translatable) {
-            $field->value = $entity->getTranslation($language)->{$local_field_name}->value;
+          if ($isTranslatable) {
+            $value = $entity->getTranslation($language)->{$localFieldName}->value;
           }
           else {
-            $field->value = $entity->{$local_field_name}->value;
+            $value = $entity->{$localFieldName}->value;
           }
         }
         break;
     }
 
-    return $field;
+    return $value;
+  }
+
+  /**
+   * Check if the given option ID is valid for the template.
+   *
+   * @param array $options
+   * @param $optionId
+   *
+   * @return bool
+   */
+  protected function validOptionId(array $options, $optionId) {
+    foreach ($options as $option) {
+      if ($option->optionId === $optionId) {
+        return TRUE;
+      }
+    }
+
+    return FALSE;
   }
 
 }

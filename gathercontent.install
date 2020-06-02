@@ -18,6 +18,7 @@ function gathercontent_install() {
   if (\Drupal::entityTypeManager()->hasDefinition('taxonomy_term')) {
     $entityFieldManager = \Drupal::service('entity_field.manager');
     $definitions = $entityFieldManager->getFieldStorageDefinitions('taxonomy_term');
+
     if (!isset($definitions['gathercontent_option_ids'])) {
       FieldStorageConfig::create([
         'field_name' => 'gathercontent_option_ids',
@@ -89,7 +90,9 @@ function _gathercontent_entity_mapping_spec() {
  * Implements hook_schema().
  */
 function gathercontent_schema() {
-  return ['gathercontent_entity_mapping' => _gathercontent_entity_mapping_spec()];
+  return [
+    'gathercontent_entity_mapping' => _gathercontent_entity_mapping_spec(),
+  ];
 }
 
 /**
@@ -191,17 +194,12 @@ function gathercontent_update_8402() {
  * Convert previous version mapping type to the new one.
  */
 function gathercontent_update_8501() {
-  try {
-    $entity_update_manager = \Drupal::entityDefinitionUpdateManager();
-    $entity_type = $entity_update_manager->getEntityType('gathercontent_operation');
-    $entity_update_manager->uninstallEntityType($entity_type);
+  $entity_update_manager = \Drupal::entityDefinitionUpdateManager();
+  $entity_type = $entity_update_manager->getEntityType('gathercontent_operation');
+  $entity_update_manager->uninstallEntityType($entity_type);
 
-    $entity_type = $entity_update_manager->getEntityType('gathercontent_operation_item');
-    $entity_update_manager->uninstallEntityType($entity_type);
-  }
-  catch (\Exception $e) {
-    // TODO: remove this when https://www.drupal.org/project/drupal/issues/2655162 issue merged.
-  }
+  $entity_type = $entity_update_manager->getEntityType('gathercontent_operation_item');
+  $entity_update_manager->uninstallEntityType($entity_type);
 
   // Convert mappings.
   $mapping_ids = \Drupal::entityQuery('gathercontent_mapping')->execute();

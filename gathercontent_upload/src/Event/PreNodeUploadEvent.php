@@ -2,7 +2,7 @@
 
 namespace Drupal\gathercontent_upload\Event;
 
-use Drupal\node\NodeInterface;
+use Drupal\Core\Entity\EntityInterface;
 use Symfony\Component\EventDispatcher\Event;
 
 /**
@@ -27,12 +27,12 @@ class PreNodeUploadEvent extends Event {
   /**
    * Constructs a pre node upload event object.
    *
-   * @param \Drupal\node\NodeInterface $node
-   *   Map plugin.
+   * @param \Drupal\Core\Entity\EntityInterface $node
+   *   Entity object.
    * @param array $gathercontentValues
    *   Source fields representing object in GatherContent.
    */
-  public function __construct(NodeInterface $node, array $gathercontentValues) {
+  public function __construct(EntityInterface $node, array $gathercontentValues) {
     $this->node = $node;
     $this->gathercontentValues = $gathercontentValues;
   }
