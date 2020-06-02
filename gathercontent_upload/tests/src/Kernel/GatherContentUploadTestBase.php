@@ -4,6 +4,7 @@ namespace Drupal\Tests\gathercontent_upload\Kernel;
 
 use Cheppers\GatherContent\DataTypes\Item;
 use Drupal\file\Entity\File;
+use Drupal\gathercontent\MappingLoader;
 use Drupal\gathercontent_upload\Export\Exporter;
 use Drupal\KernelTests\Core\Entity\EntityKernelTestBase;
 use Drupal\node\Entity\Node;
@@ -39,6 +40,7 @@ class GatherContentUploadTestBase extends EntityKernelTestBase {
     'content_translation',
     'entity_reference_revisions',
     'paragraphs',
+    'token',
     'metatag',
     'gathercontent',
     'gathercontent_upload',
@@ -61,6 +63,19 @@ class GatherContentUploadTestBase extends EntityKernelTestBase {
 
     $container = \Drupal::getContainer();
     $this->exporter = Exporter::create($container);
+  }
+
+  /**
+   * Returns mapping for a GatherContent Item.
+   *
+   * @param \Cheppers\GatherContent\DataTypes\Item $gcItem
+   *   GatherContent Item object.
+   *
+   * @return mixed
+   *   Mapping object.
+   */
+  public function getMapping(Item $gcItem) {
+    return MappingLoader::load($gcItem);
   }
 
   /**
@@ -89,14 +104,14 @@ class GatherContentUploadTestBase extends EntityKernelTestBase {
     $term_1 = Term::create([
       'vid' => 'tags',
       'name' => 'First choice',
-      'gathercontent_option_ids' => 'op1501678793028',
+      'gathercontent_option_ids' => 'ad10caf0-239b-473f-b106-6f615a35f574',
     ]);
     $term_1->save();
 
     $term_2 = Term::create([
       'vid' => 'tags',
       'name' => 'Choice1',
-      'gathercontent_option_ids' => 'op1500994449663',
+      'gathercontent_option_ids' => 'd009aae5-a91d-4a57-bc00-e8888b738c8d',
     ]);
     $term_2->save();
 

@@ -11,9 +11,11 @@ use Drupal\gathercontent\DrupalGatherContentClient;
 class MockDrupalGatherContentClient extends DrupalGatherContentClient {
 
   /**
+   * Chosen status.
+   *
    * @var null|int
    */
-  public static $choosenStatus = NULL;
+  public static $chosenStatus = NULL;
 
   /**
    * Mock download.
@@ -54,10 +56,10 @@ class MockDrupalGatherContentClient extends DrupalGatherContentClient {
    * Mock status change.
    */
   public function itemChooseStatusPost($itemId, $statusId) {
-    if (static::$choosenStatus !== NULL) {
+    if (static::$chosenStatus !== NULL) {
       throw new \Exception("itemChooseStatusPost shouldn't be called twice");
     }
-    static::$choosenStatus = $statusId;
+    static::$chosenStatus = $statusId;
   }
 
 }

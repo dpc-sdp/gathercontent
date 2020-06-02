@@ -97,11 +97,15 @@ class MigrationDefinitionCreator {
   protected $metatagQuery;
 
   /**
+   * Module handler.
+   *
    * @var \Drupal\Core\Extension\ModuleHandlerInterface
    */
   protected $moduleHandler;
 
   /**
+   * Database connection.
+   *
    * @var \Drupal\Core\Database\Connection
    */
   protected $database;
@@ -115,7 +119,8 @@ class MigrationDefinitionCreator {
     ConfigFactoryInterface $configFactory,
     EntityTypeManagerInterface $entityTypeManager,
     ModuleHandlerInterface $moduleHandler,
-    Connection $database
+    Connection $database,
+    MetatagQuery $metatagQuery
   ) {
     $this->configFactory = $configFactory;
     $this->entityTypeManager = $entityTypeManager;
@@ -127,8 +132,7 @@ class MigrationDefinitionCreator {
       ->getEditable('system.site')
       ->get('langcode');
 
-    /** @var \Drupal\gathercontent\MetatagQuery $metatagQuery */
-    $this->metatagQuery = \Drupal::service('gathercontent.metatag');
+    $this->metatagQuery = $metatagQuery;
   }
 
   /**

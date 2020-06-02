@@ -23,7 +23,7 @@ class RemoveGatherContentLocalData extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    drupal_set_message($this->t('This operation is irreversible and should be done before module uninstall!'), 'warning');
+    $this->messenger()->addWarning($this->t('This operation is irreversible and should be done before module uninstall!'));
 
     $form['remove_message'] = [
       '#type' => 'markup',
@@ -55,7 +55,7 @@ class RemoveGatherContentLocalData extends FormBase {
     batch_set($batch);
 
     $form_state->setRedirect('system.modules_uninstall');
-    drupal_set_message($this->t('Now you can try to uninstall the Gather Content module.'));
+    $this->messenger()->addStatus($this->t('Now you can try to uninstall the Gather Content module.'));
   }
 
   /**

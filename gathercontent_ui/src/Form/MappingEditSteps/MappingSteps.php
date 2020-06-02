@@ -4,7 +4,6 @@ namespace Drupal\gathercontent_ui\Form\MappingEditSteps;
 
 use Cheppers\GatherContent\DataTypes\Element;
 use Cheppers\GatherContent\DataTypes\ElementText;
-use Cheppers\GatherContent\DataTypes\Template;
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
@@ -21,7 +20,6 @@ use Drupal\gathercontent\Entity\MappingInterface;
 abstract class MappingSteps {
 
   use StringTranslationTrait;
-  // TODO: Use correct dependency injection.
   use DependencySerializationTrait;
 
   /**
@@ -286,7 +284,10 @@ abstract class MappingSteps {
     if ($translatable) {
       $titleField = $entity_type . '.' . $content_type . '.title';
       foreach ($content_fields as $k => $lang_fields) {
-        if (!in_array($titleField, $lang_fields) && $k !== LanguageInterface::LANGCODE_NOT_SPECIFIED) {
+        if (!in_array($titleField, $lang_fields)
+          && !in_array('title', $lang_fields)
+          && $k !== LanguageInterface::LANGCODE_NOT_SPECIFIED
+        ) {
           $formState->setErrorByName('form', $this->t('You have to map Drupal Title field for translatable content.'));
         }
       }

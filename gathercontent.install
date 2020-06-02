@@ -130,11 +130,14 @@ function gathercontent_update_8302() {
  * Create fields for gathercontent_operation_item entity.
  */
 function gathercontent_update_8303() {
-  $entity_manager = \Drupal::entityManager();
-  $definition = $entity_manager->getFieldStorageDefinitions('gathercontent_operation_item')['created'];
-  $entity_manager->onFieldStorageDefinitionCreate($definition);
-  $definition = $entity_manager->getFieldStorageDefinitions('gathercontent_operation_item')['changed'];
-  $entity_manager->onFieldStorageDefinitionCreate($definition);
+  /** @var \Drupal\Core\Entity\EntityFieldManagerInterface $entityFieldManager */
+  $entityFieldManager = \Drupal::service('entity_field.manager');
+  /** @var \Drupal\Core\Field\FieldStorageDefinitionListenerInterface $fieldStorageListener */
+  $fieldStorageListener = \Drupal::service('field_storage_definition.listener');
+  $definition = $entityFieldManager->getFieldStorageDefinitions('gathercontent_operation_item')['created'];
+  $fieldStorageListener->onFieldStorageDefinitionCreate($definition);
+  $definition = $entityFieldManager->getFieldStorageDefinitions('gathercontent_operation_item')['changed'];
+  $fieldStorageListener->onFieldStorageDefinitionCreate($definition);
 }
 
 /**
@@ -264,4 +267,18 @@ function gathercontent_update_8504() {
   $schema->addField('gathercontent_entity_mapping', 'langcode', $spec['fields']['langcode']);
   $schema->dropPrimaryKey('gathercontent_entity_mapping');
   $schema->addPrimaryKey('gathercontent_entity_mapping', $spec['primary key']);
+
+  /** @var \Drupal\Core\Database\Connection $connection */
+  $connection = \Drupal::service('database');
+  /** @var \Drupal\Core\Language\LanguageInterface $language */
+  $language = \Drupal::service('language.default')->get();
+  $langcode = $language->getId();
+
+  // Update the langcode field to contain the default language.
+  // Later imports will store the correct language for the given entity.
+  $connection->update('gathercontent_entity_mapping')
+    ->fields([
+      'langcode' => $langcode,
+    ])
+    ->execute();
 }

@@ -37,6 +37,9 @@ class ConfigCreatorTest extends GcMigrateTestBase {
     'langcode',
   ];
 
+  /**
+   * Test config creation.
+   */
   public function testConfigCreate() {
     foreach (self::CONFIG_NAMES_CONFIG_CREATE_TEST as $templateId => $testFiles) {
       /** @var \Drupal\gathercontent\Entity\MappingInterface $mapping */

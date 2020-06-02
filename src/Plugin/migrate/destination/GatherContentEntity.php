@@ -3,7 +3,7 @@
 namespace Drupal\gathercontent\Plugin\migrate\destination;
 
 use Drupal\Component\Datetime\TimeInterface;
-use Drupal\Core\Entity\EntityManagerInterface;
+use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Field\FieldTypePluginManagerInterface;
 use Drupal\Core\Session\AccountProxyInterface;
@@ -13,6 +13,8 @@ use Drupal\migrate\Row;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
+ * Custom migrate entity.
+ *
  * @MigrateDestination(
  *   id = "gc_entity",
  *   deriver = "Drupal\gathercontent\Plugin\Derivative\MigrateEntity"
@@ -43,7 +45,7 @@ class GatherContentEntity extends EntityContentBase {
     MigrationInterface $migration,
     EntityStorageInterface $storage,
     array $bundles,
-    EntityManagerInterface $entity_manager,
+    EntityFieldManagerInterface $entity_manager,
     FieldTypePluginManagerInterface $field_type_manager,
     TimeInterface $time,
     AccountProxyInterface $current_user
@@ -66,7 +68,7 @@ class GatherContentEntity extends EntityContentBase {
       $migration,
       $container->get('entity.manager')->getStorage($entity_type),
       array_keys($container->get('entity.manager')->getBundleInfo($entity_type)),
-      $container->get('entity.manager'),
+      $container->get('entity_field.manager'),
       $container->get('plugin.manager.field.field_type'),
       $container->get('datetime.time'),
       $container->get('current_user')

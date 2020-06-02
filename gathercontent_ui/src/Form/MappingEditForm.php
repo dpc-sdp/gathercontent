@@ -43,6 +43,8 @@ class MappingEditForm extends MappingEditFormBase {
   protected $mappingService;
 
   /**
+   * Migration definition creator.
+   *
    * @var \Drupal\gathercontent\MigrationDefinitionCreator
    */
   protected $migrationDefinitionCreator;

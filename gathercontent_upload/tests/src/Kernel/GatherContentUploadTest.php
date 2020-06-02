@@ -16,97 +16,68 @@ use Drupal\taxonomy\Entity\Term;
 class GatherContentUploadTest extends GatherContentUploadTestBase {
 
   /**
-   * Tests success of mapping get.
-   *
-   * @covers ::getMapping
-   */
-  public function testMappingGet() {
-    $gc_item = new Item([
-      'project_id' => 86701,
-      'template_id' => 791717,
-    ]);
-
-    $mapping = $this->exporter->getMapping($gc_item);
-    $this->assertEquals(791717, $mapping->id(), 'Mapping loaded successfully');
-  }
-
-  /**
-   * Tests failure of mapping get.
-   *
-   * @covers ::getMapping
-   */
-  public function testMappingGetFail() {
-    $gc_item = new Item();
-
-    $this->setExpectedException('Exception',
-      'Operation failed: Template not mapped.');
-    $this->exporter->getMapping($gc_item);
-  }
-
-  /**
    * Tests the field manipulation.
    */
-  public function testProcessPanes() {
+  public function testProcessGroups() {
     $node = $this->getSimpleNode();
+    $gcItem = $this->getSimpleItem();
+    $mapping = $this->getMapping($gcItem);
 
-    $gc_item = $this->getSimpleItem();
+    $modifiedItem = $this->exporter->processGroups($node, $mapping);
 
-    $modified_item = $this->exporter->processPanes($gc_item, $node);
-
-    $this->assertItemChanged($modified_item, $node);
+    $this->assertNotEmpty($modifiedItem);
+    $this->assertItemChanged($modifiedItem, $node);
   }
 
   /**
    * Checks if all the fields are correctly set.
    *
-   * @param \Cheppers\GatherContent\DataTypes\Item $gc_item
-   *   Item object.
+   * @param array $content
+   *   Content array.
    * @param \Drupal\node\NodeInterface $entity
    *   Node entity object.
    */
-  public function assertItemChanged(Item $gc_item, NodeInterface $entity) {
-    foreach ($gc_item->config as $pane) {
-      foreach ($pane->elements as $field) {
-        switch ($field->id) {
-          case 'el1501675275975':
-            $this->assertEquals($entity->getTitle(), $field->getValue());
-            break;
+  public function assertItemChanged(array $content, NodeInterface $entity) {
+    foreach ($content as $id => $fieldValue) {
+      switch ($id) {
+        case 'a9d89661-9d89-4c6d-86d3-353bfcf3214c':
+          $this->assertEquals($entity->getTitle(), $fieldValue);
+          break;
 
-          case 'el1501679176743':
-            $value = $entity->get('field_guidodo')->getValue()[0]['value'];
-            $this->assertNotEquals($value, $field->getValue());
-            break;
+        case '9c7f806b-ff35-4ffa-9363-169770ac6e50':
+          $value = $entity->get('field_guidodo')->getValue()[0]['value'];
+          $this->assertNotEquals($value, $fieldValue);
+          break;
 
-          case 'el1501678793027':
-            $radio = $entity->get('field_radio');
-            $this->assertSelection($field, $radio);
-            break;
+        case 'dc73c531-d911-4acc-9055-984a1aeca0cb':
+          $radio = $entity->get('field_radio');
+          $this->assertSelection($fieldValue, $radio);
+          break;
 
-          case 'el1500994248864':
-            $value = $entity->get('body')->getValue()[0]['value'];
-            $this->assertEquals($value, $field->getValue());
-            break;
+        case '427bc71f-844d-4730-a5d2-5e87d03fdbf0':
+          $value = $entity->get('body')->getValue()[0]['value'];
+          $this->assertEquals($value, $fieldValue);
+          break;
 
-          case 'el1500994276297':
-            $checkbox = $entity->get('field_tags_alt');
-            $this->assertSelection($field, $checkbox);
-            break;
+        case '192775f3-354b-4884-bec9-0f4ecf153882':
+          $checkbox = $entity->get('field_tags_alt');
+          $this->assertSelection($fieldValue, $checkbox);
+          break;
 
-          case 'el1501666239392':
-            $paragraph = $entity->get('field_para');
-            $this->assertParagraphText($field, $paragraph);
-            break;
+        case '361b0476-643e-41e7-97bb-a5065ad6fa1b':
+          $paragraph = $entity->get('field_para');
+          $this->assertParagraphText($fieldValue, $paragraph);
+          break;
 
-          case 'el1501772184393':
-            $paragraph = $entity->get('field_para');
-            $this->assertParagraphText($field, $paragraph, TRUE);
-            break;
+        case 'f88f8389-ad24-46ec-a669-6f293a07b4f7':
+          $paragraph = $entity->get('field_para');
+          $this->assertParagraphText($fieldValue, $paragraph, TRUE);
+          break;
 
-          case 'el1501598415730':
-          case 'el1501666248919':
-            // No possibility to upload image!
-            break;
-        }
+        case 'b11e3729-2a80-4f14-9842-87a4882fa190':
+        case 'd8cbeeda-9cdf-4d3f-b94a-72a465a7cc46':
+          // Not implemented yet!
+          break;
       }
     }
   }
@@ -311,18 +282,13 @@ class GatherContentUploadTest extends GatherContentUploadTestBase {
   /**
    * Check radio and checkbox selection value.
    *
-   * @param \Cheppers\GatherContent\DataTypes\Element $field
-   *   GatherContent Element.
+   * @param array $value
+   *   Response value array.
    * @param \Drupal\Core\Field\FieldItemListInterface $itemList
    *   Item list.
    */
-  public function assertSelection(Element $field, FieldItemListInterface $itemList) {
-    $selected = NULL;
-    foreach ($field->options as $option) {
-      if ($option['selected']) {
-        $selected = $option['name'];
-      }
-    }
+  public function assertSelection(array $value, FieldItemListInterface $itemList) {
+    $selected = $value[0]['id'];
 
     $targets = $itemList->getValue();
     $target = array_shift($targets);
@@ -336,8 +302,8 @@ class GatherContentUploadTest extends GatherContentUploadTestBase {
   /**
    * Check paragraph text value.
    *
-   * @param \Cheppers\GatherContent\DataTypes\Element $field
-   *   GatherContent Element.
+   * @param string $fieldValue
+   *   GatherContent field value.
    * @param \Drupal\Core\Field\FieldItemListInterface $itemList
    *   Item list.
    * @param bool $isPop
@@ -345,7 +311,7 @@ class GatherContentUploadTest extends GatherContentUploadTestBase {
    * @param bool $translated
    *   Is the content translated.
    */
-  public function assertParagraphText(Element $field, FieldItemListInterface $itemList, $isPop = FALSE, $translated = FALSE) {
+  public function assertParagraphText($fieldValue, FieldItemListInterface $itemList, $isPop = FALSE, $translated = FALSE) {
     $targets = $itemList->getValue();
     if ($isPop) {
       $target = array_pop($targets);
@@ -362,7 +328,7 @@ class GatherContentUploadTest extends GatherContentUploadTestBase {
       $value = $para->get('field_text')->getValue()[0]['value'];
     }
 
-    $this->assertEquals($value, $field->getValue());
+    $this->assertEquals($value, $fieldValue);
   }
 
 }

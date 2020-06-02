@@ -2,6 +2,7 @@
 
 namespace Drupal\gathercontent;
 
+use function GuzzleHttp\json_decode;
 use Cheppers\GatherContent\GatherContentClient;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Pool;
@@ -106,7 +107,7 @@ class DrupalGatherContentClient extends GatherContentClient {
     $body = $this->getResponse()->getBody();
 
     if ($jsonDecoded) {
-      return \GuzzleHttp\json_decode($body);
+      return json_decode($body);
     }
 
     return $body;
@@ -181,8 +182,7 @@ class DrupalGatherContentClient extends GatherContentClient {
   /**
    * {@inheritdoc}
    */
-  public function templateGet($templateId)
-  {
+  public function templateGet($templateId) {
     $template = parent::templateGet($templateId);
 
     if (empty($template['related'])) {
@@ -204,8 +204,7 @@ class DrupalGatherContentClient extends GatherContentClient {
   /**
    * {@inheritdoc}
    */
-  public function projectStatusesGet($projectId)
-  {
+  public function projectStatusesGet($projectId) {
     $statuses = parent::projectStatusesGet($projectId);
 
     if (empty($statuses['data'])) {
@@ -222,12 +221,14 @@ class DrupalGatherContentClient extends GatherContentClient {
    * Create new assoc array with the key parameter as array key.
    *
    * @param array $array
-   * @param $key
+   *   Array to re-key.
+   * @param string $key
+   *   The key to re-key by.
    *
    * @return array
+   *   Returns the re-keyed array.
    */
-  protected function reKeyArray(array $array, $key)
-  {
+  protected function reKeyArray(array $array, $key) {
     $items = [];
     foreach ($array as $item) {
       $items[$item->{$key}] = $item;

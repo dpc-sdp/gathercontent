@@ -23,46 +23,64 @@ class ContentImportSelectForm extends FormBase {
   use StringTranslationTrait;
 
   /**
+   * Step.
+   *
    * @var int
    */
   protected $step;
 
   /**
+   * Project ID.
+   *
    * @var int|string
    */
   protected $projectId;
 
   /**
+   * Nodes.
+   *
    * @var mixed|object
    */
   protected $nodes;
 
   /**
+   * Menu.
+   *
    * @var string
    */
   protected $menu;
 
   /**
+   * Items.
+   *
    * @var array|string
    */
   protected $items;
 
   /**
+   * Drupal status.
+   *
    * @var mixed
    */
   protected $drupalStatus;
 
   /**
+   * GatherCotnent client.
+   *
    * @var \Cheppers\GatherContent\GatherContentClientInterface
    */
   protected $client;
 
   /**
+   * Menu parent form selector.
+   *
    * @var \Drupal\Core\Menu\MenuParentFormSelectorInterface
    */
   protected $menuParentFormSelector;
 
   /**
+   * Entity type manager.
+   *
    * @var \Drupal\Core\Entity\EntityTypeManagerInterface
    */
   protected $entityTypeManager;
@@ -470,12 +488,11 @@ class ContentImportSelectForm extends FormBase {
       }
       elseif ($this->step === 2) {
         $operations = [];
-        $stack = [];
         $importContent = $this->nodes;
         $gcIds = [];
         $importOptions = [];
 
-        foreach ($importContent as $k => $value) {
+        foreach ($importContent as $value) {
           /** @var \Cheppers\GatherContent\DataTypes\Item $item */
           $gcItem = $this->client->itemGet($value);
           /** @var \Drupal\gathercontent\Entity\MappingInterface $mapping */
@@ -504,8 +521,6 @@ class ContentImportSelectForm extends FormBase {
               $mapping,
             ],
           ];
-
-          $stack[$value] = $value;
         }
 
         $batch = [

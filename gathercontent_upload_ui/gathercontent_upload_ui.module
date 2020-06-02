@@ -5,50 +5,45 @@
  * GatherContent Upload UI.
  */
 
-use Drupal\gathercontent\Entity\OperationItem;
-use Drupal\gathercontent_upload\Event\GatherUploadContentEvents;
-use Drupal\gathercontent_upload\Event\PostUploadEvent;
-use Symfony\Component\HttpFoundation\RedirectResponse;
-
 /**
  * Finished callback.
  *
  * @inheritdoc
  */
 function gathercontent_upload_finished($success, $results, $operations) {
+  $messenger = \Drupal::messenger();
+
   if ($success) {
     if ($results['success'] > 0) {
-      drupal_set_message(\Drupal::translation()
+      $messenger->addStatus(\Drupal::translation()
         ->formatPlural($results['success'], '1 item was uploaded successfully.', '@count items were uploaded successfully.'));
     }
 
     if ($results['failed'] > 0) {
-      drupal_set_message(\Drupal::translation()
-        ->formatPlural($results['failed'], '1 item could not be uploaded. Check errors below.', '@count items could not be uploaded. Check errors below.'), 'error');
+      $messenger->addError(\Drupal::translation()
+        ->formatPlural($results['failed'], '1 item could not be uploaded. Check errors below.', '@count items could not be uploaded. Check errors below.'));
     }
 
     if ($results['failed'] == 0 && $results['success'] == 0) {
-      drupal_set_message(\Drupal::translation()
-        ->translate('Nothing was uploaded.'));
+      $messenger->addStatus(t('Nothing was uploaded.'));
     }
 
     if (isset($results['messages']) && count($results['messages']) > 0) {
       foreach ($results['messages'] as $message) {
-        drupal_set_message($message, 'error');
+        $messenger->addError($message);
       }
     }
   }
   else {
     $error_operation = reset($operations);
 
-    drupal_set_message(
+    $messenger->addError(
       t('An error occurred while processing @operation with arguments : @args',
         [
           '@operation' => $error_operation[0],
           '@args' => print_r($error_operation[0], TRUE),
         ]
-      ),
-      'error'
+      )
     );
   }
   return TRUE;

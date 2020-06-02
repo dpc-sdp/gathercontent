@@ -3,4 +3,6 @@ status: true
 dependencies: {  }
 id: para_2
 label: 'Para 2'
+icon_uuid: null
+description: ''
 behavior_plugins: {  }

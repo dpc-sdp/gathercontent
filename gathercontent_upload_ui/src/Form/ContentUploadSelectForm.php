@@ -22,26 +22,36 @@ class ContentUploadSelectForm extends FormBase {
   use StringTranslationTrait;
 
   /**
+   * Step.
+   *
    * @var int
    */
   protected $step;
 
   /**
+   * Project ID.
+   *
    * @var int|string
    */
   protected $projectId;
 
   /**
+   * Entities.
+   *
    * @var mixed|object
    */
   protected $entities;
 
   /**
+   * Items.
+   *
    * @var array|string
    */
   protected $items;
 
   /**
+   * Client object.
+   *
    * @var \Cheppers\GatherContent\GatherContentClientInterface
    */
   protected $client;
@@ -54,6 +64,8 @@ class ContentUploadSelectForm extends FormBase {
   protected $database;
 
   /**
+   * Entity type manager.
+   *
    * @var \Drupal\Core\Entity\EntityTypeManagerInterface
    */
   protected $entityTypeManager;
@@ -88,6 +100,7 @@ class ContentUploadSelectForm extends FormBase {
   public function getFormId() {
     return 'gathercontent_content_upload_form';
   }
+
   /**
    * {@inheritdoc}
    */
