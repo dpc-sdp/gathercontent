@@ -2,11 +2,10 @@
 
 namespace Drupal\gathercontent_upload\Export;
 
-use Cheppers\GatherContent\DataTypes\Element;
-use Cheppers\GatherContent\DataTypes\Item;
 use Cheppers\GatherContent\GatherContentClientInterface;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Language\Language;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\field\Entity\FieldConfig;
@@ -15,7 +14,6 @@ use Drupal\gathercontent\MetatagQuery;
 use Drupal\gathercontent_upload\Event\GatherUploadContentEvents;
 use Drupal\gathercontent_upload\Event\PostNodeUploadEvent;
 use Drupal\gathercontent_upload\Event\PreNodeUploadEvent;
-use Drupal\node\NodeInterface;
 use Exception;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -39,14 +37,23 @@ class Exporter implements ContainerInjectionInterface {
   protected $metatag;
 
   /**
+   * Entity type manager.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected $entityTypeManager;
+
+  /**
    * DI GatherContent Client.
    */
   public function __construct(
     GatherContentClientInterface $client,
-    MetatagQuery $metatag
+    MetatagQuery $metatag,
+    EntityTypeManagerInterface $entityTypeManager
   ) {
     $this->client = $client;
     $this->metatag = $metatag;
+    $this->entityTypeManager = $entityTypeManager;
   }
 
   /**
@@ -55,7 +62,8 @@ class Exporter implements ContainerInjectionInterface {
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('gathercontent.client'),
-      $container->get('gathercontent.metatag')
+      $container->get('gathercontent.metatag'),
+      $container->get('entity_type.manager')
     );
   }
 
@@ -194,7 +202,7 @@ class Exporter implements ContainerInjectionInterface {
         // Get the deepest field's value, we need tih sto collect the referenced entities values.
         $this->processTargets($currentEntity, $currentFieldName, $type, $bundle, $exportedFields, $localIdArray, $isTranslatable, $language);
 
-        $values[$field->uuid] = $this->processSetFields($field, $currentEntity, $isTranslatable, $language, $currentFieldName, $type, $bundle);
+        $values[$field->uuid] = $this->processSetFields($field, $currentEntity, $isTranslatable, $language, $currentFieldName, $bundle);
       }
       elseif ($mappingData[$group->id]['type'] === 'metatag') {
         if (\Drupal::moduleHandler()->moduleExists('metatag')
@@ -233,7 +241,6 @@ class Exporter implements ContainerInjectionInterface {
    */
   public function processTargets(EntityInterface &$currentEntity, &$currentFieldName, &$type, &$bundle, array &$exportedFields, array $localIdArray, $isTranslatable, $language) {
     $idCount = count($localIdArray);
-    $entityTypeManager = \Drupal::entityTypeManager();
 
     // Loop through the references, going deeper and deeper.
     for ($i = 0; $i < $idCount - 1; $i++) {
@@ -253,7 +260,7 @@ class Exporter implements ContainerInjectionInterface {
       // Load the targeted entity and process the data.
       if (!empty($targetFieldValue)) {
         $fieldTargetInfo = FieldConfig::load($localIdArray[$i + 1]);
-        $entityStorage = $entityTypeManager
+        $entityStorage = $this->entityTypeManager
           ->getStorage($fieldTargetInfo->getTargetEntityTypeId());
         $childFieldName = $fieldTargetInfo->getName();
         $childType = $fieldInfo->getType();
@@ -333,8 +340,6 @@ class Exporter implements ContainerInjectionInterface {
    *   Language string.
    * @param string $localFieldName
    *   Field Name.
-   * @param string $type
-   *   Local field Info type string.
    * @param string $bundle
    *   Local field Info bundle string.
    *
@@ -344,7 +349,7 @@ class Exporter implements ContainerInjectionInterface {
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
-  public function processSetFields($field, EntityInterface $entity, $isTranslatable, $language, $localFieldName, $type, $bundle) {
+  public function processSetFields($field, EntityInterface $entity, $isTranslatable, $language, $localFieldName, $bundle) {
     $value = null;
 
     switch ($field->field_type) {
@@ -378,7 +383,7 @@ class Exporter implements ContainerInjectionInterface {
             $conditionArray['langcode'] = $language;
           }
 
-          $terms = \Drupal::entityTypeManager()
+          $terms = $this->entityTypeManager
             ->getStorage('taxonomy_term')
             ->loadByProperties($conditionArray);
 
@@ -386,9 +391,16 @@ class Exporter implements ContainerInjectionInterface {
           $term = array_shift($terms);
           if (!empty($term)) {
             $optionIds = $term->gathercontent_option_ids->getValue();
+            $options = $field->metadata->choice_fields->options;
 
-            // TODO: implement template tracking for taxonomies, so we can use template related ids.
             foreach ($optionIds as $optionId) {
+              if (!$this->validOptionId(
+                $options,
+                $optionId['value'])
+              ) {
+                continue;
+              }
+
               $value[] = [
                 'id' => $optionId['value'],
               ];
@@ -423,6 +435,24 @@ class Exporter implements ContainerInjectionInterface {
     }
 
     return $value;
+  }
+
+  /**
+   * Check if the given option ID is valid for the template.
+   *
+   * @param array $options
+   * @param $optionId
+   *
+   * @return bool
+   */
+  protected function validOptionId(array $options, $optionId) {
+    foreach ($options as $option) {
+      if ($option->optionId === $optionId) {
+        return TRUE;
+      }
+    }
+
+    return FALSE;
   }
 
 }

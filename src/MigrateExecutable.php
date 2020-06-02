@@ -83,20 +83,28 @@ class MigrateExecutable extends MigrateExecutableBase {
     $row = $event->getRow();
 
     $migration = $event->getMigration();
-    $source_id = array_merge(array_flip(array_keys($migration->getSourcePlugin()
+    $sourceId = array_merge(array_flip(array_keys($migration->getSourcePlugin()
       ->getIds())), $row->getSourceIdValues());
 
-    if (!empty($this->importOptions[$source_id['id']])) {
+    if (!empty($this->importOptions[$sourceId['id']])) {
       /** @var \Drupal\gathercontent\Import\ImportOptions $options */
-      $options = $this->importOptions[$source_id['id']];
+      $options = $this->importOptions[$sourceId['id']];
+      $destinationConfiguration = $migration->getDestinationConfiguration();
+      $plugin = explode(':', $destinationConfiguration['plugin']);
 
-      // TODO: change to use entity specific status field if exists.
-      $row->setDestinationProperty('status', $options->getPublish());
+      $entityTypeManager = \Drupal::entityTypeManager();
+      $entityDefinition = $entityTypeManager->getDefinition($plugin[1]);
+
+      if ($entityDefinition->hasKey('published')) {
+        $statusKey = $entityDefinition->getKey('published');
+        $row->setDestinationProperty($statusKey, $options->getPublish());
+      }
+
       $row->setDestinationProperty('gc_import_options/new_revision', $options->getCreateNewRevision());
     }
 
-    $source_configuration = $migration->getSourceConfiguration();
-    $this->latestGcStatus = $this->client->projectStatusGet($source_configuration['projectId'], $row->getSourceProperty('statusId'));
+    $sourceConfiguration = $migration->getSourceConfiguration();
+    $this->latestGcStatus = $this->client->projectStatusGet($sourceConfiguration['projectId'], $row->getSourceProperty('statusId'));
   }
 
   /**
@@ -107,10 +115,10 @@ class MigrateExecutable extends MigrateExecutableBase {
     $rows = [];
 
     $migration = $event->getMigration();
-    $destination_configuration = $migration->getDestinationConfiguration();
-    $plugin = explode(':', $destination_configuration['plugin']);
-    $source_configuration = $migration->getSourceConfiguration();
-    $plugin_definition = $migration->getPluginDefinition();
+    $destinationConfiguration = $migration->getDestinationConfiguration();
+    $plugin = explode(':', $destinationConfiguration['plugin']);
+    $sourceConfiguration = $migration->getSourceConfiguration();
+    $pluginDefinition = $migration->getPluginDefinition();
 
     foreach ($this->idlist as $item) {
       $rows[] = $event->getMigration()->getIdMap()->getRowBySource($item);
@@ -128,32 +136,32 @@ class MigrateExecutable extends MigrateExecutableBase {
       if (!empty($this->importOptions[$row['sourceid1']])) {
         /** @var \Drupal\gathercontent\Import\ImportOptions $options */
         $options = $this->importOptions[$row['sourceid1']];
-        $parent_menu_item = $options->getParentMenuItem();
+        $parentMenuItem = $options->getParentMenuItem();
 
-        if (!empty($parent_menu_item) && $parent_menu_item != '0') {
+        if (!empty($parentMenuItem) && $parentMenuItem != '0') {
           // TODO: Use the entity type from the mapping, not the node!
           $entity = Node::load($row['destid1']);
 
           // TODO: Rewrite menu creator to support none node entities too.
-          MenuCreator::createMenu($entity, $parent_menu_item);
+          MenuCreator::createMenu($entity, $parentMenuItem);
         }
 
-        $new_gc_status = $options->getNewStatus();
+        $newGcStatus = $options->getNewStatus();
 
-        if ($new_gc_status && is_int($new_gc_status)) {
-          $status = $this->client->projectStatusGet($source_configuration['projectId'], $new_gc_status);
+        if ($newGcStatus && is_int($newGcStatus)) {
+          $status = $this->client->projectStatusGet($sourceConfiguration['projectId'], $newGcStatus);
 
           // Update only if status exists.
           if ($status !== NULL) {
             // Update status on GC.
-            $this->client->itemChooseStatusPost($row['sourceid1'], $new_gc_status);
+            $this->client->itemChooseStatusPost($row['sourceid1'], $newGcStatus);
 
             $this->latestGcStatus = $status;
           }
         }
       }
 
-      $this->trackEntities($row, $plugin[1], $source_configuration['templateName'], $migration->id(), $plugin_definition['langcode']);
+      $this->trackEntities($row, $plugin[1], $sourceConfiguration['templateName'], $migration->id(), $pluginDefinition['langcode']);
     }
   }
 
