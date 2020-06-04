@@ -4,7 +4,6 @@ namespace Drupal\gathercontent_ui\Form\MappingEditSteps;
 
 use Cheppers\GatherContent\DataTypes\Element;
 use Cheppers\GatherContent\DataTypes\ElementText;
-use Cheppers\GatherContent\DataTypes\Template;
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
@@ -21,7 +20,6 @@ use Drupal\gathercontent\Entity\MappingInterface;
 abstract class MappingSteps {
 
   use StringTranslationTrait;
-  // TODO: Use correct dependency injection.
   use DependencySerializationTrait;
 
   /**
@@ -64,10 +62,10 @@ abstract class MappingSteps {
    *
    * @param \Drupal\gathercontent\Entity\MappingInterface $mapping
    *   Mapping object.
-   * @param \Cheppers\GatherContent\DataTypes\Template $template
-   *   Template object.
+   * @param array $template
+   *   Template array.
    */
-  public function __construct(MappingInterface $mapping, Template $template) {
+  public function __construct(MappingInterface $mapping, array $template) {
     $this->mapping = $mapping;
     $this->template = $template;
     /** @var \Drupal\gathercontent\MetatagQuery $metatagQuery */
@@ -121,14 +119,14 @@ abstract class MappingSteps {
     $form['form_description'] = [
       '#type' => 'html_tag',
       '#tag' => 'i',
-      '#value' => t('Please map your GatherContent Template fields to your Drupal
+      '#value' => $this->t('Please map your GatherContent Template fields to your Drupal
       Content Type Fields. Please note that a GatherContent field can only be
       mapped to a single Drupal field. So each field can only be mapped to once.'),
     ];
 
     $form['gathercontent_project'] = [
       '#type' => 'item',
-      '#title' => t('Project name:'),
+      '#title' => $this->t('Project name:'),
       '#markup' => $this->mapping->getGathercontentProject(),
       '#wrapper_attributes' => [
         'class' => [
@@ -143,7 +141,7 @@ abstract class MappingSteps {
 
     $form['gathercontent']['gathercontent_template'] = [
       '#type' => 'item',
-      '#title' => t('GatherContent template:'),
+      '#title' => $this->t('GatherContent template:'),
       '#markup' => $this->mapping->getGathercontentTemplate(),
       '#wrapper_attributes' => [
         'class' => [
@@ -185,24 +183,25 @@ abstract class MappingSteps {
       }
     }
     // Check if is translatable.
+    $entity_type = (empty($this->mapping->getMappedEntityType()) ? $formState->getValue('entity_type') : $this->mapping->getMappedEntityType());
     $content_type = (empty($this->mapping->getContentType()) ? $formState->getValue('content_type') : $this->mapping->getContentType());
     $translatable = \Drupal::moduleHandler()->moduleExists('content_translation')
       && \Drupal::service('content_translation.manager')
-        ->isEnabled('node', $content_type);
+        ->isEnabled($entity_type, $content_type);
     // Validate if each language is used only once
     // for translatable content types.
     $content_lang = [];
     $metatag_lang = [];
 
     if ($translatable) {
-      foreach ($mapping_data as $tab_id => $tab) {
-        $tab_type = (isset($tab['type']) ? $tab['type'] : 'content');
-        if ($tab['language'] != 'und') {
-          if (!in_array($tab['language'], ${$tab_type . '_lang'})) {
-            ${$tab_type . '_lang'}[] = $tab['language'];
+      foreach ($mapping_data as $groupId => $group) {
+        $groupType = (isset($group['type']) ? $group['type'] : 'content');
+        if ($group['language'] != 'und') {
+          if (!in_array($group['language'], ${$groupType . '_lang'})) {
+            ${$groupType . '_lang'}[] = $group['language'];
           }
           else {
-            $element = $tab_id . '[language]';
+            $element = $groupId . '[language]';
             $formState->setErrorByName($element, $this->t('Each language can be used only once'));
           }
         }
@@ -220,46 +219,46 @@ abstract class MappingSteps {
       foreach ($metatag_lang as $lang) {
         $metatag_fields[$lang] = [];
       }
-      $content_fields['und'] = $metatag_fields['und'] = [];
+      $content_fields[LanguageInterface::LANGCODE_NOT_SPECIFIED] = $metatag_fields[LanguageInterface::LANGCODE_NOT_SPECIFIED] = [];
     }
 
-    foreach ($mapping_data as $tab_id => $tab) {
-      $tab_type = (isset($tab['type']) ? $tab['type'] : 'content');
+    foreach ($mapping_data as $groupId => $group) {
+      $groupType = (isset($group['type']) ? $group['type'] : 'content');
 
-      if (isset($tab['elements'])) {
-        foreach ($tab['elements'] as $k => $element) {
+      if (isset($group['elements'])) {
+        foreach ($group['elements'] as $k => $element) {
           if (empty($element)) {
             continue;
           }
 
           if ($translatable) {
             if (
-              ($tab_type == 'content' &&
-                in_array($this->template->config[$tab_id]->elements[$k]->type, ['text', 'section'])
+              ($groupType == 'content' &&
+                in_array($this->template['related']->structure->groups[$groupId]->fields[$k]->type, ['text', 'guidelines'])
               ) ||
-              !in_array($element, ${$tab_type . '_fields'}[$tab['language']])
+              !in_array($element, ${$groupType . '_fields'}[$group['language']])
             ) {
-              ${$tab_type . '_fields'}[$tab['language']][] = $element;
+              ${$groupType . '_fields'}[$group['language']][] = $element;
             }
             else {
               if (!strpos($element, '||')) {
-                $formState->setErrorByName($tab_id,
+                $formState->setErrorByName($groupId,
                   $this->t('A GatherContent field can only be mapped to a single Drupal field. So each field can only be mapped to once.'));
               }
             }
           }
           else {
             if (
-              ($tab_type == 'content' &&
-                in_array($this->template->config[$tab_id]->elements[$k]->type, ['text', 'section'])
+              ($groupType == 'content'
+                && in_array($this->template['related']->structure->groups[$groupId]->fields[$k]->type, ['text', 'guidelines'])
               ) ||
-              !in_array($element, ${$tab_type . '_fields'})
+              !in_array($element, ${$groupType . '_fields'})
             ) {
-              ${$tab_type . '_fields'}[] = $element;
+              ${$groupType . '_fields'}[] = $element;
             }
             else {
               if (!strpos($element, '||')) {
-                $formState->setErrorByName($tab_id,
+                $formState->setErrorByName($groupId,
                   $this->t('A GatherContent field can only be mapped to a single Drupal field. So each field can only be mapped to once.'));
               }
             }
@@ -270,22 +269,26 @@ abstract class MappingSteps {
 
     // Validate if at least one field in mapped.
     if (!$translatable && empty($content_fields) && empty($metatag_fields)) {
-      $formState->setErrorByName('form', t('You need to map at least one field to create mapping.'));
+      $formState->setErrorByName('form', $this->t('You need to map at least one field to create mapping.'));
     }
     elseif ($translatable &&
       count($content_fields) === 1
-      && empty($content_fields['und'])
-      && empty($metatag_fields['und'])
+      && empty($content_fields[LanguageInterface::LANGCODE_NOT_SPECIFIED])
+      && empty($metatag_fields[LanguageInterface::LANGCODE_NOT_SPECIFIED])
       && count($metatag_fields) === 1
     ) {
-      $formState->setErrorByName('form', t('You need to map at least one field to create mapping.'));
+      $formState->setErrorByName('form', $this->t('You need to map at least one field to create mapping.'));
     }
 
     // Validate if title is mapped for translatable content.
     if ($translatable) {
+      $titleField = $entity_type . '.' . $content_type . '.title';
       foreach ($content_fields as $k => $lang_fields) {
-        if (!in_array('title', $lang_fields) && $k != 'und') {
-          $formState->setErrorByName('form', t('You have to map Drupal Title field for translatable content.'));
+        if (!in_array($titleField, $lang_fields)
+          && !in_array('title', $lang_fields)
+          && $k !== LanguageInterface::LANGCODE_NOT_SPECIFIED
+        ) {
+          $formState->setErrorByName('form', $this->t('You have to map Drupal Title field for translatable content.'));
         }
       }
     }
@@ -331,12 +334,12 @@ abstract class MappingSteps {
    */
   protected function filterFieldsRecursively($gc_field, $content_type, $entity_type = 'node', array $nested_ids = [], $bundle_label = '') {
     $mapping_array = [
-      'files' => [
+      'attachment' => [
         'file',
         'image',
         'entity_reference_revisions',
       ],
-      'section' => [
+      'guidelines' => [
         'text_long',
         'entity_reference_revisions',
       ],
@@ -373,12 +376,12 @@ abstract class MappingSteps {
 
     $fields = [];
     // Fields.
-    foreach ($instances as $name => $instance) {
+    foreach ($instances as $instance) {
       if ($instance instanceof BaseFieldDefinition) {
         // Set label field.
         if ($gc_field->type === 'text'
           && $gc_field instanceof ElementText
-          && $gc_field->plainText
+          && $gc_field->metaData->isPlain
           && $titleKey == $instance->getName()
         ) {
           $fields[$titleKey] = $instance->getLabel();
@@ -396,7 +399,7 @@ abstract class MappingSteps {
         switch ($gc_field->type) {
           case 'text':
             if (
-              (!isset($gc_field->plainText) || !$gc_field->plainText) &&
+              (!isset($gc_field->metaData->isPlain) || !$gc_field->metaData->isPlain) &&
               in_array($instance->getType(), [
                 'string',
                 'string_long',
@@ -487,18 +490,18 @@ abstract class MappingSteps {
             $mappingData = unserialize($this->mapping->getData());
 
             if ($mappingData) {
-              foreach ($mappingData as $tabName => $tab) {
-                $gcField = array_search($key, $tab['elements']);
+              foreach ($mappingData as $groupName => $group) {
+                $gcField = array_search($key, $group['elements']);
                 if (empty($gcField)) {
                   continue;
                 }
-                if (isset($tab['language'])) {
-                  $this->entityReferenceFields[$key][$tab['language']]['name'] = $gcField;
-                  $this->entityReferenceFields[$key][$tab['language']]['tab'] = $tabName;
+                if (isset($group['language'])) {
+                  $this->entityReferenceFields[$key][$group['language']]['name'] = $gcField;
+                  $this->entityReferenceFields[$key][$group['language']]['tab'] = $groupName;
                 }
                 else {
                   $this->entityReferenceFields[$key][LanguageInterface::LANGCODE_NOT_SPECIFIED]['name'] = $gcField;
-                  $this->entityReferenceFields[$key][LanguageInterface::LANGCODE_NOT_SPECIFIED]['tab'] = $tabName;
+                  $this->entityReferenceFields[$key][LanguageInterface::LANGCODE_NOT_SPECIFIED]['tab'] = $groupName;
                 }
               }
             }
@@ -530,8 +533,8 @@ abstract class MappingSteps {
   protected function filterMetatags($gathercontent_field, $content_type, $entity_type = 'node') {
     if (
       $gathercontent_field->type === 'text' &&
-      isset($gathercontent_field->plainText) &&
-      $gathercontent_field->plainText
+      isset($gathercontent_field->metaData->isPlain) &&
+      $gathercontent_field->metaData->isPlain
     ) {
       /** @var \Drupal\gathercontent\MetatagQuery $metatagQuery */
       $metatagQuery = \Drupal::service('gathercontent.metatag');
@@ -605,4 +608,5 @@ abstract class MappingSteps {
 
     return $response;
   }
+
 }

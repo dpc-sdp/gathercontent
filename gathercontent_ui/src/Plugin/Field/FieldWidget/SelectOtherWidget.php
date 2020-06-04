@@ -5,6 +5,7 @@ namespace Drupal\gathercontent_ui\Plugin\Field\FieldWidget;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\WidgetBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 
 /**
  * Plugin implementation of the 'select_other_widget' widget.
@@ -18,6 +19,8 @@ use Drupal\Core\Form\FormStateInterface;
  * )
  */
 class SelectOtherWidget extends WidgetBase {
+
+  use StringTranslationTrait;
 
   /**
    * {@inheritdoc}
@@ -34,8 +37,8 @@ class SelectOtherWidget extends WidgetBase {
   public function settingsForm(array $form, FormStateInterface $form_state) {
     $element['available_options'] = [
       '#type' => 'textarea',
-      '#title' => t('Available options'),
-      '#description' => t('A list of values that are, by default, available for selection. Enter one value per line, in the format key|label. The key is the value that will be stored in the database, and the label is what will be displayed to the user.'),
+      '#title' => $this->t('Available options'),
+      '#description' => $this->t('A list of values that are, by default, available for selection. Enter one value per line, in the format key|label. The key is the value that will be stored in the database, and the label is what will be displayed to the user.'),
       '#default_value' => $this->getSetting('available_options'),
     ];
 

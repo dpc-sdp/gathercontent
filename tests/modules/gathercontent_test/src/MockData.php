@@ -23,6 +23,11 @@ class MockData {
   const TRANSLATED_TAB = 'tab1503302417527';
   const METATAG_TAB = 'tab1503403907382';
 
+  /**
+   * Drupal root.
+   *
+   * @var string
+   */
   public static $drupalRoot = '';
 
   /**
@@ -194,6 +199,9 @@ class MockData {
     return Mapping::load($mapping_id);
   }
 
+  /**
+   * After installing the test configs read the mapping for a given template.
+   */
   public static function getSpecificMapping(string $templateId) {
     $mapping_id = \Drupal::entityQuery('gathercontent_mapping')
       ->condition('gathercontent_template_id', $templateId)

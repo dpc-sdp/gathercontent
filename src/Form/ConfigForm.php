@@ -7,6 +7,7 @@ use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Link;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\Core\Url;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
@@ -16,6 +17,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * @package Drupal\gathercontent\Form
  */
 class ConfigForm extends ConfigFormBase {
+
+  use StringTranslationTrait;
 
   /**
    * GatherContent client.
@@ -87,12 +90,11 @@ class ConfigForm extends ConfigFormBase {
     }
 
     if ($form_state->isSubmitted()) {
-      /** @var \Cheppers\GatherContent\DataTypes\Account[] $data */
       $data = $this->client->accountsGet();
       $accounts = [];
 
-      if (!is_null($data)) {
-        foreach ($data as $account) {
+      if (!is_null($data['data'])) {
+        foreach ($data['data'] as $account) {
           $accounts[$account->id] = $account->name;
         }
 
@@ -150,13 +152,12 @@ class ConfigForm extends ConfigFormBase {
       else {
         $submitted_account_id = $form_state->getValue('account');
 
-        /** @var \Cheppers\GatherContent\DataTypes\Account[] $data */
         $data = $this->client->accountsGet();
-        foreach ($data as $account) {
+        foreach ($data['data'] as $account) {
           if ($account->id == $submitted_account_id) {
             $account_name = $account->name;
             $this->config('gathercontent.settings')->set('gathercontent_account', serialize([$submitted_account_id => $account_name]))->save();
-            drupal_set_message(t("Credentials and project were saved."));
+            $this->messenger()->addMessage($this->t("Credentials and project were saved."));
             $this->config('gathercontent.settings')->set('gathercontent_urlkey', $account->slug)->save();
             break;
           }

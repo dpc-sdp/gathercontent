@@ -2,7 +2,8 @@ name: GatherContent UI
 description: 'GatherContent User Interface module'
 package: GatherContent
 core: 8.x
+core_version_requirement: ^8 || ^9
 type: module
 dependencies:
-  - gathercontent
-  - views
+  - drupal:gathercontent
+  - drupal:views

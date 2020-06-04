@@ -3,8 +3,10 @@
 namespace Drupal\gathercontent_ui\Form;
 
 use Cheppers\GatherContent\GatherContentClientInterface;
+use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageInterface;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\gathercontent\MigrationDefinitionCreator;
 use Drupal\gathercontent_ui\Form\MappingEditSteps\MappingStepService;
@@ -16,6 +18,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * @package Drupal\gathercontent\Form
  */
 class MappingEditForm extends MappingEditFormBase {
+
+  use StringTranslationTrait;
 
   /**
    * GatherContent client.
@@ -38,17 +42,33 @@ class MappingEditForm extends MappingEditFormBase {
    */
   protected $mappingService;
 
+  /**
+   * Migration definition creator.
+   *
+   * @var \Drupal\gathercontent\MigrationDefinitionCreator
+   */
   protected $migrationDefinitionCreator;
 
   /**
-   * MappingImportForm constructor.
+   * MappingEditForm constructor.
    *
+   * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entityFieldManager
+   *   EntityFieldManagerInterface.
    * @param \Cheppers\GatherContent\GatherContentClientInterface $client
    *   GatherContent client.
    * @param \Drupal\gathercontent_ui\Form\MappingEditSteps\MappingStepService $mapping_service
    *   MappingStepService.
+   * @param \Drupal\gathercontent\MigrationDefinitionCreator $migrationDefinitionCreator
+   *   MigrationDefinitionCreator.
    */
-  public function __construct(GatherContentClientInterface $client, MappingStepService $mapping_service, MigrationDefinitionCreator $migrationDefinitionCreator) {
+  public function __construct(
+    EntityFieldManagerInterface $entityFieldManager,
+    GatherContentClientInterface $client,
+    MappingStepService $mapping_service,
+    MigrationDefinitionCreator $migrationDefinitionCreator
+  ) {
+    parent::__construct($entityFieldManager);
+
     $this->client = $client;
     $this->mappingService = $mapping_service;
     $this->migrationDefinitionCreator = $migrationDefinitionCreator;
@@ -59,6 +79,7 @@ class MappingEditForm extends MappingEditFormBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
+      $container->get('entity_field.manager'),
       $container->get('gathercontent.client'),
       $container->get('gathercontent_ui.mapping_service'),
       $container->get('gathercontent.migration_creator')
@@ -178,67 +199,63 @@ class MappingEditForm extends MappingEditFormBase {
         $mapping->save();
 
         // We need to modify field for checkboxes and field instance for radios.
-        foreach ($template->config as $i => $fieldset) {
-          if ($fieldset->hidden === FALSE) {
-            foreach ($fieldset->elements as $gc_field) {
-              $local_field_id = $this->mappingData[$fieldset->id]['elements'][$gc_field->id];
-              if ($gc_field->type === 'choice_checkbox') {
-                if (!empty($local_field_id)) {
-                  $local_options = [];
-                  foreach ($gc_field->options as $option) {
-                    $local_options[$option['name']] = $option['label'];
-                  }
+        foreach ($template['related']->structure->groups as $group) {
+          foreach ($group->fields as $gcField) {
+            $local_field_id = $this->mappingData[$group->id]['elements'][$gcField->id];
+            if ($gcField->type === 'choice_checkbox') {
+              if (!empty($local_field_id)) {
+                $local_options = [];
+                foreach ($gcField->metaData->choiceFields['options'] as $option) {
+                  $local_options[$option['optionId']] = $option['label'];
+                }
 
-                  $local_id_array = explode('||', $local_field_id);
-                  $field_info = FieldConfig::load($local_id_array[count($local_id_array) - 1]);
+                $local_id_array = explode('||', $local_field_id);
+                $field_info = FieldConfig::load($local_id_array[count($local_id_array) - 1]);
 
-                  if ($field_info->getType() === 'entity_reference') {
-                    if ($this->erImportType === 'automatic') {
-                      $this->automaticTermsGenerator($field_info, $local_options, isset($this->mappingData[$fieldset->id]['language']) ? $this->mappingData[$fieldset->id]['language'] : LanguageInterface::LANGCODE_NOT_SPECIFIED);
-                    }
+                if ($field_info->getType() === 'entity_reference') {
+                  if ($this->erImportType === 'automatic') {
+                    $this->automaticTermsGenerator($field_info, $local_options, isset($this->mappingData[$group->id]['language']) ? $this->mappingData[$group->id]['language'] : LanguageInterface::LANGCODE_NOT_SPECIFIED);
                   }
-                  else {
-                    $field_info = $field_info->getFieldStorageDefinition();
-                    // Make the change.
-                    $field_info->setSetting('allowed_values', $local_options);
-                    try {
-                      $field_info->save();
-                    }
-                    catch (\Exception $e) {
-                      // Log something.
-                    }
+                }
+                else {
+                  $field_info = $field_info->getFieldStorageDefinition();
+                  // Make the change.
+                  $field_info->setSetting('allowed_values', $local_options);
+                  try {
+                    $field_info->save();
+                  }
+                  catch (\Exception $e) {
+                    // Log something.
                   }
                 }
               }
-              elseif ($gc_field->type === 'choice_radio') {
-                if (!empty($local_field_id)) {
-                  $local_options = [];
-                  foreach ($gc_field->options as $option) {
-                    if (!isset($option['value'])) {
-                      $local_options[$option['name']] = $option['label'];
-                    }
-                  }
+            }
+            elseif ($gcField->type === 'choice_radio') {
+              if (!empty($local_field_id)) {
+                $local_options = [];
+                foreach ($gcField->metaData->choiceFields['options'] as $option) {
+                  $local_options[$option['optionId']] = $option['label'];
+                }
 
-                  $local_id_array = explode('||', $local_field_id);
-                  $field_info = FieldConfig::load($local_id_array[count($local_id_array) - 1]);
+                $local_id_array = explode('||', $local_field_id);
+                $field_info = FieldConfig::load($local_id_array[count($local_id_array) - 1]);
 
-                  if ($field_info->getType() === 'entity_reference') {
-                    if ($this->erImportType === 'automatic') {
-                      $this->automaticTermsGenerator($field_info, $local_options, isset($this->mappingData[$fieldset->id]['language']) ? $this->mappingData[$fieldset->id]['language'] : LanguageInterface::LANGCODE_NOT_SPECIFIED);
-                    }
+                if ($field_info->getType() === 'entity_reference') {
+                  if ($this->erImportType === 'automatic') {
+                    $this->automaticTermsGenerator($field_info, $local_options, isset($this->mappingData[$group->id]['language']) ? $this->mappingData[$group->id]['language'] : LanguageInterface::LANGCODE_NOT_SPECIFIED);
                   }
-                  else {
-                    $new_local_options = [];
-                    foreach ($local_options as $name => $label) {
-                      $new_local_options[] = $name . '|' . $label;
-                    }
-                    $entity = \Drupal::entityTypeManager()
-                      ->getStorage('entity_form_display')
-                      ->load('node.' . $mapping->getContentType() . '.default');
-                    /** @var \Drupal\Core\Entity\Entity\EntityFormDisplay $entity */
-                    $entity->getRenderer($field_info->getName())
-                      ->setSetting('available_options', implode("\n", $new_local_options));
+                }
+                else {
+                  $new_local_options = [];
+                  foreach ($local_options as $name => $label) {
+                    $new_local_options[] = $name . '|' . $label;
                   }
+                  $entity = \Drupal::entityTypeManager()
+                    ->getStorage('entity_form_display')
+                    ->load('node.' . $mapping->getContentType() . '.default');
+                  /** @var \Drupal\Core\Entity\Entity\EntityFormDisplay $entity */
+                  $entity->getRenderer($field_info->getName())
+                    ->setSetting('available_options', implode("\n", $new_local_options));
                 }
               }
             }
@@ -274,10 +291,10 @@ class MappingEditForm extends MappingEditFormBase {
         }
 
         if ($this->new) {
-          drupal_set_message(t('Mapping has been created.'));
+          $this->messenger()->addMessage($this->t('Mapping has been created.'));
         }
         else {
-          drupal_set_message(t('Mapping has been updated.'));
+          $this->messenger()->addMessage($this->t('Mapping has been updated.'));
         }
 
         $this
@@ -287,7 +304,7 @@ class MappingEditForm extends MappingEditFormBase {
           ->createMigrationDefinition();
 
         if (!empty($this->entityReferenceFields)) {
-          drupal_set_message($this->formatPlural($this->erImported, '@count term was imported', '@count terms were imported'));
+          $this->messenger()->addMessage($this->formatPlural($this->erImported, '@count term was imported', '@count terms were imported'));
         }
 
         $form_state->setRedirect('entity.gathercontent_mapping.collection');
@@ -303,7 +320,7 @@ class MappingEditForm extends MappingEditFormBase {
     $actions['submit']['#value'] = ($this->new ? $this->t('Create mapping') : $this->t('Update mapping'));
     $actions['close'] = [
       '#type' => 'submit',
-      '#value' => t('Cancel'),
+      '#value' => $this->t('Cancel'),
     ];
     unset($actions['delete']);
     return $actions;

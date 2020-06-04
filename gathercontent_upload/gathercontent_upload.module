@@ -1,0 +1,43 @@
+<?php
+
+/**
+ * @file
+ * Main module file for GatherContent Upload module.
+ */
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\gathercontent\Entity\MappingInterface;
+
+/**
+ * Upload batch operation callback.
+ *
+ * @param int $gcId
+ *   GatherContent ID.
+ * @param \Drupal\Core\Entity\EntityInterface $entity
+ *   Object of entity we want to upload.
+ * @param \Drupal\gathercontent\Entity\MappingInterface $mapping
+ *   Mapping object.
+ * @param array $context
+ *   Context of operation.
+ */
+function gathercontent_upload_process($gcId, EntityInterface $entity, MappingInterface $mapping, &$context) {
+  /** @var \Drupal\gathercontent_upload\Export\Exporter $exporter */
+  $exporter = \Drupal::service('gathercontent_upload.exporter');
+
+  if (!isset($context['results']['success'])) {
+    $context['results']['success'] = 0;
+  }
+
+  if (!isset($context['results']['failed'])) {
+    $context['results']['failed'] = 0;
+  }
+
+  try {
+    $exporter->export($gcId, $entity, $mapping);
+    $context['results']['success']++;
+  }
+  catch (\Exception $e) {
+    $context['results']['messages'][] = $e->getMessage();
+    $context['results']['failed']++;
+  }
+}

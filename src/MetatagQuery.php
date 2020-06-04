@@ -12,7 +12,18 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 class MetatagQuery implements ContainerInjectionInterface {
 
+  /**
+   * Entity field manager.
+   *
+   * @var \Drupal\Core\Entity\EntityFieldManagerInterface
+   */
   protected $entityFieldManager;
+
+  /**
+   * Config factory.
+   *
+   * @var \Drupal\Core\Config\ConfigFactoryInterface
+   */
   protected $configFactory;
 
   /**
@@ -51,7 +62,7 @@ class MetatagQuery implements ContainerInjectionInterface {
     $instances = $this->entityFieldManager
       ->getFieldDefinitions($entityType, $contentType);
 
-    foreach ($instances as $name => $instance) {
+    foreach ($instances as $instance) {
       /** @var \Drupal\Core\Field\FieldDefinitionInterface $instance */
       if ($instance->getType() === 'metatag') {
         return TRUE;
@@ -75,7 +86,7 @@ class MetatagQuery implements ContainerInjectionInterface {
     $instances = $this->entityFieldManager
       ->getFieldDefinitions($entityType, $contentType);
 
-    foreach ($instances as $name => $instance) {
+    foreach ($instances as $instance) {
       /** @var \Drupal\Core\Field\FieldDefinitionInterface $instance */
       if ($instance->getType() === 'metatag') {
         return $instance->getName();

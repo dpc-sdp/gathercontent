@@ -5,6 +5,7 @@ namespace Drupal\gathercontent_ui\Form;
 use Cheppers\GatherContent\GatherContentClientInterface;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\gathercontent\DrupalGatherContentClient;
 use Drupal\gathercontent\Entity\Mapping;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -15,6 +16,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * @package Drupal\gathercontent\Form
  */
 class MappingImportForm extends EntityForm {
+
+  use StringTranslationTrait;
 
   /**
    * GatherContent client.
@@ -58,7 +61,7 @@ class MappingImportForm extends EntityForm {
     $form['description'] = [
       '#type' => 'html_tag',
       '#tag' => 'div',
-      '#value' => t("Please select the GatherContent Templates you'd like to map. Only Templates you've not selected will be listed."),
+      '#value' => $this->t("Please select the GatherContent Templates you'd like to map. Only Templates you've not selected will be listed."),
       '#attributes' => [
         'class' => ['description'],
       ],
@@ -90,21 +93,21 @@ class MappingImportForm extends EntityForm {
       $local_templates[$mapping->getGathercontentTemplateId()] = $mapping->getGathercontentTemplate();
     }
 
-    foreach ($projects as $project_id => $project) {
-      $remote_templates = $this->client->getTemplatesOptionArray($project_id);
+    foreach ($projects['data'] as $project) {
+      $remote_templates = $this->client->getTemplatesOptionArray($project->id);
       $templates = array_diff_assoc($remote_templates, $local_templates);
 
       if (empty($templates)) {
         continue;
       }
 
-      $form['p' . $project_id] = [
+      $form['p' . $project->id] = [
         '#type' => 'details',
         '#title' => $project->name,
         '#group' => 'projects',
         '#tree' => TRUE,
       ];
-      $form['p' . $project_id]['templates'] = [
+      $form['p' . $project->id]['templates'] = [
         '#type' => 'checkboxes',
         '#title' => $project->name,
         '#options' => $templates,
@@ -128,7 +131,7 @@ class MappingImportForm extends EntityForm {
       $account_id = DrupalGatherContentClient::getAccountId();
 
       if (!$account_id) {
-        drupal_set_message($this->t('No available accounts.'), 'error');
+        $this->messenger()->addError($this->t('No available accounts.'));
         $form_state->setRedirect('entity.gathercontent_mapping.collection');
         return;
       }
@@ -149,14 +152,14 @@ class MappingImportForm extends EntityForm {
 
           $mapping_values = [
             'id' => $template_id,
-            'gathercontent_project_id' => $template->projectId,
-            'gathercontent_project' => $projects[$template->projectId]->name,
+            'gathercontent_project_id' => $template['data']->projectId,
+            'gathercontent_project' => $projects['data'][$template['data']->projectId]->name,
             'gathercontent_template_id' => $template_id,
-            'gathercontent_template' => $template->name,
+            'gathercontent_template' => $template['data']->name,
             'template' => serialize($templateBody),
           ];
 
-          $mapping = \Drupal::entityManager()
+          $mapping = $this->entityTypeManager
             ->getStorage('gathercontent_mapping')
             ->create($mapping_values);
           if (is_object($mapping)) {
@@ -177,7 +180,7 @@ class MappingImportForm extends EntityForm {
     $actions['submit']['#value'] = $this->t('Select');
     $actions['close'] = [
       '#type' => 'submit',
-      '#value' => t('Close'),
+      '#value' => $this->t('Close'),
     ];
     return $actions;
   }

@@ -3,11 +3,11 @@
 namespace Drupal\gathercontent_ui;
 
 use Cheppers\GatherContent\GatherContentClientInterface;
-use Drupal\Component\Utility\Unicode;
 use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\gathercontent\DrupalGatherContentClient;
 
@@ -16,6 +16,13 @@ use Drupal\gathercontent\DrupalGatherContentClient;
  */
 class MappingListBuilder extends ConfigEntityListBuilder {
 
+  use StringTranslationTrait;
+
+  /**
+   * Templates array.
+   *
+   * @var array
+   */
   protected $templates;
 
   /**
@@ -43,7 +50,7 @@ class MappingListBuilder extends ConfigEntityListBuilder {
   public static function createInstance(ContainerInterface $container, EntityTypeInterface $entity_type) {
     return new static(
       $entity_type,
-      $container->get('entity.manager')->getStorage($entity_type->id()),
+      $container->get('entity_type.manager')->getStorage($entity_type->id()),
       $container->get('gathercontent.client')
     );
   }
@@ -64,7 +71,7 @@ class MappingListBuilder extends ConfigEntityListBuilder {
         if (is_array($header) && $header['data'] === $query_string->get('order')) {
           $sort = 'ASC';
           if ($query_string->has('sort') && $query_string->get('sort') === 'asc' || $query_string->get('sort') === 'desc') {
-            $sort = Unicode::strtoupper($query_string->get('sort'));
+            $sort = mb_strtoupper($query_string->get('sort'));
           }
           $entity_query->sort($header['field'], $sort);
         }
@@ -91,8 +98,13 @@ class MappingListBuilder extends ConfigEntityListBuilder {
         'field' => 'gathercontent_template',
         'specifier' => 'gathercontent_template',
       ],
+      'entity_type' => [
+        'data' => $this->t('Entity type'),
+        'field' => 'entity_type',
+        'specifier' => 'entity_type',
+      ],
       'content_type_name' => [
-        'data' => $this->t('Content type'),
+        'data' => $this->t('Bundle'),
         'field' => 'content_type_name',
         'specifier' => 'content_type_name',
       ],
@@ -115,9 +127,10 @@ class MappingListBuilder extends ConfigEntityListBuilder {
     $exists = isset($this->templates[$entity->getGathercontentTemplateId()]);
     $row['project'] = $entity->getGathercontentProject();
     $row['gathercontent_template'] = $entity->getGathercontentTemplate();
+    $row['entity_type'] = $entity->getFormattedEntityType();
     $row['content_type'] = $entity->getFormattedContentType();
     $row['updated_gathercontent'] = ($exists ? \Drupal::service('date.formatter')
-      ->format($this->templates[$entity->getGathercontentTemplateId()], 'custom', 'M d, Y - H:i') : t("Deleted"));
+      ->format($this->templates[$entity->getGathercontentTemplateId()], 'custom', 'M d, Y - H:i') : $this->t("Deleted"));
     $row['updated_drupal'] = $entity->getFormatterUpdatedDrupal();
     if ($exists) {
       $row = $row + parent::buildRow($entity);
@@ -136,10 +149,10 @@ class MappingListBuilder extends ConfigEntityListBuilder {
 
     $projects = $this->client->getActiveProjects($account_id);
 
-    foreach ($projects as $project) {
+    foreach ($projects['data'] as $project) {
       $remote_templates = $this->client->templatesGet($project->id);
-      foreach ($remote_templates as $remote_template) {
-        $this->templates[$remote_template->id] = $remote_template->updatedAt;
+      foreach ($remote_templates['data'] as $remote_template) {
+        $this->templates[$remote_template->id] = strtotime($remote_template->updatedAt);
       }
     }
 
@@ -155,14 +168,14 @@ class MappingListBuilder extends ConfigEntityListBuilder {
       $operations['edit'] = [
         'title' => $entity->hasMapping() ? $this->t('Edit') : $this->t('Create'),
         'weight' => 10,
-        'url' => $entity->urlInfo('edit-form'),
+        'url' => $entity->toUrl('edit-form'),
       ];
     }
     if ($entity->access('delete') && $entity->hasLinkTemplate('delete-form')) {
       $operations['delete'] = [
         'title' => $this->t('Delete'),
         'weight' => 100,
-        'url' => $entity->urlInfo('delete-form'),
+        'url' => $entity->toUrl('delete-form'),
       ];
     }
     return $operations;

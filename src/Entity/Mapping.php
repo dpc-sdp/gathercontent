@@ -3,6 +3,8 @@
 namespace Drupal\gathercontent\Entity;
 
 use Drupal\Core\Config\Entity\ConfigEntityBase;
+use Drupal\Core\Entity\EntityStorageInterface;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 
 /**
  * Defines the GatherContent Mapping entity.
@@ -18,6 +20,8 @@ use Drupal\Core\Config\Entity\ConfigEntityBase;
  * )
  */
 class Mapping extends ConfigEntityBase implements MappingInterface {
+
+  use StringTranslationTrait;
 
   /**
    * The GatherContent Mapping ID.
@@ -234,7 +238,20 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
       return $content_type;
     }
     else {
-      return t('None');
+      return $this->t('None');
+    }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getFormattedEntityType() {
+    $entity_type = $this->get('entity_type');
+    if (!empty($entity_type)) {
+      return ucfirst($entity_type);
+    }
+    else {
+      return $this->t('None');
     }
   }
 
@@ -248,7 +265,7 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
         ->format($updated_drupal, 'custom', 'M d, Y - H:i');
     }
     else {
-      return t('Never');
+      return $this->t('Never');
     }
   }
 
@@ -292,6 +309,31 @@ class Mapping extends ConfigEntityBase implements MappingInterface {
    */
   public function getMigrations() {
     return $this->get('migration_definitions');
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function postDelete(EntityStorageInterface $storage, array $entities) {
+    parent::postDelete($storage, $entities);
+
+    // Delete the related migration definitions.
+    $entityTypeManager = \Drupal::service('entity_type.manager');
+    $migrationStorage = $entityTypeManager->getStorage('migration');
+
+    foreach ($entities as $entity) {
+      $migrationIds = $entity->getMigrations();
+
+      if (!$migrationIds) {
+        continue;
+      }
+
+      foreach ($migrationIds as $migrationId) {
+        /** @var \Drupal\migrate_plus\Entity\MigrationInterface $migration */
+        $migration = $migrationStorage->load($migrationId);
+        $migration->delete();
+      }
+    }
   }
 
 }

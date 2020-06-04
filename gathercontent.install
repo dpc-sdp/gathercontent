@@ -18,6 +18,7 @@ function gathercontent_install() {
   if (\Drupal::entityTypeManager()->hasDefinition('taxonomy_term')) {
     $entityFieldManager = \Drupal::service('entity_field.manager');
     $definitions = $entityFieldManager->getFieldStorageDefinitions('taxonomy_term');
+
     if (!isset($definitions['gathercontent_option_ids'])) {
       FieldStorageConfig::create([
         'field_name' => 'gathercontent_option_ids',
@@ -53,7 +54,7 @@ function _gathercontent_entity_mapping_spec() {
       ],
       'entity_type' => [
         'type' => 'varchar',
-        'length' => 255,
+        'length' => 32,
         'not null' => TRUE,
         'description' => 'Entity type.',
       ],
@@ -69,8 +70,14 @@ function _gathercontent_entity_mapping_spec() {
         'not null' => TRUE,
         'description' => 'Migration ID.',
       ],
+      'langcode' => [
+        'type' => 'varchar',
+        'length' => 12,
+        'not null' => TRUE,
+        'description' => 'Language ISO2.',
+      ],
     ],
-    'primary key' => ['entity_id'],
+    'primary key' => ['entity_id', 'entity_type', 'langcode'],
     'indexes' => [
       'entity_type' => ['entity_type'],
       'gc_id' => ['gc_id'],
@@ -83,7 +90,9 @@ function _gathercontent_entity_mapping_spec() {
  * Implements hook_schema().
  */
 function gathercontent_schema() {
-  return ['gathercontent_entity_mapping' => _gathercontent_entity_mapping_spec()];
+  return [
+    'gathercontent_entity_mapping' => _gathercontent_entity_mapping_spec(),
+  ];
 }
 
 /**
@@ -121,11 +130,14 @@ function gathercontent_update_8302() {
  * Create fields for gathercontent_operation_item entity.
  */
 function gathercontent_update_8303() {
-  $entity_manager = \Drupal::entityManager();
-  $definition = $entity_manager->getFieldStorageDefinitions('gathercontent_operation_item')['created'];
-  $entity_manager->onFieldStorageDefinitionCreate($definition);
-  $definition = $entity_manager->getFieldStorageDefinitions('gathercontent_operation_item')['changed'];
-  $entity_manager->onFieldStorageDefinitionCreate($definition);
+  /** @var \Drupal\Core\Entity\EntityFieldManagerInterface $entityFieldManager */
+  $entityFieldManager = \Drupal::service('entity_field.manager');
+  /** @var \Drupal\Core\Field\FieldStorageDefinitionListenerInterface $fieldStorageListener */
+  $fieldStorageListener = \Drupal::service('field_storage_definition.listener');
+  $definition = $entityFieldManager->getFieldStorageDefinitions('gathercontent_operation_item')['created'];
+  $fieldStorageListener->onFieldStorageDefinitionCreate($definition);
+  $definition = $entityFieldManager->getFieldStorageDefinitions('gathercontent_operation_item')['changed'];
+  $fieldStorageListener->onFieldStorageDefinitionCreate($definition);
 }
 
 /**
@@ -185,17 +197,12 @@ function gathercontent_update_8402() {
  * Convert previous version mapping type to the new one.
  */
 function gathercontent_update_8501() {
-  try {
-    $entity_update_manager = \Drupal::entityDefinitionUpdateManager();
-    $entity_type = $entity_update_manager->getEntityType('gathercontent_operation');
-    $entity_update_manager->uninstallEntityType($entity_type);
+  $entity_update_manager = \Drupal::entityDefinitionUpdateManager();
+  $entity_type = $entity_update_manager->getEntityType('gathercontent_operation');
+  $entity_update_manager->uninstallEntityType($entity_type);
 
-    $entity_type = $entity_update_manager->getEntityType('gathercontent_operation_item');
-    $entity_update_manager->uninstallEntityType($entity_type);
-  }
-  catch (\Exception $e) {
-    // TODO: remove this when https://www.drupal.org/project/drupal/issues/2655162 issue merged.
-  }
+  $entity_type = $entity_update_manager->getEntityType('gathercontent_operation_item');
+  $entity_update_manager->uninstallEntityType($entity_type);
 
   // Convert mappings.
   $mapping_ids = \Drupal::entityQuery('gathercontent_mapping')->execute();
@@ -233,9 +240,14 @@ function gathercontent_update_8502() {
   $fieldStorageDefinitionListener = \Drupal::service('field_storage_definition.listener');
 
   $definition = $entityFieldManager->getFieldStorageDefinitions('node')['gc_mapping_id'];
-  $fieldStorageDefinitionListener->onFieldStorageDefinitionDelete($definition);
+  if (!empty($definition)) {
+    $fieldStorageDefinitionListener->onFieldStorageDefinitionDelete($definition);
+  }
+
   $definition = $entityFieldManager->getFieldStorageDefinitions('node')['gc_id'];
-  $fieldStorageDefinitionListener->onFieldStorageDefinitionDelete($definition);
+  if (!empty($definition)) {
+    $fieldStorageDefinitionListener->onFieldStorageDefinitionDelete($definition);
+  }
 }
 
 /**
@@ -244,4 +256,29 @@ function gathercontent_update_8502() {
 function gathercontent_update_8503() {
   $schema = Database::getConnection()->schema();
   $schema->createTable('gathercontent_entity_mapping', _gathercontent_entity_mapping_spec());
+}
+
+/**
+ * Add langcode field to tracking table.
+ */
+function gathercontent_update_8504() {
+  $spec = _gathercontent_entity_mapping_spec();
+  $schema = Database::getConnection()->schema();
+  $schema->addField('gathercontent_entity_mapping', 'langcode', $spec['fields']['langcode']);
+  $schema->dropPrimaryKey('gathercontent_entity_mapping');
+  $schema->addPrimaryKey('gathercontent_entity_mapping', $spec['primary key']);
+
+  /** @var \Drupal\Core\Database\Connection $connection */
+  $connection = \Drupal::service('database');
+  /** @var \Drupal\Core\Language\LanguageInterface $language */
+  $language = \Drupal::service('language.default')->get();
+  $langcode = $language->getId();
+
+  // Update the langcode field to contain the default language.
+  // Later imports will store the correct language for the given entity.
+  $connection->update('gathercontent_entity_mapping')
+    ->fields([
+      'langcode' => $langcode,
+    ])
+    ->execute();
 }

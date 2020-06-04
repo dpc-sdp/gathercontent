@@ -18,7 +18,7 @@ class GcMigrateTestBase extends MigrateTestBase {
     'node', 'text', 'field', 'user', 'image', 'file', 'taxonomy', 'language',
     'content_translation', 'paragraphs', 'entity_reference_revisions', 'system',
     'metatag', 'menu_ui', 'menu_link_content', 'link', 'gathercontent', 'gathercontent_test',
-    'migrate', 'migrate_plus', 'migrate_tools',
+    'migrate', 'migrate_plus', 'migrate_tools', 'token',
   ];
 
   /**

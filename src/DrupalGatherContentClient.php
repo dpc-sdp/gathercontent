@@ -2,6 +2,7 @@
 
 namespace Drupal\gathercontent;
 
+use function GuzzleHttp\json_decode;
 use Cheppers\GatherContent\GatherContentClient;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Pool;
@@ -33,7 +34,7 @@ class DrupalGatherContentClient extends GatherContentClient {
    *
    * If none given, retrieve the first account by default.
    */
-  public static function getAccountId($account_name = NULL) {
+  public static function getAccountId($accountName = NULL) {
     $account = \Drupal::config('gathercontent.settings')
       ->get('gathercontent_account');
     $account = unserialize($account);
@@ -41,14 +42,14 @@ class DrupalGatherContentClient extends GatherContentClient {
       return NULL;
     }
 
-    if (!$account_name) {
+    if (!$accountName) {
       if (reset($account)) {
         return key($account);
       }
     }
 
     foreach ($account as $id => $name) {
-      if ($name === $account_name) {
+      if ($name === $accountName) {
         return $id;
       }
     }
@@ -59,14 +60,16 @@ class DrupalGatherContentClient extends GatherContentClient {
   /**
    * Retrieve all the active projects.
    */
-  public function getActiveProjects($account_id) {
-    $projects = $this->projectsGet($account_id);
+  public function getActiveProjects($accountId) {
+    $projects = $this->projectsGet($accountId);
 
-    foreach ($projects as $id => $project) {
+    foreach ($projects['data'] as $id => $project) {
       if (!$project->active) {
-        unset($projects[$id]);
+        unset($projects['data'][$id]);
       }
     }
+
+    $projects['data'] = $this->reKeyArray($projects['data'], 'id');
 
     return $projects;
   }
@@ -74,18 +77,18 @@ class DrupalGatherContentClient extends GatherContentClient {
   /**
    * Returns a formatted array with the template ID's as a key.
    *
-   * @param int $project_id
+   * @param int $projectId
    *   Project ID.
    *
    * @return array
    *   Return array.
    */
-  public function getTemplatesOptionArray($project_id) {
+  public function getTemplatesOptionArray($projectId) {
     $formatted = [];
-    $templates = $this->templatesGet($project_id);
+    $templates = $this->templatesGet($projectId);
 
-    foreach ($templates as $id => $template) {
-      $formatted[$id] = $template->name;
+    foreach ($templates['data'] as $template) {
+      $formatted[$template->id] = $template->name;
     }
 
     return $formatted;
@@ -94,17 +97,17 @@ class DrupalGatherContentClient extends GatherContentClient {
   /**
    * Returns the response body.
    *
-   * @param bool $json_decoded
+   * @param bool $jsonDecoded
    *   If TRUE the method will return the body json_decoded.
    *
    * @return \Psr\Http\Message\StreamInterface
    *   Response body.
    */
-  public function getBody($json_decoded = FALSE) {
+  public function getBody($jsonDecoded = FALSE) {
     $body = $this->getResponse()->getBody();
 
-    if ($json_decoded) {
-      return \GuzzleHttp\json_decode($body);
+    if ($jsonDecoded) {
+      return json_decode($body);
     }
 
     return $body;
@@ -133,15 +136,14 @@ class DrupalGatherContentClient extends GatherContentClient {
 
     $options['headers'] += $this->getRequestHeaders();
 
+    // Remove unnecessary associative array keys.
     $files = array_values($files);
     $importedFiles = [];
 
     $requests = function () use ($httpClient, $files, $options) {
       foreach ($files as $file) {
-        $url = $this->getUri("files/{$file->id}/download");
-
-        yield function () use ($httpClient, $url, $options) {
-          return $httpClient->getAsync($url, $options);
+        yield function () use ($httpClient, $file, $options) {
+          return $httpClient->getAsync($file->url, $options);
         };
       }
     };
@@ -152,7 +154,7 @@ class DrupalGatherContentClient extends GatherContentClient {
       [
         'fulfilled' => function ($response, $index) use ($files, $directory, $language, &$importedFiles) {
           if ($response->getStatusCode() === 200) {
-            $path = $directory . '/' . $files[$index]->fileName;
+            $path = $directory . '/' . $files[$index]->filename;
 
             $importedFile = file_save_data($response->getBody(), $path);
 
@@ -175,6 +177,64 @@ class DrupalGatherContentClient extends GatherContentClient {
 
     ksort($importedFiles);
     return $importedFiles;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function templateGet($templateId) {
+    $template = parent::templateGet($templateId);
+
+    if (empty($template['related'])) {
+      return $template;
+    }
+
+    // Add the ID as the array key.
+    $groups = $template['related']->structure->groups;
+
+    foreach ($groups as $group) {
+      $group->fields = $this->reKeyArray($group->fields, 'id');
+    }
+
+    $template['related']->structure->groups = $this->reKeyArray($groups, 'id');
+
+    return $template;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function projectStatusesGet($projectId) {
+    $statuses = parent::projectStatusesGet($projectId);
+
+    if (empty($statuses['data'])) {
+      return $statuses;
+    }
+
+    // Add the ID as the array key.
+    $statuses['data'] = $this->reKeyArray($statuses['data'], 'id');
+
+    return $statuses;
+  }
+
+  /**
+   * Create new assoc array with the key parameter as array key.
+   *
+   * @param array $array
+   *   Array to re-key.
+   * @param string $key
+   *   The key to re-key by.
+   *
+   * @return array
+   *   Returns the re-keyed array.
+   */
+  protected function reKeyArray(array $array, $key) {
+    $items = [];
+    foreach ($array as $item) {
+      $items[$item->{$key}] = $item;
+    }
+
+    return $items;
   }
 
 }

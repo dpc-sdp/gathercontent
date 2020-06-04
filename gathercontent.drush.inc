@@ -7,7 +7,6 @@
 
 use Drupal\gathercontent\DrupalGatherContentClient;
 use Drupal\gathercontent\Entity\Mapping;
-use Drupal\gathercontent\Import\Importer;
 use Drupal\gathercontent\Import\ImportOptions;
 
 /**

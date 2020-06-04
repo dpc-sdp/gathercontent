@@ -8,6 +8,7 @@ use Drupal\migrate\Row;
 
 /**
  * Perform custom value transformation.
+ *
  * Converts simple arrays to multidimensional so we can use extract plugin.
  *
  * @MigrateProcessPlugin(
@@ -31,17 +32,13 @@ class GatherContentReferenceRevision extends ProcessPluginBase {
       $value = [$value];
     }
 
-    if (is_array($value)) {
-      $return = [];
+    $return = [];
 
-      foreach ($value as $data) {
-        $return[] = ['id' => $data];
-      }
-
-      return $return;
+    foreach ($value as $data) {
+      $return[] = ['id' => $data];
     }
 
-    return $value;
+    return $return;
   }
 
   /**

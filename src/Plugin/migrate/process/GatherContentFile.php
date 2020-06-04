@@ -5,6 +5,7 @@ namespace Drupal\gathercontent\Plugin\migrate\process;
 use Cheppers\GatherContent\GatherContentClientInterface;
 use Drupal\Component\Render\PlainTextOutput;
 use Drupal\Core\File\FileSystem;
+use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\migrate\MigrateExecutableInterface;
 use Drupal\migrate\ProcessPluginBase;
@@ -30,11 +31,15 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class GatherContentFile extends ProcessPluginBase implements ContainerFactoryPluginInterface {
 
   /**
+   * GatherContent client.
+   *
    * @var \Drupal\gathercontent\DrupalGatherContentClient
    */
   protected $client;
 
   /**
+   * File system service.
+   *
    * @var \Drupal\Core\File\FileSystem
    */
   protected $fileSystem;
@@ -65,10 +70,14 @@ class GatherContentFile extends ProcessPluginBase implements ContainerFactoryPlu
    * {@inheritdoc}
    */
   public function transform($value, MigrateExecutableInterface $migrate_executable, Row $row, $destination_property) {
+    if (empty($value)) {
+      return $value;
+    }
+
     $language = $this->configuration['language'];
     $fileDir = PlainTextOutput::renderFromHtml(\Drupal::token()->replace($this->configuration['file_dir'], []));
-    $create_dir = $this->fileSystem->realpath($this->configuration['uri_scheme']) . '/' . $fileDir;
-    file_prepare_directory($create_dir, FILE_CREATE_DIRECTORY);
+    $createDir = $this->fileSystem->realpath($this->configuration['uri_scheme']) . '/' . $fileDir;
+    $this->fileSystem->prepareDirectory($createDir, FileSystemInterface::CREATE_DIRECTORY);
 
     if (is_array($value)) {
       return $this->client->downloadFiles($value, $this->configuration['uri_scheme'] . $fileDir, $language);

@@ -5,6 +5,11 @@ namespace Drupal\gathercontent\Plugin\Derivative;
 use Drupal\Core\Plugin\Discovery\ContainerDeriverInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
+/**
+ * Class MigrateEntity.
+ *
+ * @package Drupal\gathercontent\Plugin\Derivative
+ */
 class MigrateEntity implements ContainerDeriverInterface {
 
   /**
@@ -15,7 +20,7 @@ class MigrateEntity implements ContainerDeriverInterface {
   protected $derivatives = [];
 
   /**
-   * The entity definitions
+   * The entity definitions.
    *
    * @var \Drupal\Core\Entity\EntityTypeInterface[]
    */

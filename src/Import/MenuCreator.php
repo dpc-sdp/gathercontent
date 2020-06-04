@@ -158,7 +158,7 @@ class MenuCreator {
    */
   public static function isContentTypeTranslatable($contentType) {
     return \Drupal::moduleHandler()
-        ->moduleExists('content_translation')
+      ->moduleExists('content_translation')
       && \Drupal::service('content_translation.manager')
         ->isEnabled('node', $contentType);
   }

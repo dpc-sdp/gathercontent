@@ -3,6 +3,7 @@
 namespace Drupal\gathercontent_ui\Form\MappingEditSteps;
 
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\field\Entity\FieldConfig;
 
 /**
@@ -11,6 +12,8 @@ use Drupal\field\Entity\FieldConfig;
  * @package Drupal\gathercontent_ui\Form\MappingEditSteps
  */
 class MappingStepEntityReference extends MappingSteps {
+
+  use StringTranslationTrait;
 
   /**
    * Type of import for entity reference fields.
@@ -50,21 +53,19 @@ class MappingStepEntityReference extends MappingSteps {
 
       // Prepare options for every language.
       foreach ($gcMapping as $lang => $fieldSettings) {
-        foreach ($this->template->config as $tab) {
-          if ($tab->id === $fieldSettings['tab']) {
-            foreach ($tab->elements as $element) {
-              if ($element->id == $fieldSettings['name']) {
-                $header[$lang] = t('@field (@lang values)', [
-                  '@field' => $element->label,
+        foreach ($this->template['related']->structure->groups as $group) {
+          if ($group->id === $fieldSettings['tab']) {
+            foreach ($group->fields as $field) {
+              if ($field->id == $fieldSettings['name']) {
+                $header[$lang] = $this->t('@field (@lang values)', [
+                  '@field' => $field->label,
                   '@lang' => strtoupper($lang),
                 ]);
                 if (count($header) === 1 && $this->erImportType === 'manual') {
-                  $header['terms'] = t('Terms');
+                  $header['terms'] = $this->t('Terms');
                 }
-                foreach ($element->options as $option) {
-                  if (!isset($option['value'])) {
-                    $options[$lang][$option['name']] = $option['label'];
-                  }
+                foreach ($field->metaData->choiceFields['options'] as $option) {
+                  $options[$lang][$option['optionId']] = $option['label'];
                 }
               }
             }
@@ -94,7 +95,7 @@ class MappingStepEntityReference extends MappingSteps {
 
       $field = str_replace('.', '--', $field);
 
-      // Extract available languages and first language and his options.
+      // Extract available languages and get the first and its options.
       $languages = array_keys($header);
       $first_language = array_shift($languages);
       $first_language_options = array_shift($options);
@@ -109,7 +110,7 @@ class MappingStepEntityReference extends MappingSteps {
 
       $form[$field]['title'] = [
         '#type' => 'html_tag',
-        '#value' => t('Field @field', ['@field' => $field_config->getLabel()]),
+        '#value' => $this->t('Field @field', ['@field' => $field_config->getLabel()]),
         '#tag' => 'h2',
       ];
 
@@ -134,19 +135,19 @@ class MappingStepEntityReference extends MappingSteps {
           $form[$field]['table'][$rows]['terms'] = [
             '#type' => 'select',
             '#options' => $term_options,
-            '#title' => t('Taxonomy term options'),
+            '#title' => $this->t('Taxonomy term options'),
             '#title_display' => 'invisible',
-            '#empty_option' => t('- None -'),
+            '#empty_option' => $this->t('- None -'),
           ];
         }
 
-        foreach ($languages as $i => $language) {
+        foreach ($languages as $language) {
           $form[$field]['table'][$rows][$language] = [
             '#type' => 'select',
             '#options' => $options[$language],
-            '#title' => t('@lang options', ['@lang' => $language]),
+            '#title' => $this->t('@lang options', ['@lang' => $language]),
             '#title_display' => 'invisible',
-            '#empty_option' => t('- None -'),
+            '#empty_option' => $this->t('- None -'),
           ];
         }
         $rows++;
