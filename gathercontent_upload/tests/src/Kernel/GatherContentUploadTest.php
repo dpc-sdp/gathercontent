@@ -2,8 +2,6 @@
 
 namespace Drupal\Tests\gathercontent_upload\Kernel;
 
-use Cheppers\GatherContent\DataTypes\Element;
-use Cheppers\GatherContent\DataTypes\Item;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\node\NodeInterface;
 use Drupal\paragraphs\Entity\Paragraph;
