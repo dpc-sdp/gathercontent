@@ -85,102 +85,102 @@ class GatherContentUploadTest extends GatherContentUploadTestBase {
   /**
    * Tests field manipulation for multilingual content.
    */
-  public function testProcessPanesMultilang() {
+  public function testProcessGroupsMultilang() {
     $node = $this->getMultilangNode();
+    $gcItem = $this->getMultilangItem();
+    $mapping = $this->getMapping($gcItem);
 
-    $gc_item = $this->getMultilangItem();
+    $modifiedItem = $this->exporter->processGroups($node, $mapping);
 
-    $modified_item = $this->exporter->processPanes($gc_item, $node);
-    $this->assertItemChangedMultilang($modified_item, $node);
+    $this->assertNotEmpty($modifiedItem);
+    $this->assertItemChangedMultilang($modifiedItem, $node);
   }
 
   /**
    * Checks if all the fields are correctly set for multilingual content.
    *
-   * @param \Cheppers\GatherContent\DataTypes\Item $gc_item
-   *   Item object.
+   * @param array $content
+   *   Content array.
    * @param \Drupal\node\NodeInterface $entity
    *   Node entity object.
    */
-  public function assertItemChangedMultilang(Item $gc_item, NodeInterface $entity) {
-    foreach ($gc_item->config as $pane) {
-      foreach ($pane->elements as $field) {
-        switch ($field->id) {
-          case 'el1502959595615':
-            $this->assertEquals($entity->getTranslation('en')->getTitle(), $field->getValue());
-            break;
+  public function assertItemChangedMultilang(array $content, NodeInterface $entity) {
+    foreach ($content as $id => $fieldValue) {
+      switch ($id) {
+        case 'a91274c7-d273-4bad-82e4-caacc2175285':
+          $this->assertEquals($entity->getTranslation('en')->getTitle(), $fieldValue);
+          break;
 
-          case 'el1502959226216':
-            $value = $entity->getTranslation('en')->get('body')->getValue()[0]['value'];
-            $this->assertEquals($value, $field->getValue());
-            break;
+        case '97c8625d-e304-44ec-a610-c7f193330fc8':
+          $value = $entity->getTranslation('en')->get('body')->getValue()[0]['value'];
+          $this->assertEquals($value, $fieldValue);
+          break;
 
-          case 'el1503046753703':
-            $radio = $entity->getTranslation('en')->get('field_radio');
-            $this->assertSelection($field, $radio);
-            break;
+        case '20a410c9-28ba-44d4-a2e7-907b935da5fa':
+          $radio = $entity->getTranslation('en')->get('field_radio');
+          $this->assertSelection($fieldValue, $radio);
+          break;
 
-          case 'el1503046763382':
-            $checkbox = $entity->getTranslation('en')->get('field_tags');
-            $this->assertSelection($field, $checkbox);
-            break;
+        case '8fb45eed-3453-4d29-8977-2a7c9d982c5e':
+          $checkbox = $entity->getTranslation('en')->get('field_tags');
+          $this->assertSelection($fieldValue, $checkbox);
+          break;
 
-          case 'el1503046796344':
-            $paragraph = $entity->getTranslation('en')->get('field_para');
-            $this->assertParagraphText($field, $paragraph);
-            break;
+        case '25e99975-d918-4cc3-a676-500d839a14c5':
+          $paragraph = $entity->getTranslation('en')->get('field_para');
+          $this->assertParagraphText($fieldValue, $paragraph);
+          break;
 
-          case 'el1503046917174':
-            $paragraph = $entity->getTranslation('en')->get('field_para');
-            $this->assertParagraphText($field, $paragraph, TRUE);
-            break;
+        case '215538c7-ec2e-41d6-a433-c23d46bf1e60':
+          $paragraph = $entity->getTranslation('en')->get('field_para');
+          $this->assertParagraphText($fieldValue, $paragraph, TRUE);
+          break;
 
-          case 'el1503050151209':
-            $value = $entity->getTranslation('en')->get('field_guidodo')->getValue()[0]['value'];
-            $this->assertNotEquals($value, $field->getValue());
-            break;
+        case 'f00dad7a-8429-4939-8014-498d5a4f41bd':
+          $value = $entity->getTranslation('en')->get('field_guidodo')->getValue()[0]['value'];
+          $this->assertNotEquals($value, $fieldValue);
+          break;
 
-          case 'el1503046938794':
-            $this->assertEquals($entity->getTranslation('hu')->getTitle(), $field->getValue());
-            break;
+        case 'beb19611-0685-483b-b409-7a47e696eb4b':
+          $this->assertEquals($entity->getTranslation('hu')->getTitle(), $fieldValue);
+          break;
 
-          case 'el1503046938795':
-            $value = $entity->getTranslation('hu')->get('body')->getValue()[0]['value'];
-            $this->assertEquals($value, $field->getValue());
-            break;
+        case 'c3dc73e4-1614-4f56-a09b-997664bd00f4':
+          $value = $entity->getTranslation('hu')->get('body')->getValue()[0]['value'];
+          $this->assertEquals($value, $fieldValue);
+          break;
 
-          case 'el1503046938797':
-            $radio = $entity->getTranslation('hu')->get('field_radio');
-            $this->assertSelection($field, $radio);
-            break;
+        case 'e33e4ada-a977-4c63-bfa5-df325f65e65d':
+          $radio = $entity->getTranslation('hu')->get('field_radio');
+          $this->assertSelection($fieldValue, $radio);
+          break;
 
-          case 'el1503046938798':
-            $checkbox = $entity->getTranslation('hu')->get('field_tags');
-            $this->assertSelection($field, $checkbox);
-            break;
+        case '64896363-bd4a-4f54-9a82-fec9f0137a3d':
+          $checkbox = $entity->getTranslation('hu')->get('field_tags');
+          $this->assertSelection($fieldValue, $checkbox);
+          break;
 
-          case 'el1503046938799':
-            $paragraph = $entity->getTranslation('hu')->get('field_para');
-            $this->assertParagraphText($field, $paragraph, FALSE, TRUE);
-            break;
+        case 'e167651a-20ee-48cd-b4ac-5baaeae27c19':
+          $paragraph = $entity->getTranslation('hu')->get('field_para');
+          $this->assertParagraphText($fieldValue, $paragraph, FALSE, TRUE);
+          break;
 
-          case 'el1503046938801':
-            $paragraph = $entity->getTranslation('hu')->get('field_para');
-            $this->assertParagraphText($field, $paragraph, TRUE, TRUE);
-            break;
+        case '53295e60-dad8-430b-af3c-cc190eab4a39':
+          $paragraph = $entity->getTranslation('hu')->get('field_para');
+          $this->assertParagraphText($fieldValue, $paragraph, TRUE, TRUE);
+          break;
 
-          case 'el1503050171534':
-            $value = $entity->getTranslation('hu')->get('field_guidodo')->getValue()[0]['value'];
-            $this->assertNotEquals($value, $field->getValue());
-            break;
+        case '81b210c6-b1fb-444f-a320-db58836b68de':
+          $value = $entity->getTranslation('hu')->get('field_guidodo')->getValue()[0]['value'];
+          $this->assertNotEquals($value, $fieldValue);
+          break;
 
-          case 'el1503046930689':
-          case 'el1503046889180':
-          case 'el1503046938800':
-          case 'el1503046938796':
-            // No possibility to upload image!
-            break;
-        }
+        case '715695f8-07db-4c5e-926f-bcec64412430':
+        case '2859eea4-5aff-4eab-9fcb-88120deea6cc':
+        case '135e837c-a9dd-4079-9b95-ce49a3b94cce':
+        case 'cb711089-9121-4257-8927-b1577d6e59e9':
+          // Image upload is not implemented yet.
+          break;
       }
     }
   }
@@ -190,44 +190,44 @@ class GatherContentUploadTest extends GatherContentUploadTestBase {
    */
   public function testProcessPanesMetatag() {
     $node = $this->getMetatagNode();
+    $gcItem = $this->getMetatagItem();
+    $mapping = $this->getMapping($gcItem);
 
-    $gc_item = $this->getMetatagItem();
+    $modifiedItem = $this->exporter->processGroups($node, $mapping);
 
-    $modified_item = $this->exporter->processPanes($gc_item, $node);
-    $this->assertItemChangedMetatag($modified_item, $node);
+    $this->assertNotEmpty($modifiedItem);
+    $this->assertItemChangedMetatag($modifiedItem, $node);
   }
 
   /**
    * Checks if all the fields are correctly set for metatag content.
    *
-   * @param \Cheppers\GatherContent\DataTypes\Item $gc_item
-   *   Item object.
+   * @param array $content
+   *   Content array.
    * @param \Drupal\node\NodeInterface $entity
    *   Node entity object.
    */
-  public function assertItemChangedMetatag(Item $gc_item, NodeInterface $entity) {
-    foreach ($gc_item->config as $pane) {
-      foreach ($pane->elements as $field) {
-        switch ($field->id) {
-          case 'el1502978044104':
-            $this->assertEquals($entity->getTitle(), $field->getValue());
-            break;
+  public function assertItemChangedMetatag(array $content, NodeInterface $entity) {
+    foreach ($content as $id => $fieldValue) {
+      switch ($id) {
+        case 'c59b2682-e22a-413b-88d1-f63dfccb3e8b':
+          $this->assertEquals($entity->getTitle(), $fieldValue);
+          break;
 
-          case 'el1475138048898':
-            $value = $entity->get('body')->getValue()[0]['value'];
-            $this->assertEquals($value, $field->getValue());
-            break;
+        case '45a1ef4d-16c5-41a8-aafb-bdc0b5dffe3b':
+          $value = $entity->get('body')->getValue()[0]['value'];
+          $this->assertEquals($value, $fieldValue);
+          break;
 
-          case 'el1475138068185':
-            $meta_value = unserialize($entity->get('field_meta_alt')->value);
-            $this->assertEquals($meta_value['title'], $field->getValue());
-            break;
+        case '5188d4ef-d391-4286-baa4-667b103145fd':
+          $meta_value = unserialize($entity->get('field_meta_test')->value);
+          $this->assertEquals($meta_value['title'], $fieldValue);
+          break;
 
-          case 'el1475138069769':
-            $meta_value = unserialize($entity->get('field_meta_alt')->value);
-            $this->assertEquals($meta_value['description'], $field->getValue());
-            break;
-        }
+        case 'ff93aedd-8add-413b-8313-23231f0045f8':
+          $meta_value = unserialize($entity->get('field_meta_test')->value);
+          $this->assertEquals($meta_value['description'], $fieldValue);
+          break;
       }
     }
   }
@@ -237,44 +237,44 @@ class GatherContentUploadTest extends GatherContentUploadTestBase {
    */
   public function testProcessPanesMetatagMultilang() {
     $node = $this->getMetatagMultilangNode();
+    $gcItem = $this->getMetatagMultilangItem();
+    $mapping = $this->getMapping($gcItem);
 
-    $gc_item = $this->getMetatagMultilangItem();
+    $modifiedItem = $this->exporter->processGroups($node, $mapping);
 
-    $modified_item = $this->exporter->processPanes($gc_item, $node);
-    $this->assertItemChangedMetatagMultilang($modified_item, $node);
+    $this->assertNotEmpty($modifiedItem);
+    $this->assertItemChangedMetatagMultilang($modifiedItem, $node);
   }
 
   /**
    * Checks if all the fields are correctly set for metatag content.
    *
-   * @param \Cheppers\GatherContent\DataTypes\Item $gc_item
-   *   Item object.
+   * @param array $content
+   *   Content array.
    * @param \Drupal\node\NodeInterface $entity
    *   Node entity object.
    */
-  public function assertItemChangedMetatagMultilang(Item $gc_item, NodeInterface $entity) {
-    foreach ($gc_item->config as $pane) {
-      foreach ($pane->elements as $field) {
-        switch ($field->id) {
-          case 'el1502978044104':
-            $this->assertEquals($entity->getTitle(), $field->getValue());
-            break;
+  public function assertItemChangedMetatagMultilang(array $content, NodeInterface $entity) {
+    foreach ($content as $id => $fieldValue) {
+      switch ($id) {
+        case 'be66d719-ae0e-4c31-ad57-9a07ba3b1aaf':
+          $this->assertEquals($entity->getTitle(), $fieldValue);
+          break;
 
-          case 'el1475138048898':
-            $value = $entity->get('body')->getValue()[0]['value'];
-            $this->assertEquals($value, $field->getValue());
-            break;
+        case '66da5837-604a-45d9-a72e-484cdd963076':
+          $value = $entity->get('body')->getValue()[0]['value'];
+          $this->assertEquals($value, $fieldValue);
+          break;
 
-          case 'el1475138068185':
-            $meta_value = unserialize($entity->get('field_meta_alt')->value);
-            $this->assertEquals($meta_value['title'], $field->getValue());
-            break;
+        case '836a5f14-f93e-47c7-9ec3-0ac511b104b8':
+          $meta_value = unserialize($entity->get('field_meta_alt')->value);
+          $this->assertEquals($meta_value['title'], $fieldValue);
+          break;
 
-          case 'el1475138069769':
-            $meta_value = unserialize($entity->get('field_meta_alt')->value);
-            $this->assertEquals($meta_value['description'], $field->getValue());
-            break;
-        }
+        case '8ea8bea0-8a78-4a48-a04b-3d8ff6c8c568':
+          $meta_value = unserialize($entity->get('field_meta_alt')->value);
+          $this->assertEquals($meta_value['description'], $fieldValue);
+          break;
       }
     }
   }

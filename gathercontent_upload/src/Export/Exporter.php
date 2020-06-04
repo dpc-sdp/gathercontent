@@ -239,7 +239,7 @@ class Exporter implements ContainerInjectionInterface {
 
         $values[$field->uuid] = $this->processSetFields($field, $currentEntity, $isTranslatable, $language, $currentFieldName, $bundle);
       }
-      elseif ($mappingData[$group->id]['type'] === 'metatag') {
+      elseif ($mappingData[$group->uuid]['type'] === 'metatag') {
         if ($this->moduleHandler->moduleExists('metatag')
           && $this->metatag->checkMetatag($entity->getEntityTypeId(), $entity->bundle())
         ) {
@@ -346,20 +346,16 @@ class Exporter implements ContainerInjectionInterface {
    *   Returns value.
    */
   public function processMetaTagFields(EntityInterface $entity, $localFieldName, $isTranslatable, $language) {
-    $metatagFields = $this->metatag->getMetatagFields($entity->getType(), $entity->bundle());
+    $fieldName = $this->metatag->getFirstMetatagField($entity->getEntityTypeId(), $entity->bundle());
 
-    foreach ($metatagFields as $metatagField) {
-      if ($isTranslatable) {
-        $currentValue = unserialize($entity->getTranslation($language)->{$metatagField}->value);
-      }
-      else {
-        $currentValue = unserialize($entity->{$metatagField}->value);
-      }
-
-      return $currentValue[$localFieldName];
+    if ($isTranslatable) {
+      $currentValue = unserialize($entity->getTranslation($language)->{$fieldName}->value);
+    }
+    else {
+      $currentValue = unserialize($entity->{$fieldName}->value);
     }
 
-    return '';
+    return $currentValue[$localFieldName] ?? '';
   }
 
   /**
