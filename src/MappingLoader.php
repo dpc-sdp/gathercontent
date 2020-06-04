@@ -11,6 +11,8 @@ use Drupal\gathercontent\Entity\Mapping;
 class MappingLoader {
 
   /**
+   * Mappings.
+   *
    * @var array
    */
   protected static $mappings = [];

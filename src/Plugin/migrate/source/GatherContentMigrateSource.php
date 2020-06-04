@@ -283,6 +283,15 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
     return serialize($collectedMetaTags);
   }
 
+  /**
+   * Get field's value.
+   *
+   * @param mixed $field
+   *   Field object/objects.
+   *
+   * @return array
+   *   Returns value.
+   */
   protected function getFieldValue($field) {
     if (!is_array($field)) {
       return $field->getValue();

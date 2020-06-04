@@ -24,7 +24,8 @@ class ImportOptions {
   /**
    * ID of a GatherContent status.
    *
-   * If set, status of the imported node will be updated both in GatherContent and Drupal.
+   * If set, status of the imported node will be updated both in GatherContent
+   * and Drupal.
    *
    * @var int
    */

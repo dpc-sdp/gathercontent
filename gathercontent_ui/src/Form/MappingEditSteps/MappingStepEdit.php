@@ -73,11 +73,11 @@ class MappingStepEdit extends MappingSteps {
             isset($mappingData[$group->id]['type'])
             || $formState->hasValue($group->id)
           )
-            ? (
+          ? (
               $formState->hasValue($group->id)
                 ? $formState->getValue($group->id)['type']
                 : $mappingData[$group->id]['type'])
-            : 'content',
+          : 'content',
           '#ajax' => [
             'callback' => '::getMappingTable',
             'wrapper' => 'edit-mapping',

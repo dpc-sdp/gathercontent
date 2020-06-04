@@ -2,6 +2,7 @@ name: GatherContent
 description: 'Imports items from GatherContent to your Drupal CMS'
 package: GatherContent
 core: 8.x
+core_version_requirement: ^8 || ^9
 type: module
 dependencies:
   - drupal:node

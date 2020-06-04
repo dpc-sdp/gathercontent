@@ -131,7 +131,7 @@ class MappingImportForm extends EntityForm {
       $account_id = DrupalGatherContentClient::getAccountId();
 
       if (!$account_id) {
-        drupal_set_message($this->t('No available accounts.'), 'error');
+        $this->messenger()->addError($this->t('No available accounts.'));
         $form_state->setRedirect('entity.gathercontent_mapping.collection');
         return;
       }

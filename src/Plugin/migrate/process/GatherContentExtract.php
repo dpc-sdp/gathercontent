@@ -26,8 +26,10 @@ class GatherContentExtract extends Extract {
   public function transform($value, MigrateExecutableInterface $migrate_executable, Row $row, $destination_property) {
     try {
       return parent::transform($value, $migrate_executable, $row, $destination_property);
-    } catch (MigrateException $e) {
-      // Throw a skip process exception instead, so the process will be skipped and the migration will not get terminated.
+    }
+    catch (MigrateException $e) {
+      // Throw a skip process exception instead, so the process will be skipped
+      // and the migration will not get terminated.
       throw new MigrateSkipProcessException($e->getMessage());
     }
   }

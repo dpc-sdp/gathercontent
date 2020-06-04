@@ -2,7 +2,6 @@
 
 namespace Drupal\gathercontent_ui\Form\MappingEditSteps;
 
-use Cheppers\GatherContent\DataTypes\Template;
 use Drupal\gathercontent\Entity\MappingInterface;
 
 /**
@@ -13,16 +12,22 @@ use Drupal\gathercontent\Entity\MappingInterface;
 class MappingStepService {
 
   /**
+   * New step.
+   *
    * @var null|object
    */
   protected $newStep;
 
   /**
+   * Edit step.
+   *
    * @var null|object
    */
   protected $editStep;
 
   /**
+   * Entity reference step.
+   *
    * @var null|object
    */
   protected $entityReferenceStep;

@@ -31,11 +31,15 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class GatherContentFile extends ProcessPluginBase implements ContainerFactoryPluginInterface {
 
   /**
+   * GatherContent client.
+   *
    * @var \Drupal\gathercontent\DrupalGatherContentClient
    */
   protected $client;
 
   /**
+   * File system service.
+   *
    * @var \Drupal\Core\File\FileSystem
    */
   protected $fileSystem;

@@ -110,6 +110,8 @@ class MappingEditFormBase extends EntityForm implements ContainerInjectionInterf
   protected $entityReferenceFieldsOptions;
 
   /**
+   * Entity field manager.
+   *
    * @var \Drupal\Core\Entity\EntityFieldManagerInterface
    */
   protected $entityFieldManager;
@@ -277,7 +279,7 @@ class MappingEditFormBase extends EntityForm implements ContainerInjectionInterf
             foreach ($group->fields as $field) {
               if ($field->id === $fieldSettings['name']) {
                 foreach ($field->metaData->choiceFields['options'] as $option) {
-                  $local_options[$option['optionId']] = $option['label'];
+                  $options[$option['optionId']] = $option['label'];
                 }
               }
             }

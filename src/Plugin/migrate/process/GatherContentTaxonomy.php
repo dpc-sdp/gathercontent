@@ -26,6 +26,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class GatherContentTaxonomy extends ProcessPluginBase implements ContainerFactoryPluginInterface {
 
   /**
+   * Entity type manager.
+   *
    * @var \Drupal\Core\Entity\EntityTypeManagerInterface
    */
   protected $entityTypeManager;

@@ -1,0 +1,15 @@
+langcode: en
+status: true
+dependencies: {  }
+id: '429623'
+gathercontent_project_id: 86701
+gathercontent_project: 'Test project'
+gathercontent_template_id: 429623
+gathercontent_template: 'Meta tag multilang'
+entity_type: node
+content_type: test_content
+content_type_name: 'Test content'
+updated_drupal: '1502978089'
+data: 'a:2:{s:36:"2b351692-8278-4e54-a32f-bc023a2a81a0";a:3:{s:4:"type";s:7:"content";s:8:"language";s:2:"en";s:8:"elements";a:2:{s:36:"be66d719-ae0e-4c31-ad57-9a07ba3b1aaf";s:5:"title";s:36:"66da5837-604a-45d9-a72e-484cdd963076";s:22:"node.test_content.body";}}s:36:"7e7a3d8b-512e-4f2b-b60a-dd69cbc3995f";a:3:{s:4:"type";s:7:"metatag";s:8:"language";s:2:"en";s:8:"elements";a:2:{s:36:"836a5f14-f93e-47c7-9ec3-0ac511b104b8";s:5:"title";s:36:"8ea8bea0-8a78-4a48-a04b-3d8ff6c8c568";s:11:"description";}}}'
+template: 'O:8:"stdClass":2:{s:4:"data";O:8:"stdClass":7:{s:2:"id";i:429623;s:4:"name";s:18:"Meta tag multilang";s:21:"number_of_items_using";i:1;s:14:"structure_uuid";s:36:"65d55071-64d1-4a64-bf1c-aa30d386390a";s:10:"project_id";i:86701;s:10:"updated_at";s:19:"2017-08-18 08:29:01";s:10:"updated_by";i:187189;}s:7:"related";O:8:"stdClass":1:{s:9:"structure";O:8:"stdClass":2:{s:4:"uuid";s:36:"65d55071-64d1-4a64-bf1c-aa30d386390a";s:6:"groups";a:2:{i:0;O:8:"stdClass":3:{s:4:"uuid";s:36:"2b351692-8278-4e54-a32f-bc023a2a81a0";s:4:"name";s:7:"Content";s:6:"fields";a:2:{i:0;O:8:"stdClass":5:{s:4:"uuid";s:36:"be66d719-ae0e-4c31-ad57-9a07ba3b1aaf";s:5:"label";s:5:"Title";s:12:"instructions";s:0:"";s:10:"field_type";s:4:"text";s:8:"metadata";O:8:"stdClass":2:{s:8:"is_plain";b:1;s:10:"validation";N;}}i:1;O:8:"stdClass":5:{s:4:"uuid";s:36:"66da5837-604a-45d9-a72e-484cdd963076";s:5:"label";s:4:"Body";s:12:"instructions";s:0:"";s:10:"field_type";s:4:"text";s:8:"metadata";O:8:"stdClass":2:{s:8:"is_plain";b:0;s:10:"validation";N;}}}}i:1;O:8:"stdClass":3:{s:4:"uuid";s:36:"7e7a3d8b-512e-4f2b-b60a-dd69cbc3995f";s:4:"name";s:8:"Meta tag";s:6:"fields";a:2:{i:0;O:8:"stdClass":5:{s:4:"uuid";s:36:"836a5f14-f93e-47c7-9ec3-0ac511b104b8";s:5:"label";s:14:"Meta tag title";s:12:"instructions";s:0:"";s:10:"field_type";s:4:"text";s:8:"metadata";O:8:"stdClass":2:{s:8:"is_plain";b:1;s:10:"validation";N;}}i:1;O:8:"stdClass":5:{s:4:"uuid";s:36:"8ea8bea0-8a78-4a48-a04b-3d8ff6c8c568";s:5:"label";s:20:"Meta tag description";s:12:"instructions";s:0:"";s:10:"field_type";s:4:"text";s:8:"metadata";O:8:"stdClass":2:{s:8:"is_plain";b:1;s:10:"validation";N;}}}}}}}}'
+migration_definitions: { }

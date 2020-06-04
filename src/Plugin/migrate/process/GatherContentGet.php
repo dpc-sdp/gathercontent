@@ -38,6 +38,8 @@ class GatherContentGet extends Get implements ContainerFactoryPluginInterface {
   protected $database;
 
   /**
+   * Entity type manager.
+   *
    * @var \Drupal\Core\Entity\EntityTypeManagerInterface
    */
   protected $entityTypeManager;

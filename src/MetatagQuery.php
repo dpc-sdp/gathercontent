@@ -13,11 +13,15 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 class MetatagQuery implements ContainerInjectionInterface {
 
   /**
+   * Entity field manager.
+   *
    * @var \Drupal\Core\Entity\EntityFieldManagerInterface
    */
   protected $entityFieldManager;
 
   /**
+   * Config factory.
+   *
    * @var \Drupal\Core\Config\ConfigFactoryInterface
    */
   protected $configFactory;
