@@ -85,7 +85,7 @@ class GatherContentFile extends ProcessPluginBase implements ContainerFactoryPlu
 
     $result = $this->client->downloadFiles([$value], $this->configuration['uri_scheme'] . $fileDir, $language);
 
-    return $result[0];
+    return $result[0] ?? NULL;
   }
 
 }

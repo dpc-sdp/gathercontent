@@ -2,7 +2,7 @@ uuid: 30ab4308-8886-4e84-971f-65d5914672f5
 langcode: hu
 status: true
 dependencies: {  }
-id: 86701_819462_node_simple_test_type_tab1503302417527
+id: 86701_819462_node_simple_test_type_hu
 class: null
 field_plugin_method: null
 cck_plugin_method: null
@@ -14,8 +14,6 @@ source:
   projectId: 86701
   templateId: 819462
   templateName: 'simple test template'
-  tabIds:
-    - tab1503302417527
   fields:
     - el1503303744185
     - el1503302429740
@@ -42,18 +40,18 @@ process:
   nid:
     plugin: migration_lookup
     source: id
-    migration: 86701_819462_node_simple_test_type_tab1502870979013
+    migration: 86701_819462_node_simple_test_type_en
   langcode:
     plugin: default_value
     default_value: hu
-  collect_86701_819462_paragraph_paragraph_test_type_tab1503302417527:
+  collect_86701_819462_paragraph_paragraph_test_type_hu:
     plugin: migration_lookup
-    migration: 86701_819462_paragraph_paragraph_test_type_tab1503302417527
+    migration: 86701_819462_paragraph_paragraph_test_type_hu
     source: id
   get_collected_field_paragraph_field_test:
     plugin: get
     source:
-      - '@collect_86701_819462_paragraph_paragraph_test_type_tab1503302417527'
+      - '@collect_86701_819462_paragraph_paragraph_test_type_hu'
   field_paragraph_field_test:
     -
       plugin: gather_content_reference_revision
@@ -76,5 +74,5 @@ destination:
   translations: true
 migration_dependencies:
   optional:
-    - 86701_819462_node_simple_test_type_tab1502870979013
-    - 86701_819462_paragraph_paragraph_test_type_tab1503302417527
+    - 86701_819462_node_simple_test_type_en
+    - 86701_819462_paragraph_paragraph_test_type_hu
