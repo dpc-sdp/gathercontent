@@ -282,3 +282,47 @@ function gathercontent_update_8504() {
     ])
     ->execute();
 }
+
+/**
+ * Update gc_id to gc_file_id field on file entity.
+ */
+function gathercontent_update_8505() {
+  /** @var \Drupal\Core\Entity\EntityFieldManager $entityFieldManager */
+  $entityFieldManager = \Drupal::service('entity_field.manager');
+  /** @var \Drupal\Core\Field\FieldStorageDefinitionListener $fieldStorageDefinitionListener */
+  $fieldStorageDefinitionListener = \Drupal::service('field_storage_definition.listener');
+
+  $definition = $entityFieldManager->getFieldStorageDefinitions('file')['gc_file_id'];
+  if (!empty($definition)) {
+    $fieldStorageDefinitionListener->onFieldStorageDefinitionCreate($definition);
+  }
+
+  /** @var \Drupal\Core\Database\Connection $connection */
+  $connection = \Drupal::service('database');
+  $connection->query('UPDATE file_managed SET gc_file_id = gc_id')
+    ->execute();
+
+  $definition = $entityFieldManager->getFieldStorageDefinitions('file')['gc_id'];
+  if (!empty($definition)) {
+    $fieldStorageDefinitionListener->onFieldStorageDefinitionDelete($definition);
+  }
+}
+
+/**
+ * Refresh all the migrate definitions to the new format.
+ */
+function gathercontent_update_8506() {
+  $mapping_ids = \Drupal::entityQuery('gathercontent_mapping')->execute();
+
+  if (empty($mapping_ids)) {
+    throw new Exception("Operation failed: Template not mapped.");
+  }
+
+  foreach ($mapping_ids as $mapping_id) {
+    $mapping = Mapping::load($mapping_id);
+
+    $mapping->setUpdatedDrupal(time());
+    $mapping->save();
+  }
+
+}
