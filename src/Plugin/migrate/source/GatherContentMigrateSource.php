@@ -37,13 +37,6 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
   protected $templateId;
 
   /**
-   * Item tab IDs.
-   *
-   * @var array
-   */
-  protected $tabIds;
-
-  /**
    * An array of source fields.
    *
    * @var array
@@ -84,7 +77,6 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
     $configFields = [
       'projectId',
       'templateId',
-      'tabIds',
       'fields',
       'metatagFields',
     ];

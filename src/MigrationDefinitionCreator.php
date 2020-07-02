@@ -28,7 +28,6 @@ class MigrationDefinitionCreator {
       'projectId' => '',
       'templateId' => '',
       'templateName' => '',
-      'tabIds' => [],
       'fields' => [],
       'metatagFields' => [],
     ],
@@ -190,7 +189,6 @@ class MigrationDefinitionCreator {
         $groupedData[$language]['data'] = [];
       }
 
-      $groupedData[$language]['tabIds'][] = $tabId;
       $groupedData[$language]['data'] = $this->arrayMergeRecursiveDistinct($groupedData[$language]['data'], $data);
     }
 
@@ -209,8 +207,7 @@ class MigrationDefinitionCreator {
         'templateId' => $this->mapping->getGathercontentTemplateId(),
         'entityType' => $this->mapping->getMappedEntityType(),
         'contentType' => $this->mapping->getContentType(),
-        'tabIds' => $this->formatTabIds($data['tabIds']),
-      ], $data['tabIds'], $data['data'], 'gc_entity');
+      ], $data['data'], 'gc_entity');
 
       $definitions[$definition['id']] = $definition;
     }
@@ -250,6 +247,8 @@ class MigrationDefinitionCreator {
       return;
     }
 
+    $collectedSubDependencies = [];
+
     foreach ($definitions as $definitionId => $definition) {
       if (!isset($this->collectedReferences[$definitionId])) {
         continue;
@@ -267,23 +266,26 @@ class MigrationDefinitionCreator {
               'templateId' => $reference['base_data']['templateId'],
               'entityType' => $reference['base_data']['entityType'],
               'contentType' => $reference['base_data']['contentType'],
-              'tabIds' => $this->formatTabIds($reference['base_data']['tabIds']),
             ],
-            $reference['base_data']['tabIds'],
             $reference['data'],
             'entity_reference_revisions'
           );
 
           $subDependencies[$subDefinition['id']] = $subDefinition;
+
+          $key = implode('_', [
+            $reference['base_data']['projectId'],
+            $reference['base_data']['templateId'],
+            $reference['base_data']['entityType'],
+            $reference['base_data']['contentType'],
+          ]);
+          $collectedSubDependencies[$key][$subDefinition['id']] = $subDefinition;
         }
         $this->setReferenceDependencies($subDependencies);
 
         $collected = [];
 
         foreach ($subDependencies as $subDefinitionId => $subDefinition) {
-          $migration = Migration::create($subDefinition);
-          $migration->save();
-
           $this->migrationDefinitionIds[] = $subDefinitionId;
 
           $definitions[$definitionId]['migration_dependencies']['optional'][] = $subDefinitionId;
@@ -326,12 +328,21 @@ class MigrationDefinitionCreator {
         }
       }
     }
+
+    foreach ($collectedSubDependencies as $dependencies) {
+      $this->setLanguageDefinitions($dependencies);
+
+      foreach ($dependencies as $subDefinitionId => $subDefinition) {
+        $migration = Migration::create($subDefinition);
+        $migration->save();
+      }
+    }
   }
 
   /**
    * Builds the migration definition.
    */
-  public function buildMigrationDefinition(array $baseData, array $tabIds, array $data, $plugin) {
+  public function buildMigrationDefinition(array $baseData, array $data, $plugin) {
     $entityDefinition = $this->entityTypeManager->getDefinition($baseData['entityType']);
     $baseDataLabel = [
       $this->mapping->getGathercontentProject(),
@@ -347,13 +358,12 @@ class MigrationDefinitionCreator {
 
     $definition = self::BASIC_SCHEMA_GC_DESTINATION_CONFIG;
     $definition['langcode'] = $language;
-    $definition['id'] = implode('_', $baseData);
+    $definition['id'] = implode('_', $baseData) . "_$language";
     $definition['label'] = implode('_', $baseDataLabel) . "_$language";
 
     $definition['source']['projectId'] = $this->mapping->getGathercontentProjectId();
     $definition['source']['templateId'] = $this->mapping->getGathercontentTemplateId();
     $definition['source']['templateName'] = $this->mapping->getGathercontentTemplate();
-    $definition['source']['tabIds'] = $tabIds;
     $definition['source']['metatagFields'] = $data['metatag_elements'] ?? [];
 
     $bundleKey = $entityDefinition->getKey('bundle');
@@ -367,7 +377,7 @@ class MigrationDefinitionCreator {
 
     $definition['destination']['plugin'] = $plugin . ':' . $baseData['entityType'];
 
-    $this->setDefinitionFieldProperties($definition, $data, $tabIds, $entityDefinition);
+    $this->setDefinitionFieldProperties($definition, $data, $entityDefinition);
 
     if (!$this->isNewConfiguration($definition['id'])) {
       $config = $this->configFactory->getEditable('migrate_plus.migration.' . $definition['id']);
@@ -380,7 +390,7 @@ class MigrationDefinitionCreator {
   /**
    * Set the field process and destination properties.
    */
-  protected function setDefinitionFieldProperties(array &$definition, array $data, array $tabIds, EntityTypeInterface $entityDefinition) {
+  protected function setDefinitionFieldProperties(array &$definition, array $data, EntityTypeInterface $entityDefinition) {
     $labelSet = FALSE;
 
     foreach ($data['elements'] as $elementId => $element) {
@@ -417,7 +427,7 @@ class MigrationDefinitionCreator {
       }
 
       $definition['source']['fields'][] = $elementId;
-      $this->setFieldDefinition($definition, $data, $tabIds, $elementId, $element, $fieldInfo, $fieldType, $targetFieldInfo, $isTranslatable);
+      $this->setFieldDefinition($definition, $data, $elementId, $element, $fieldInfo, $fieldType, $targetFieldInfo, $isTranslatable);
     }
 
     if (!$labelSet) {
@@ -445,7 +455,7 @@ class MigrationDefinitionCreator {
   /**
    * Set field definition.
    */
-  private function setFieldDefinition(array &$definition, array $data, array $tabIds, $elementId, $element, EntityInterface $fieldInfo = NULL, string $fieldType, EntityInterface $targetFieldInfo = NULL, bool $isTranslatable) {
+  private function setFieldDefinition(array &$definition, array $data, $elementId, $element, EntityInterface $fieldInfo = NULL, string $fieldType, EntityInterface $targetFieldInfo = NULL, bool $isTranslatable) {
     switch ($fieldType) {
       case 'image':
       case 'file':
@@ -536,7 +546,6 @@ class MigrationDefinitionCreator {
           'templateId' => $this->mapping->getGathercontentTemplateId(),
           'entityType' => $targetFieldInfo->getTargetEntityTypeId(),
           'contentType' => $targetEntityBundle,
-          'tabIds' => $tabIds,
         ];
         $this->collectedReferences[$definition['id']][$element][$targetEntityBundle]['reference_data'][] = $elementId;
         break;
@@ -640,11 +649,34 @@ class MigrationDefinitionCreator {
 
         $definitions[$definitionId]['destination']['translations'] = TRUE;
 
-        $definitions[$definitionId]['process'][$entityDefinition->getKey('id')] = [
-          'plugin' => 'migration_lookup',
-          'source' => 'id',
-          'migration' => $defaultLangMigrationId,
-        ];
+        if ($plugin[0] == 'entity_reference_revisions') {
+          $element = $entityDefinition->getKey('id');
+
+          $definitions[$definitionId]['process']['collect_' . $defaultLangMigrationId] = [
+            'plugin' => 'migration_lookup',
+            'source' => 'id',
+            'migration' => $defaultLangMigrationId,
+          ];
+
+          $definitions[$definitionId]['process']['get_collected_' . $element] = [
+            'plugin' => 'get',
+            'source' => ['@collect_' . $defaultLangMigrationId],
+          ];
+
+          $definitions[$definitionId]['process'][$element] = [
+            'plugin' => 'extract',
+            'source' => '@get_collected_' . $element,
+            'index' => [0, 0],
+          ];
+        }
+        else {
+          $definitions[$definitionId]['process'][$entityDefinition->getKey('id')] = [
+            'plugin' => 'migration_lookup',
+            'source' => 'id',
+            'migration' => $defaultLangMigrationId,
+          ];
+        }
+
         $definitions[$definitionId]['process']['langcode'] = [
           'plugin' => 'default_value',
           'default_value' => $definition['langcode'],
@@ -668,19 +700,6 @@ class MigrationDefinitionCreator {
     }
 
     return $defaultLangMigrationId;
-  }
-
-  /**
-   * Returns formatted tab ID. Removing the dashes.
-   */
-  protected function formatTabIds(array $tabIds) {
-    $formattedTabIds = [];
-
-    foreach ($tabIds as $tabId) {
-      $formattedTabIds[] = $this->database->escapeTable($tabId);
-    }
-
-    return implode('_', $formattedTabIds);
   }
 
   /**

@@ -2,7 +2,7 @@ uuid: d0c82d74-ca83-4a69-a652-0b6fbe47c4db
 langcode: en
 status: true
 dependencies: {  }
-id: 86701_819462_node_simple_test_type_tab1502870979013
+id: 86701_819462_node_simple_test_type_en
 class: null
 field_plugin_method: null
 cck_plugin_method: null
@@ -14,8 +14,6 @@ source:
   projectId: 86701
   templateId: 819462
   templateName: 'simple test template'
-  tabIds:
-    - tab1502870979013
   fields:
     - el1503303735218
     - el1502871113494
@@ -64,14 +62,14 @@ process:
   field_long_text_test:
     plugin: gather_content_get
     source: el1502871217145
-  collect_86701_819462_paragraph_paragraph_test_type_tab1502870979013:
+  collect_86701_819462_paragraph_paragraph_test_type_en:
     plugin: migration_lookup
-    migration: 86701_819462_paragraph_paragraph_test_type_tab1502870979013
+    migration: 86701_819462_paragraph_paragraph_test_type_en
     source: id
   get_collected_field_paragraph_field_test:
     plugin: get
     source:
-      - '@collect_86701_819462_paragraph_paragraph_test_type_tab1502870979013'
+      - '@collect_86701_819462_paragraph_paragraph_test_type_en'
   field_paragraph_field_test:
     -
       plugin: gather_content_reference_revision
@@ -93,4 +91,4 @@ destination:
   plugin: 'gc_entity:node'
 migration_dependencies:
   optional:
-    - 86701_819462_paragraph_paragraph_test_type_tab1502870979013
+    - 86701_819462_paragraph_paragraph_test_type_en

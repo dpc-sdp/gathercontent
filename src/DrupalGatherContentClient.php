@@ -127,6 +127,7 @@ class DrupalGatherContentClient extends GatherContentClient {
    *   Imported files array.
    */
   public function downloadFiles(array $files, $directory, $language) {
+    $entityTypeManager = \Drupal::service('entity_type.manager');
     /** @var \GuzzleHttp\Client $httpClient */
     $httpClient = $this->client;
     $options = [
@@ -152,15 +153,25 @@ class DrupalGatherContentClient extends GatherContentClient {
       $httpClient,
       $requests(),
       [
-        'fulfilled' => function ($response, $index) use ($files, $directory, $language, &$importedFiles) {
+        'fulfilled' => function ($response, $index) use ($files, $directory, $language, &$importedFiles, $entityTypeManager) {
           if ($response->getStatusCode() === 200) {
+            $file = $entityTypeManager
+              ->getStorage('file')
+              ->loadByProperties(['gc_file_id' => $files[$index]->fileId]);
+
+            if ($file) {
+              $file = reset($file);
+              $importedFiles[$index] = $file->id();
+              return;
+            }
+
             $path = $directory . '/' . $files[$index]->filename;
 
             $importedFile = file_save_data($response->getBody(), $path);
 
             if ($importedFile) {
               $importedFile
-                ->set('gc_id', $files[$index]->id)
+                ->set('gc_file_id', $files[$index]->fileId)
                 ->set('langcode', $language)
                 ->set('filesize', $files[$index]->size)
                 ->save();

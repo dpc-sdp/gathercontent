@@ -7,6 +7,7 @@ use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
+use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Language\Language;
 use Drupal\Core\Language\LanguageInterface;
 use Drupal\field\Entity\FieldConfig;
@@ -15,6 +16,7 @@ use Drupal\gathercontent\MetatagQuery;
 use Drupal\gathercontent_upload\Event\GatherUploadContentEvents;
 use Drupal\gathercontent_upload\Event\PostNodeUploadEvent;
 use Drupal\gathercontent_upload\Event\PreNodeUploadEvent;
+use Drupal\migrate\Plugin\MigrationPluginManagerInterface;
 use Exception;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -67,6 +69,20 @@ class Exporter implements ContainerInjectionInterface {
   protected $contentTranslation;
 
   /**
+   * Filesystem service.
+   *
+   * @var \Drupal\Core\File\FileSystemInterface
+   */
+  protected $fileSystem;
+
+  /**
+   * Migration service.
+   *
+   * @var \Drupal\migrate\Plugin\MigrationPluginManagerInterface
+   */
+  protected $migrationService;
+
+  /**
    * DI GatherContent Client.
    */
   public function __construct(
@@ -74,13 +90,17 @@ class Exporter implements ContainerInjectionInterface {
     MetatagQuery $metatag,
     EntityTypeManagerInterface $entityTypeManager,
     EventDispatcherInterface $eventDispatcher,
-    ModuleHandlerInterface $moduleHandler
+    ModuleHandlerInterface $moduleHandler,
+    FileSystemInterface $fileSystem,
+    MigrationPluginManagerInterface $migrationService
   ) {
     $this->client = $client;
     $this->metatag = $metatag;
     $this->entityTypeManager = $entityTypeManager;
     $this->eventDispatcher = $eventDispatcher;
     $this->moduleHandler = $moduleHandler;
+    $this->fileSystem = $fileSystem;
+    $this->migrationService = $migrationService;
 
     if ($this->moduleHandler->moduleExists('content_translation')) {
       $this->contentTranslation = \Drupal::service('content_translation.manager');
@@ -96,7 +116,9 @@ class Exporter implements ContainerInjectionInterface {
       $container->get('gathercontent.metatag'),
       $container->get('entity_type.manager'),
       $container->get('event_dispatcher'),
-      $container->get('module_handler')
+      $container->get('module_handler'),
+      $container->get('file_system'),
+      $container->get('plugin.manager.migration')
     );
   }
 
@@ -123,19 +145,58 @@ class Exporter implements ContainerInjectionInterface {
    * @throws \Exception
    */
   public function export($gcId, EntityInterface $entity, MappingInterface $mapping) {
-    $content = $this->processGroups($entity, $mapping);
+    $data = $this->processGroups($entity, $mapping);
 
     $event = $this->eventDispatcher
-      ->dispatch(GatherUploadContentEvents::PRE_NODE_UPLOAD, new PreNodeUploadEvent($entity, $content));
+      ->dispatch(GatherUploadContentEvents::PRE_NODE_UPLOAD, new PreNodeUploadEvent($entity, $data));
 
     /** @var \Drupal\gathercontent_upload\Event\PreNodeUploadEvent $event */
-    $content = $event->getGathercontentValues();
-    $this->client->itemUpdatePost($gcId, $content);
+    $data = $event->getGathercontentValues();
+    $this->client->itemUpdatePost($gcId, $data['content'], $data['assets']);
 
     $this->eventDispatcher
-      ->dispatch(GatherUploadContentEvents::POST_NODE_UPLOAD, new PostNodeUploadEvent($entity, $content));
+      ->dispatch(GatherUploadContentEvents::POST_NODE_UPLOAD, new PostNodeUploadEvent($entity, $data));
 
     return $entity->id();
+  }
+
+  /**
+   * Update Migrate API's ID Mapping.
+   *
+   * @param array $mappings
+   *   Mapping objects keyed by GC ID.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\PluginException
+   */
+  public function updateIdMap(array $mappings = []) {
+    if (empty($mappings)) {
+      return;
+    }
+
+    // Wait for the changes to take effect on the GC side.
+    sleep(10);
+    foreach ($mappings as $gcId => $mapping) {
+      $migrationIds = $mapping->getMigrations();
+
+      foreach ($migrationIds as $migrationId) {
+        /** @var \Drupal\migrate\Plugin\MigrationInterface $migration */
+        $migration = $this->migrationService->createInstance($migrationId);
+
+        $idMap = $migration->getIdMap();
+        $source = $migration->getSourcePlugin();
+        $source->rewind();
+
+        while ($source->valid()) {
+          $row = $source->current();
+          $sourceId = $row->getSourceIdValues();
+
+          if (in_array($gcId, $sourceId)) {
+            $idMap->saveIdMapping($row, []);
+            break;
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -159,7 +220,10 @@ class Exporter implements ContainerInjectionInterface {
     }
 
     $templateData = unserialize($mapping->getTemplate());
-    $content = [];
+    $data = [
+      'content' => [],
+      'assets' => [],
+    ];
 
     foreach ($templateData->related->structure->groups as $group) {
       $isTranslatable = $this->moduleHandler->moduleExists('content_translation')
@@ -174,10 +238,12 @@ class Exporter implements ContainerInjectionInterface {
         $language = Language::LANGCODE_NOT_SPECIFIED;
       }
 
-      $content += $this->processFields($group, $entity, $mappingData, $isTranslatable, $language);
+      $fields = $this->processFields($group, $entity, $mappingData, $isTranslatable, $language);
+      $data['content'] += $fields['content'];
+      $data['assets'] += $fields['assets'];
     }
 
-    return $content;
+    return $data;
   }
 
   /**
@@ -195,14 +261,15 @@ class Exporter implements ContainerInjectionInterface {
    *   Language.
    *
    * @return array
-   *   Returns pane.
+   *   Returns data.
    *
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
   public function processFields($group, EntityInterface $entity, array $mappingData, $isTranslatable, $language) {
     $exportedFields = [];
-    $values = [];
+    $fields = [];
+    $assets = [];
 
     foreach ($group->fields as $field) {
       // Skip field if it is not mapped.
@@ -237,18 +304,31 @@ class Exporter implements ContainerInjectionInterface {
         // the referenced entities values.
         $this->processTargets($currentEntity, $currentFieldName, $type, $bundle, $exportedFields, $localIdArray, $isTranslatable, $language);
 
-        $values[$field->uuid] = $this->processSetFields($field, $currentEntity, $isTranslatable, $language, $currentFieldName, $bundle);
+        $value = $this->processSetFields($field, $currentEntity, $isTranslatable, $language, $currentFieldName, $bundle);
+
+        if (!empty($value)) {
+          $fields[$field->uuid] = $value;
+        }
+
+        $asset = $this->processSetAssets($field, $currentEntity, $isTranslatable, $language, $currentFieldName);
+
+        if (!empty($asset)) {
+          $assets[$field->uuid] = $asset;
+        }
       }
       elseif ($mappingData[$group->uuid]['type'] === 'metatag') {
         if ($this->moduleHandler->moduleExists('metatag')
           && $this->metatag->checkMetatag($entity->getEntityTypeId(), $entity->bundle())
         ) {
-          $values[$field->uuid] = $this->processMetaTagFields($entity, $localFieldId, $isTranslatable, $language);
+          $fields[$field->uuid] = $this->processMetaTagFields($entity, $localFieldId, $isTranslatable, $language);
         }
       }
     }
 
-    return $values;
+    return [
+      'content' => $fields,
+      'assets' => $assets,
+    ];
   }
 
   /**
@@ -385,14 +465,32 @@ class Exporter implements ContainerInjectionInterface {
 
     switch ($field->field_type) {
       case 'attachment':
-        // TODO: Implement a file tracking method
-        // and create the uploading functionality.
+        // Fetch file targets.
+        if ($isTranslatable && $entity->hasTranslation($language)) {
+          $targets = $entity->getTranslation($language)->{$localFieldName}->getValue();
+        }
+        else {
+          $targets = $entity->{$localFieldName}->getValue();
+        }
+
+        $value = [];
+        foreach ($targets as $target) {
+          $file = $this->entityTypeManager
+            ->getStorage('file')
+            ->load($target['target_id']);
+
+          if (empty($file) || $file->get('gc_file_id')->isEmpty()) {
+            continue;
+          }
+
+          $value[] = $file->get('gc_file_id')->first()->getValue()['value'];
+        }
         break;
 
       case 'choice_radio':
       case 'choice_checkbox':
         // Fetch local selected option.
-        if ($isTranslatable) {
+        if ($isTranslatable && $entity->hasTranslation($language)) {
           $targets = $entity->getTranslation($language)->{$localFieldName}->getValue();
         }
         else {
@@ -448,7 +546,7 @@ class Exporter implements ContainerInjectionInterface {
 
       default:
         if ($localFieldName === 'title') {
-          if ($isTranslatable) {
+          if ($isTranslatable && $entity->hasTranslation($language)) {
             $value = $entity->getTranslation($language)->getTitle();
           }
           else {
@@ -456,12 +554,64 @@ class Exporter implements ContainerInjectionInterface {
           }
         }
         else {
-          if ($isTranslatable) {
+          if ($isTranslatable && $entity->hasTranslation($language)) {
             $value = $entity->getTranslation($language)->{$localFieldName}->value;
           }
           else {
             $value = $entity->{$localFieldName}->value;
           }
+        }
+        break;
+    }
+
+    return $value;
+  }
+
+  /**
+   * Set assets.
+   *
+   * @param object $field
+   *   Field object.
+   * @param \Drupal\Core\Entity\EntityInterface $entity
+   *   Entity object.
+   * @param bool $isTranslatable
+   *   Translatable bool.
+   * @param string $language
+   *   Language string.
+   * @param string $localFieldName
+   *   Field Name.
+   *
+   * @return array|string
+   *   Returns value.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
+   */
+  public function processSetAssets($field, EntityInterface $entity, $isTranslatable, $language, $localFieldName) {
+    $value = NULL;
+
+    switch ($field->field_type) {
+      case 'attachment':
+        // Fetch file targets.
+        if ($isTranslatable && $entity->hasTranslation($language)) {
+          $targets = $entity->getTranslation($language)->{$localFieldName}->getValue();
+        }
+        else {
+          $targets = $entity->{$localFieldName}->getValue();
+        }
+
+        $value = [];
+        foreach ($targets as $target) {
+          /** @var \Drupal\file\FileInterface $file */
+          $file = $this->entityTypeManager
+            ->getStorage('file')
+            ->load($target['target_id']);
+
+          if (empty($file) || !$file->get('gc_file_id')->isEmpty()) {
+            continue;
+          }
+
+          $value[] = $this->fileSystem->realpath($file->getFileUri());
         }
         break;
     }

@@ -15,12 +15,12 @@ class ConfigCreatorTest extends GcMigrateTestBase {
 
   const CONFIG_NAMES_CONFIG_CREATE_TEST = [
     '821317' => [
-      'migrate_plus.migration.86701_821317_node_article_tab1502959217871' => 'test1.1.yml',
-      'migrate_plus.migration.86701_821317_node_article_tab1503046938794' => 'test1.2.yml',
+      'migrate_plus.migration.86701_821317_node_article_en' => 'test1.1.yml',
+      'migrate_plus.migration.86701_821317_node_article_hu' => 'test1.2.yml',
     ],
     '819462' => [
-      'migrate_plus.migration.86701_819462_node_simple_test_type_tab1502870979013' => 'test1.1.yml',
-      'migrate_plus.migration.86701_819462_node_simple_test_type_tab1503302417527' => 'test1.2.yml',
+      'migrate_plus.migration.86701_819462_node_simple_test_type_en' => 'test1.1.yml',
+      'migrate_plus.migration.86701_819462_node_simple_test_type_hu' => 'test1.2.yml',
     ],
   ];
 
@@ -34,7 +34,6 @@ class ConfigCreatorTest extends GcMigrateTestBase {
     'process',
     'destination',
     'migration_dependencies',
-    'langcode',
   ];
 
   /**

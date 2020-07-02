@@ -41,3 +41,22 @@ function gathercontent_upload_process($gcId, EntityInterface $entity, MappingInt
     $context['results']['failed']++;
   }
 }
+
+/**
+ * Upload batch operation callback.
+ *
+ * @param array $mappings
+ *   Mapping list keyed by GC ID.
+ * @param array $context
+ *   Context of operation.
+ */
+function gathercontent_upload_migrate_update_process(array $mappings, &$context) {
+  /** @var \Drupal\gathercontent_upload\Export\Exporter $exporter */
+  $exporter = \Drupal::service('gathercontent_upload.exporter');
+  try {
+    $exporter->updateIdMap($mappings);
+  }
+  catch (\Exception $e) {
+    $context['results']['messages'][] = $e->getMessage();
+  }
+}
