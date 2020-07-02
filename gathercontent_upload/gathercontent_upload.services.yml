@@ -1,4 +1,4 @@
 services:
   gathercontent_upload.exporter:
     class: Drupal\gathercontent_upload\Export\Exporter
-    arguments: ['@gathercontent.client', '@gathercontent.metatag', '@entity_type.manager', '@event_dispatcher', '@module_handler', '@content_translation.manager']
+    arguments: ['@gathercontent.client', '@gathercontent.metatag', '@entity_type.manager', '@event_dispatcher', '@module_handler']

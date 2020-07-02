@@ -3,7 +3,6 @@
 namespace Drupal\gathercontent_upload\Export;
 
 use Cheppers\GatherContent\GatherContentClientInterface;
-use Drupal\content_translation\ContentTranslationManagerInterface;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
@@ -75,15 +74,17 @@ class Exporter implements ContainerInjectionInterface {
     MetatagQuery $metatag,
     EntityTypeManagerInterface $entityTypeManager,
     EventDispatcherInterface $eventDispatcher,
-    ModuleHandlerInterface $moduleHandler,
-    ContentTranslationManagerInterface $contentTranslation
+    ModuleHandlerInterface $moduleHandler
   ) {
     $this->client = $client;
     $this->metatag = $metatag;
     $this->entityTypeManager = $entityTypeManager;
     $this->eventDispatcher = $eventDispatcher;
     $this->moduleHandler = $moduleHandler;
-    $this->contentTranslation = $contentTranslation;
+
+    if ($this->moduleHandler->moduleExists('content_translation')) {
+      $this->contentTranslation = \Drupal::service('content_translation.manager');
+    }
   }
 
   /**
@@ -95,8 +96,7 @@ class Exporter implements ContainerInjectionInterface {
       $container->get('gathercontent.metatag'),
       $container->get('entity_type.manager'),
       $container->get('event_dispatcher'),
-      $container->get('module_handler'),
-      $container->get('content_translation.manager')
+      $container->get('module_handler')
     );
   }
 
@@ -408,6 +408,7 @@ class Exporter implements ContainerInjectionInterface {
 
           if (
             $isTranslatable &&
+            $this->moduleHandler->moduleExists('content_translation') &&
             $this->contentTranslation->isEnabled('taxonomy_term', $bundle) &&
             $language !== LanguageInterface::LANGCODE_NOT_SPECIFIED
           ) {
