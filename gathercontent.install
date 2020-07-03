@@ -197,11 +197,24 @@ function gathercontent_update_8402() {
  * Convert previous version mapping type to the new one.
  */
 function gathercontent_update_8501() {
+  try {
+    $entity_update_manager = \Drupal::entityDefinitionUpdateManager();
+    $entity_type = $entity_update_manager->getEntityType('gathercontent_operation');
+    $entity_update_manager->uninstallEntityType($entity_type);
+
+    $entity_type = $entity_update_manager->getEntityType('gathercontent_operation_item');
+    $entity_update_manager->uninstallEntityType($entity_type);
+  }
+  catch (\Exception $e) {
+    // Do nothing, to prevent failure. The entities are removed, but Drupal
+    // throws an exception, because the entities are no longer in the code.
+  }
+
   // Convert mappings.
   $mapping_ids = \Drupal::entityQuery('gathercontent_mapping')->execute();
 
   if (empty($mapping_ids)) {
-    throw new Exception("Operation failed: There are no templates mapped.");
+    return;
   }
 
   $migrationDefinitionCreator = \Drupal::service('gathercontent.migration_creator');
@@ -214,12 +227,14 @@ function gathercontent_update_8501() {
 
     $mapping_data = unserialize($mapping->getData());
 
-    if (!empty($mapping_data)) {
-      $migrationDefinitionCreator
-        ->setMapping($mapping)
-        ->setMappingData($mapping_data)
-        ->createMigrationDefinition();
+    if (empty($mapping_data)) {
+      continue;
     }
+
+    $migrationDefinitionCreator
+      ->setMapping($mapping)
+      ->setMappingData($mapping_data)
+      ->createMigrationDefinition();
   }
 }
 
@@ -230,10 +245,14 @@ function gathercontent_update_8502() {
   $updateManager = \Drupal::entityDefinitionUpdateManager();
 
   $entityFieldStorage = $updateManager->getFieldStorageDefinition('gc_id', 'node');
-  $updateManager->uninstallFieldStorageDefinition($entityFieldStorage);
+  if (!empty($entityFieldStorage)) {
+    $updateManager->uninstallFieldStorageDefinition($entityFieldStorage);
+  }
 
   $entityFieldStorage = $updateManager->getFieldStorageDefinition('gc_mapping_id', 'node');
-  $updateManager->uninstallFieldStorageDefinition($entityFieldStorage);
+  if (!empty($entityFieldStorage)) {
+    $updateManager->uninstallFieldStorageDefinition($entityFieldStorage);
+  }
 }
 
 /**
@@ -252,9 +271,9 @@ function gathercontent_update_8504() {
   $schema = Database::getConnection()->schema();
   if (!$schema->fieldExists('gathercontent_entity_mapping', 'langcode')) {
     $schema->addField('gathercontent_entity_mapping', 'langcode', $spec['fields']['langcode']);
+    $schema->dropPrimaryKey('gathercontent_entity_mapping');
+    $schema->addPrimaryKey('gathercontent_entity_mapping', $spec['primary key']);
   }
-  $schema->dropPrimaryKey('gathercontent_entity_mapping');
-  $schema->addPrimaryKey('gathercontent_entity_mapping', $spec['primary key']);
 
   /** @var \Drupal\Core\Database\Connection $connection */
   $connection = \Drupal::service('database');
@@ -275,9 +294,27 @@ function gathercontent_update_8504() {
  * Update gc_id to gc_file_id field on file entity.
  */
 function gathercontent_update_8505() {
+  /** @var \Drupal\Core\Entity\EntityFieldManager $entityFieldManager */
+  $entityFieldManager = \Drupal::service('entity_field.manager');
+  /** @var \Drupal\Core\Field\FieldStorageDefinitionListener $fieldStorageDefinitionListener */
+  $fieldStorageDefinitionListener = \Drupal::service('field_storage_definition.listener');
+
+  $definition = $entityFieldManager->getFieldStorageDefinitions('file')['gc_file_id'];
+  if (!empty($definition)) {
+    $fieldStorageDefinitionListener->onFieldStorageDefinitionCreate($definition);
+  }
+
+  /** @var \Drupal\Core\Database\Connection $connection */
+  $connection = \Drupal::service('database');
+  $connection->query('UPDATE file_managed SET gc_file_id = gc_id')
+    ->execute();
+
   $updateManager = \Drupal::entityDefinitionUpdateManager();
   $entityFieldStorage = $updateManager->getFieldStorageDefinition('gc_id', 'file');
-  $updateManager->uninstallFieldStorageDefinition($entityFieldStorage);
+
+  if (!empty($entityFieldStorage)) {
+    $updateManager->uninstallFieldStorageDefinition($entityFieldStorage);
+  }
 }
 
 /**
