@@ -197,18 +197,24 @@ function gathercontent_update_8402() {
  * Convert previous version mapping type to the new one.
  */
 function gathercontent_update_8501() {
-  $entity_update_manager = \Drupal::entityDefinitionUpdateManager();
-  $entity_type = $entity_update_manager->getEntityType('gathercontent_operation');
-  $entity_update_manager->uninstallEntityType($entity_type);
+  try {
+    $entity_update_manager = \Drupal::entityDefinitionUpdateManager();
+    $entity_type = $entity_update_manager->getEntityType('gathercontent_operation');
+    $entity_update_manager->uninstallEntityType($entity_type);
 
-  $entity_type = $entity_update_manager->getEntityType('gathercontent_operation_item');
-  $entity_update_manager->uninstallEntityType($entity_type);
+    $entity_type = $entity_update_manager->getEntityType('gathercontent_operation_item');
+    $entity_update_manager->uninstallEntityType($entity_type);
+  }
+  catch (\Exception $e) {
+    // Do nothing, to prevent failure. The entities are removed, but Drupal
+    // throws an exception, because the entities are no longer in the code.
+  }
 
   // Convert mappings.
   $mapping_ids = \Drupal::entityQuery('gathercontent_mapping')->execute();
 
   if (empty($mapping_ids)) {
-    throw new Exception("Operation failed: There are no templates mapped.");
+    return;
   }
 
   $migrationDefinitionCreator = \Drupal::service('gathercontent.migration_creator');
@@ -221,12 +227,14 @@ function gathercontent_update_8501() {
 
     $mapping_data = unserialize($mapping->getData());
 
-    if (!empty($mapping_data)) {
-      $migrationDefinitionCreator
-        ->setMapping($mapping)
-        ->setMappingData($mapping_data)
-        ->createMigrationDefinition();
+    if (empty($mapping_data)) {
+      continue;
     }
+
+    $migrationDefinitionCreator
+      ->setMapping($mapping)
+      ->setMappingData($mapping_data)
+      ->createMigrationDefinition();
   }
 }
 
@@ -234,19 +242,16 @@ function gathercontent_update_8501() {
  * Remove deprecated fields from node.
  */
 function gathercontent_update_8502() {
-  /** @var \Drupal\Core\Entity\EntityFieldManager $entityFieldManager */
-  $entityFieldManager = \Drupal::service('entity_field.manager');
-  /** @var \Drupal\Core\Field\FieldStorageDefinitionListener $fieldStorageDefinitionListener */
-  $fieldStorageDefinitionListener = \Drupal::service('field_storage_definition.listener');
+  $updateManager = \Drupal::entityDefinitionUpdateManager();
 
-  $definition = $entityFieldManager->getFieldStorageDefinitions('node')['gc_mapping_id'];
-  if (!empty($definition)) {
-    $fieldStorageDefinitionListener->onFieldStorageDefinitionDelete($definition);
+  $entityFieldStorage = $updateManager->getFieldStorageDefinition('gc_id', 'node');
+  if (!empty($entityFieldStorage)) {
+    $updateManager->uninstallFieldStorageDefinition($entityFieldStorage);
   }
 
-  $definition = $entityFieldManager->getFieldStorageDefinitions('node')['gc_id'];
-  if (!empty($definition)) {
-    $fieldStorageDefinitionListener->onFieldStorageDefinitionDelete($definition);
+  $entityFieldStorage = $updateManager->getFieldStorageDefinition('gc_mapping_id', 'node');
+  if (!empty($entityFieldStorage)) {
+    $updateManager->uninstallFieldStorageDefinition($entityFieldStorage);
   }
 }
 
@@ -264,9 +269,11 @@ function gathercontent_update_8503() {
 function gathercontent_update_8504() {
   $spec = _gathercontent_entity_mapping_spec();
   $schema = Database::getConnection()->schema();
-  $schema->addField('gathercontent_entity_mapping', 'langcode', $spec['fields']['langcode']);
-  $schema->dropPrimaryKey('gathercontent_entity_mapping');
-  $schema->addPrimaryKey('gathercontent_entity_mapping', $spec['primary key']);
+  if (!$schema->fieldExists('gathercontent_entity_mapping', 'langcode')) {
+    $schema->addField('gathercontent_entity_mapping', 'langcode', $spec['fields']['langcode']);
+    $schema->dropPrimaryKey('gathercontent_entity_mapping');
+    $schema->addPrimaryKey('gathercontent_entity_mapping', $spec['primary key']);
+  }
 
   /** @var \Drupal\Core\Database\Connection $connection */
   $connection = \Drupal::service('database');
@@ -302,9 +309,11 @@ function gathercontent_update_8505() {
   $connection->query('UPDATE file_managed SET gc_file_id = gc_id')
     ->execute();
 
-  $definition = $entityFieldManager->getFieldStorageDefinitions('file')['gc_id'];
-  if (!empty($definition)) {
-    $fieldStorageDefinitionListener->onFieldStorageDefinitionDelete($definition);
+  $updateManager = \Drupal::entityDefinitionUpdateManager();
+  $entityFieldStorage = $updateManager->getFieldStorageDefinition('gc_id', 'file');
+
+  if (!empty($entityFieldStorage)) {
+    $updateManager->uninstallFieldStorageDefinition($entityFieldStorage);
   }
 }
 
@@ -318,11 +327,21 @@ function gathercontent_update_8506() {
     throw new Exception("Operation failed: Template not mapped.");
   }
 
+  $migrationDefinitionCreator = \Drupal::service('gathercontent.migration_creator');
+
   foreach ($mapping_ids as $mapping_id) {
     $mapping = Mapping::load($mapping_id);
 
     $mapping->setUpdatedDrupal(time());
     $mapping->save();
-  }
 
+    $mapping_data = unserialize($mapping->getData());
+
+    if (!empty($mapping_data)) {
+      $migrationDefinitionCreator
+        ->setMapping($mapping)
+        ->setMappingData($mapping_data)
+        ->createMigrationDefinition();
+    }
+  }
 }
