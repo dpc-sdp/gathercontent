@@ -234,19 +234,17 @@ function gathercontent_update_8501() {
  * Remove deprecated fields from node.
  */
 function gathercontent_update_8502() {
-  /** @var \Drupal\Core\Entity\EntityFieldManager $entityFieldManager */
-  $entityFieldManager = \Drupal::service('entity_field.manager');
-  /** @var \Drupal\Core\Field\FieldStorageDefinitionListener $fieldStorageDefinitionListener */
-  $fieldStorageDefinitionListener = \Drupal::service('field_storage_definition.listener');
+  /** @var \Drupal\Core\Entity\EntityDefinitionUpdateManagerInterface $updateManager */
+  $updateManager = \Drupal::service('entity.definition_update_manager');
 
-  $definition = $entityFieldManager->getFieldStorageDefinitions('node')['gc_mapping_id'];
+  $definition = $updateManager->getFieldStorageDefinition('gc_mapping_id', 'node');
   if (!empty($definition)) {
-    $fieldStorageDefinitionListener->onFieldStorageDefinitionDelete($definition);
+    $updateManager->uninstallFieldStorageDefinition($definition);
   }
 
-  $definition = $entityFieldManager->getFieldStorageDefinitions('node')['gc_id'];
+  $definition = $updateManager->getFieldStorageDefinition('gc_id', 'node');
   if (!empty($definition)) {
-    $fieldStorageDefinitionListener->onFieldStorageDefinitionDelete($definition);
+    $updateManager->uninstallFieldStorageDefinition($definition);
   }
 }
 
@@ -291,6 +289,8 @@ function gathercontent_update_8505() {
   $entityFieldManager = \Drupal::service('entity_field.manager');
   /** @var \Drupal\Core\Field\FieldStorageDefinitionListener $fieldStorageDefinitionListener */
   $fieldStorageDefinitionListener = \Drupal::service('field_storage_definition.listener');
+  /** @var \Drupal\Core\Entity\EntityDefinitionUpdateManagerInterface $updateManager */
+  $updateManager = \Drupal::service('entity.definition_update_manager');
 
   $definition = $entityFieldManager->getFieldStorageDefinitions('file')['gc_file_id'];
   if (!empty($definition)) {
@@ -302,9 +302,9 @@ function gathercontent_update_8505() {
   $connection->query('UPDATE file_managed SET gc_file_id = gc_id')
     ->execute();
 
-  $definition = $entityFieldManager->getFieldStorageDefinitions('file')['gc_id'];
+  $definition = $updateManager->getFieldStorageDefinition('gc_id', 'node');
   if (!empty($definition)) {
-    $fieldStorageDefinitionListener->onFieldStorageDefinitionDelete($definition);
+    $updateManager->uninstallFieldStorageDefinition($definition);
   }
 }
 
@@ -318,11 +318,22 @@ function gathercontent_update_8506() {
     throw new Exception("Operation failed: Template not mapped.");
   }
 
+  $migrationDefinitionCreator = \Drupal::service('gathercontent.migration_creator');
+
   foreach ($mapping_ids as $mapping_id) {
     $mapping = Mapping::load($mapping_id);
 
     $mapping->setUpdatedDrupal(time());
     $mapping->save();
+
+    $mapping_data = unserialize($mapping->getData());
+
+    if (!empty($mapping_data)) {
+      $migrationDefinitionCreator
+        ->setMapping($mapping)
+        ->setMappingData($mapping_data)
+        ->createMigrationDefinition();
+    }
   }
 
 }
