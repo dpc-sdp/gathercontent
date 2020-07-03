@@ -197,13 +197,6 @@ function gathercontent_update_8402() {
  * Convert previous version mapping type to the new one.
  */
 function gathercontent_update_8501() {
-  $entity_update_manager = \Drupal::entityDefinitionUpdateManager();
-  $entity_type = $entity_update_manager->getEntityType('gathercontent_operation');
-  $entity_update_manager->uninstallEntityType($entity_type);
-
-  $entity_type = $entity_update_manager->getEntityType('gathercontent_operation_item');
-  $entity_update_manager->uninstallEntityType($entity_type);
-
   // Convert mappings.
   $mapping_ids = \Drupal::entityQuery('gathercontent_mapping')->execute();
 
@@ -234,18 +227,13 @@ function gathercontent_update_8501() {
  * Remove deprecated fields from node.
  */
 function gathercontent_update_8502() {
-  /** @var \Drupal\Core\Entity\EntityDefinitionUpdateManagerInterface $updateManager */
-  $updateManager = \Drupal::service('entity.definition_update_manager');
+  $updateManager = \Drupal::entityDefinitionUpdateManager();
 
-  $definition = $updateManager->getFieldStorageDefinition('gc_mapping_id', 'node');
-  if (!empty($definition)) {
-    $updateManager->uninstallFieldStorageDefinition($definition);
-  }
+  $entityFieldStorage = $updateManager->getFieldStorageDefinition('gc_id', 'node');
+  $updateManager->uninstallFieldStorageDefinition($entityFieldStorage);
 
-  $definition = $updateManager->getFieldStorageDefinition('gc_id', 'node');
-  if (!empty($definition)) {
-    $updateManager->uninstallFieldStorageDefinition($definition);
-  }
+  $entityFieldStorage = $updateManager->getFieldStorageDefinition('gc_mapping_id', 'node');
+  $updateManager->uninstallFieldStorageDefinition($entityFieldStorage);
 }
 
 /**
@@ -262,7 +250,9 @@ function gathercontent_update_8503() {
 function gathercontent_update_8504() {
   $spec = _gathercontent_entity_mapping_spec();
   $schema = Database::getConnection()->schema();
-  $schema->addField('gathercontent_entity_mapping', 'langcode', $spec['fields']['langcode']);
+  if (!$schema->fieldExists('gathercontent_entity_mapping', 'langcode')) {
+    $schema->addField('gathercontent_entity_mapping', 'langcode', $spec['fields']['langcode']);
+  }
   $schema->dropPrimaryKey('gathercontent_entity_mapping');
   $schema->addPrimaryKey('gathercontent_entity_mapping', $spec['primary key']);
 
@@ -285,27 +275,9 @@ function gathercontent_update_8504() {
  * Update gc_id to gc_file_id field on file entity.
  */
 function gathercontent_update_8505() {
-  /** @var \Drupal\Core\Entity\EntityFieldManager $entityFieldManager */
-  $entityFieldManager = \Drupal::service('entity_field.manager');
-  /** @var \Drupal\Core\Field\FieldStorageDefinitionListener $fieldStorageDefinitionListener */
-  $fieldStorageDefinitionListener = \Drupal::service('field_storage_definition.listener');
-  /** @var \Drupal\Core\Entity\EntityDefinitionUpdateManagerInterface $updateManager */
-  $updateManager = \Drupal::service('entity.definition_update_manager');
-
-  $definition = $entityFieldManager->getFieldStorageDefinitions('file')['gc_file_id'];
-  if (!empty($definition)) {
-    $fieldStorageDefinitionListener->onFieldStorageDefinitionCreate($definition);
-  }
-
-  /** @var \Drupal\Core\Database\Connection $connection */
-  $connection = \Drupal::service('database');
-  $connection->query('UPDATE file_managed SET gc_file_id = gc_id')
-    ->execute();
-
-  $definition = $updateManager->getFieldStorageDefinition('gc_id', 'node');
-  if (!empty($definition)) {
-    $updateManager->uninstallFieldStorageDefinition($definition);
-  }
+  $updateManager = \Drupal::entityDefinitionUpdateManager();
+  $entityFieldStorage = $updateManager->getFieldStorageDefinition('gc_id', 'file');
+  $updateManager->uninstallFieldStorageDefinition($entityFieldStorage);
 }
 
 /**
@@ -335,5 +307,4 @@ function gathercontent_update_8506() {
         ->createMigrationDefinition();
     }
   }
-
 }
