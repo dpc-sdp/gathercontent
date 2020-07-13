@@ -176,9 +176,7 @@ class ContentUploadSelectForm extends FormBase {
               'class' => ['select-all'],
               'data' => '',
             ],
-            'status' => $this->t('Status'),
             'title' => $this->t('Item Name'),
-            'updated' => $this->t('Last updated in GatherContent'),
             'template' => $this->t('GatherContent Template Name'),
           ],
           '#empty' => $this->t('No content available.'),
@@ -210,105 +208,89 @@ class ContentUploadSelectForm extends FormBase {
           ],
         ];
 
-        $results = $this->database->select('gathercontent_entity_mapping')
-          ->fields('gathercontent_entity_mapping', [
-            'gc_id',
-            'entity_id',
-            'entity_type',
-          ])
-          ->condition('migration_id', $migrationIds, 'IN')
-          ->execute()
-          ->fetchAllAssoc('gc_id', PDO::FETCH_ASSOC);
-
         $projectId = $form_state->hasValue('project') ? $form_state->getValue('project') : $this->projectId;
-        $content = $this->client->itemsGet($projectId, ['item_ids' => implode(',', array_keys($results))]);
-        $statuses = $this->client->projectStatusesGet($projectId);
 
-        foreach ($content['data'] as $item) {
-          $entityId = $results[$item->id]['entity_id'];
-          $entityType = $results[$item->id]['entity_type'];
-          $key = $entityType . '_' . $entityId;
+        foreach ($createdMappings as $mapping) {
+          /** @var \Drupal\gathercontent\Entity\Mapping $mapping */
+          if (
+            !$mapping->hasMapping()
+            || $mapping->getGathercontentProjectId() != $projectId
+          ) {
+            continue;
+          }
 
-          $this->items[$key] = [
-            'color' => $statuses['data'][$item->statusId]->color,
-            'label' => $statuses['data'][$item->statusId]->name,
-            'template' => $mappingArray[$item->templateId]['gc_template'],
-            'title' => $item->name,
-          ];
-          $form['upload']['entities'][$key] = [
-            '#tree' => TRUE,
-            'data' => [
-              'selected' => [
-                '#type' => 'checkbox',
-                '#title' => $this->t('Selected'),
-                '#title_display' => 'invisible',
-                '#default_value' => !empty($this->entities[$key]),
-                '#attributes' => [
-                  'class' => ['gathercontent-select-import-items'],
+          $entityType = $mapping->getMappedEntityType();
+          $entityStorage = $this->entityTypeManager->getStorage($entityType);
+          $bundle = $this->entityTypeManager->getDefinition($entityType)->getKey('bundle');
+          $entities = $entityStorage->loadByProperties([$bundle => $mapping->getContentType()]);
+
+          foreach ($entities as $entity) {
+            $entityId = $entity->id();
+            $key = $entityType . '_' . $entityId;
+
+            $gcId = $this->database->select('gathercontent_entity_mapping')
+              ->fields('gathercontent_entity_mapping', [
+                'gc_id',
+              ])
+              ->condition('migration_id', $migrationIds, 'IN')
+              ->condition('entity_type', $entityType)
+              ->condition('entity_id', $entityId)
+              ->execute()
+              ->fetchField();
+
+            $this->items[$key] = [
+              'template' => $mapping->getGathercontentTemplate(),
+              'title' => $entity->label(),
+            ];
+
+            $form['upload']['entities'][$key] = [
+              '#tree' => TRUE,
+              'data' => [
+                'selected' => [
+                  '#type' => 'checkbox',
+                  '#title' => $this->t('Selected'),
+                  '#title_display' => 'invisible',
+                  '#default_value' => !empty($this->entities[$key]),
+                  '#attributes' => [
+                    'class' => ['gathercontent-select-import-items'],
+                  ],
+                ],
+                'entity_type' => [
+                  '#type' => 'hidden',
+                  '#value' => $entityType,
+                ],
+                'entity_id' => [
+                  '#type' => 'hidden',
+                  '#value' => $entityId,
+                ],
+                'gc_id' => [
+                  '#type' => 'hidden',
+                  '#value' => $gcId,
+                ],
+                'mapping_id' => [
+                  '#type' => 'hidden',
+                  '#value' => $mapping->id(),
                 ],
               ],
-              'entity_type' => [
-                '#type' => 'hidden',
-                '#value' => $entityType,
-              ],
-              'entity_id' => [
-                '#type' => 'hidden',
-                '#value' => $entityId,
-              ],
-              'gc_id' => [
-                '#type' => 'hidden',
-                '#value' => $item->id,
-              ],
-              'mapping_id' => [
-                '#type' => 'hidden',
-                '#value' => $mappingArray[$item->templateId]['id'],
-              ],
-            ],
-            'status' => [
-              '#wrapper_attributes' => [
-                'class' => ['gc-item', 'status-item'],
-              ],
-              'color' => [
-                '#type' => 'html_tag',
-                '#tag' => 'div',
-                '#value' => ' ',
-                '#attributes' => [
-                  'style' => 'width:20px; height: 20px; float: left; margin-right: 5px; background: ' . $statuses['data'][$item->statusId]->color,
+              'title' => [
+                'data' => [
+                  '#type' => 'markup',
+                  '#markup' => $entity->label(),
+                ],
+                '#wrapper_attributes' => [
+                  'class' => ['gc-item', 'gc-item--name'],
                 ],
               ],
-              'label' => [
-                '#plain_text' => $statuses['data'][$item->statusId]->name,
+              'template' => [
+                'data' => [
+                  '#markup' => $mapping->getGathercontentTemplate(),
+                ],
+                '#wrapper_attributes' => [
+                  'class' => ['template-name-item'],
+                ],
               ],
-            ],
-            'title' => [
-              'data' => [
-                '#type' => 'markup',
-                '#markup' => $item->name,
-              ],
-              '#wrapper_attributes' => [
-                'class' => ['gc-item', 'gc-item--name'],
-              ],
-            ],
-            'updated' => [
-              'data' => [
-                '#markup' => date('F d, Y - H:i', strtotime($item->updatedAt)),
-              ],
-              '#wrapper_attributes' => [
-                'class' => ['gc-item', 'gc-item-date'],
-              ],
-              '#attributes' => [
-                'data-date' => date('Y-m-d.H:i:s', strtotime($item->updatedAt)),
-              ],
-            ],
-            'template' => [
-              'data' => [
-                '#markup' => $mappingArray[$item->templateId]['gc_template'],
-              ],
-              '#wrapper_attributes' => [
-                'class' => ['template-name-item'],
-              ],
-            ],
-          ];
+            ];
+          }
         }
 
         $form['upload']['actions']['#type'] = 'actions';
@@ -344,7 +326,6 @@ class ContentUploadSelectForm extends FormBase {
       ];
 
       $header = [
-        'status' => $this->t('Status'),
         'title' => $this->t('Item name'),
         'template' => $this->t('GatherContent Template'),
       ];
@@ -352,21 +333,6 @@ class ContentUploadSelectForm extends FormBase {
       $rows = [];
       foreach ($this->entities as $key => $data) {
         $rows[$key] = [
-          'status' => [
-            'data' => [
-              'color' => [
-                '#type' => 'html_tag',
-                '#tag' => 'div',
-                '#value' => ' ',
-                '#attributes' => [
-                  'style' => 'width:20px; height: 20px; float: left; margin-right: 5px; background: ' . $this->items[$key]['color'],
-                ],
-              ],
-              'label' => [
-                '#plain_text' => $this->items[$key]['label'],
-              ],
-            ],
-          ],
           'title' => $this->items[$key]['title'],
           'template' => $this->items[$key]['template'],
         ];
@@ -433,13 +399,15 @@ class ContentUploadSelectForm extends FormBase {
           $operations[] = [
             'gathercontent_upload_process',
             [
-              $data['gc_id'],
               $entity,
               $mapping,
+              $data['gc_id'],
             ],
           ];
 
-          $mappings[$data['gc_id']] = $mapping;
+          if (!empty($data['gc_id'])) {
+            $mappings[$data['gc_id']] = $mapping;
+          }
         }
 
         $operations[] = [
