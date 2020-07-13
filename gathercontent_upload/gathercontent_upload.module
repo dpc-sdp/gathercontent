@@ -11,16 +11,16 @@ use Drupal\gathercontent\Entity\MappingInterface;
 /**
  * Upload batch operation callback.
  *
- * @param int $gcId
- *   GatherContent ID.
  * @param \Drupal\Core\Entity\EntityInterface $entity
  *   Object of entity we want to upload.
  * @param \Drupal\gathercontent\Entity\MappingInterface $mapping
  *   Mapping object.
+ * @param int|null $gcId
+ *   GatherContent ID.
  * @param array $context
  *   Context of operation.
  */
-function gathercontent_upload_process($gcId, EntityInterface $entity, MappingInterface $mapping, &$context) {
+function gathercontent_upload_process(EntityInterface $entity, MappingInterface $mapping, $gcId = NULL, &$context = []) {
   /** @var \Drupal\gathercontent_upload\Export\Exporter $exporter */
   $exporter = \Drupal::service('gathercontent_upload.exporter');
 
@@ -33,7 +33,7 @@ function gathercontent_upload_process($gcId, EntityInterface $entity, MappingInt
   }
 
   try {
-    $exporter->export($gcId, $entity, $mapping);
+    $exporter->export($entity, $mapping, $gcId);
     $context['results']['success']++;
   }
   catch (\Exception $e) {

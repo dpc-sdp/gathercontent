@@ -2,6 +2,7 @@
 
 namespace Drupal\gathercontent_upload\Export;
 
+use Cheppers\GatherContent\DataTypes\Item;
 use Cheppers\GatherContent\GatherContentClientInterface;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\EntityInterface;
@@ -132,19 +133,19 @@ class Exporter implements ContainerInjectionInterface {
   /**
    * Exports the changes made in Drupal contents.
    *
-   * @param int $gcId
-   *   GatherContent ID.
    * @param \Drupal\Core\Entity\EntityInterface $entity
    *   Entity entity object.
    * @param \Drupal\gathercontent\Entity\MappingInterface $mapping
    *   Mapping object.
+   * @param int|null $gcId
+   *   GatherContent ID.
    *
    * @return int|null|string
    *   Returns entity ID.
    *
    * @throws \Exception
    */
-  public function export($gcId, EntityInterface $entity, MappingInterface $mapping) {
+  public function export(EntityInterface $entity, MappingInterface $mapping, $gcId = NULL) {
     $data = $this->processGroups($entity, $mapping);
 
     $event = $this->eventDispatcher
@@ -152,7 +153,15 @@ class Exporter implements ContainerInjectionInterface {
 
     /** @var \Drupal\gathercontent_upload\Event\PreNodeUploadEvent $event */
     $data = $event->getGathercontentValues();
-    $this->client->itemUpdatePost($gcId, $data['content'], $data['assets']);
+
+    if (!empty($gcId)) {
+      $this->client->itemUpdatePost($gcId, $data['content'], $data['assets']);
+    }
+    else {
+      $data['name'] = $entity->label();
+      $data['template_id'] = $mapping->getGathercontentTemplateId();
+      $this->client->itemPost($mapping->getGathercontentProjectId(), new Item($data));
+    }
 
     $this->eventDispatcher
       ->dispatch(GatherUploadContentEvents::POST_NODE_UPLOAD, new PostNodeUploadEvent($entity, $data));
@@ -227,7 +236,7 @@ class Exporter implements ContainerInjectionInterface {
 
     foreach ($templateData->related->structure->groups as $group) {
       $isTranslatable = $this->moduleHandler->moduleExists('content_translation')
-        && $this->contentTranslation->isEnabled('node', $mapping->getContentType())
+        && $this->contentTranslation->isEnabled($mapping->getMappedEntityType(), $mapping->getContentType())
         && isset($mappingData[$group->uuid]['language'])
         && ($mappingData[$group->uuid]['language'] != Language::LANGCODE_NOT_SPECIFIED);
 
@@ -365,7 +374,7 @@ class Exporter implements ContainerInjectionInterface {
       $type = $fieldInfo->getType();
       $bundle = $fieldInfo->getTargetBundle();
 
-      if ($isTranslatable) {
+      if ($isTranslatable && $currentEntity->hasTranslation($language)) {
         $targetFieldValue = $currentEntity->getTranslation($language)->get($currentFieldName)->getValue();
       }
       else {
@@ -428,7 +437,7 @@ class Exporter implements ContainerInjectionInterface {
   public function processMetaTagFields(EntityInterface $entity, $localFieldName, $isTranslatable, $language) {
     $fieldName = $this->metatag->getFirstMetatagField($entity->getEntityTypeId(), $entity->bundle());
 
-    if ($isTranslatable) {
+    if ($isTranslatable && $entity->hasTranslation($language)) {
       $currentValue = unserialize($entity->getTranslation($language)->{$fieldName}->value);
     }
     else {
