@@ -386,7 +386,6 @@ class ContentUploadSelectForm extends FormBase {
         $form_state->setRebuild(TRUE);
       }
       elseif ($this->step === 2) {
-        $mappings = [];
         $operations = [];
         $uploadContent = $this->entities;
 
@@ -404,17 +403,11 @@ class ContentUploadSelectForm extends FormBase {
               $data['gc_id'],
             ],
           ];
-
-          if (!empty($data['gc_id'])) {
-            $mappings[$data['gc_id']] = $mapping;
-          }
         }
 
         $operations[] = [
           'gathercontent_upload_migrate_update_process',
-          [
-            $mappings,
-          ],
+          [],
         ];
 
         $batch = [

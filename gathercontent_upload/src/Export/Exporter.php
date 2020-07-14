@@ -17,7 +17,6 @@ use Drupal\gathercontent\MetatagQuery;
 use Drupal\gathercontent_upload\Event\GatherUploadContentEvents;
 use Drupal\gathercontent_upload\Event\PostNodeUploadEvent;
 use Drupal\gathercontent_upload\Event\PreNodeUploadEvent;
-use Drupal\migrate\Plugin\MigrationPluginManagerInterface;
 use Exception;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -77,11 +76,11 @@ class Exporter implements ContainerInjectionInterface {
   protected $fileSystem;
 
   /**
-   * Migration service.
+   * Collected reference revisions.
    *
-   * @var \Drupal\migrate\Plugin\MigrationPluginManagerInterface
+   * @var array
    */
-  protected $migrationService;
+  protected $collectedReferenceRevisions = [];
 
   /**
    * DI GatherContent Client.
@@ -92,8 +91,7 @@ class Exporter implements ContainerInjectionInterface {
     EntityTypeManagerInterface $entityTypeManager,
     EventDispatcherInterface $eventDispatcher,
     ModuleHandlerInterface $moduleHandler,
-    FileSystemInterface $fileSystem,
-    MigrationPluginManagerInterface $migrationService
+    FileSystemInterface $fileSystem
   ) {
     $this->client = $client;
     $this->metatag = $metatag;
@@ -101,7 +99,6 @@ class Exporter implements ContainerInjectionInterface {
     $this->eventDispatcher = $eventDispatcher;
     $this->moduleHandler = $moduleHandler;
     $this->fileSystem = $fileSystem;
-    $this->migrationService = $migrationService;
 
     if ($this->moduleHandler->moduleExists('content_translation')) {
       $this->contentTranslation = \Drupal::service('content_translation.manager');
@@ -118,8 +115,7 @@ class Exporter implements ContainerInjectionInterface {
       $container->get('entity_type.manager'),
       $container->get('event_dispatcher'),
       $container->get('module_handler'),
-      $container->get('file_system'),
-      $container->get('plugin.manager.migration')
+      $container->get('file_system')
     );
   }
 
@@ -139,13 +135,16 @@ class Exporter implements ContainerInjectionInterface {
    *   Mapping object.
    * @param int|null $gcId
    *   GatherContent ID.
+   * @param array $context
+   *   Batch context.
    *
    * @return int|null|string
    *   Returns entity ID.
    *
    * @throws \Exception
    */
-  public function export(EntityInterface $entity, MappingInterface $mapping, $gcId = NULL) {
+  public function export(EntityInterface $entity, MappingInterface $mapping, $gcId = NULL, &$context = []) {
+    $this->collectedReferenceRevisions = [];
     $data = $this->processGroups($entity, $mapping);
 
     $event = $this->eventDispatcher
@@ -160,52 +159,29 @@ class Exporter implements ContainerInjectionInterface {
     else {
       $data['name'] = $entity->label();
       $data['template_id'] = $mapping->getGathercontentTemplateId();
-      $this->client->itemPost($mapping->getGathercontentProjectId(), new Item($data));
+      $item = $this->client->itemPost($mapping->getGathercontentProjectId(), new Item($data));
+      $gcId = $item->id;
     }
 
     $this->eventDispatcher
       ->dispatch(GatherUploadContentEvents::POST_NODE_UPLOAD, new PostNodeUploadEvent($entity, $data));
 
+    if (empty($context['results']['mappings'][$mapping->id()])) {
+      $context['results']['mappings'][$mapping->id()] = [
+        'mapping' => $mapping,
+        'gcIds' => [
+          $gcId => [],
+        ],
+      ];
+    }
+
+    $context['results']['mappings'][$mapping->id()]['gcIds'][$gcId][] = $entity;
+
+    foreach ($this->collectedReferenceRevisions as $reference) {
+      $context['results']['mappings'][$mapping->id()]['gcIds'][$gcId][] = $reference;
+    }
+
     return $entity->id();
-  }
-
-  /**
-   * Update Migrate API's ID Mapping.
-   *
-   * @param array $mappings
-   *   Mapping objects keyed by GC ID.
-   *
-   * @throws \Drupal\Component\Plugin\Exception\PluginException
-   */
-  public function updateIdMap(array $mappings = []) {
-    if (empty($mappings)) {
-      return;
-    }
-
-    // Wait for the changes to take effect on the GC side.
-    sleep(10);
-    foreach ($mappings as $gcId => $mapping) {
-      $migrationIds = $mapping->getMigrations();
-
-      foreach ($migrationIds as $migrationId) {
-        /** @var \Drupal\migrate\Plugin\MigrationInterface $migration */
-        $migration = $this->migrationService->createInstance($migrationId);
-
-        $idMap = $migration->getIdMap();
-        $source = $migration->getSourcePlugin();
-        $source->rewind();
-
-        while ($source->valid()) {
-          $row = $source->current();
-          $sourceId = $row->getSourceIdValues();
-
-          if (in_array($gcId, $sourceId)) {
-            $idMap->saveIdMapping($row, []);
-            break;
-          }
-        }
-      }
-    }
   }
 
   /**
@@ -312,6 +288,7 @@ class Exporter implements ContainerInjectionInterface {
         // Get the deepest field's value, we need this to collect
         // the referenced entities values.
         $this->processTargets($currentEntity, $currentFieldName, $type, $bundle, $exportedFields, $localIdArray, $isTranslatable, $language);
+        $this->collectedReferenceRevisions[] = $currentEntity;
 
         $value = $this->processSetFields($field, $currentEntity, $isTranslatable, $language, $currentFieldName, $bundle);
 

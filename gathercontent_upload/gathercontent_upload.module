@@ -33,7 +33,7 @@ function gathercontent_upload_process(EntityInterface $entity, MappingInterface 
   }
 
   try {
-    $exporter->export($entity, $mapping, $gcId);
+    $exporter->export($entity, $mapping, $gcId, $context);
     $context['results']['success']++;
   }
   catch (\Exception $e) {
@@ -45,16 +45,14 @@ function gathercontent_upload_process(EntityInterface $entity, MappingInterface 
 /**
  * Upload batch operation callback.
  *
- * @param array $mappings
- *   Mapping list keyed by GC ID.
  * @param array $context
  *   Context of operation.
  */
-function gathercontent_upload_migrate_update_process(array $mappings, &$context) {
-  /** @var \Drupal\gathercontent_upload\Export\Exporter $exporter */
-  $exporter = \Drupal::service('gathercontent_upload.exporter');
+function gathercontent_upload_migrate_update_process(&$context) {
+  /** @var \Drupal\gathercontent_upload\Export\MigrateUpdater $migrateUpdater */
+  $migrateUpdater = \Drupal::service('gathercontent_upload.migrate_updater');
   try {
-    $exporter->updateIdMap($mappings);
+    $migrateUpdater->updateIdMap($context);
   }
   catch (\Exception $e) {
     $context['results']['messages'][] = $e->getMessage();
