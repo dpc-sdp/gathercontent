@@ -83,7 +83,7 @@ class Exporter implements ContainerInjectionInterface {
   protected $collectedReferenceRevisions = [];
 
   /**
-   * DI GatherContent Client.
+   * Exporter constructor.
    */
   public function __construct(
     GatherContentClientInterface $client,

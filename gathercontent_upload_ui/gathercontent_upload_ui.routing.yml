@@ -7,3 +7,12 @@ gathercontent_upload_ui.upload_select_form:
     _permission: 'administer gathercontent'
   options:
     _admin_route: TRUE
+entity.gathercontent_mapping.create_template:
+  path: '/admin/config/gathercontent/create-template'
+  defaults:
+    _form: '\Drupal\gathercontent_upload_ui\Form\CreateTemplateForm'
+    _title: 'Create Template from Entity type'
+  requirements:
+    _permission: 'administer gathercontent'
+  options:
+    _admin_route: TRUE
