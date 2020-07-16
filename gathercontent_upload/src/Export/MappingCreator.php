@@ -7,7 +7,6 @@ use Cheppers\GatherContent\GatherContentClientInterface;
 use Drupal\Component\Uuid\UuidInterface;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
-use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
@@ -115,11 +114,25 @@ class MappingCreator implements ContainerInjectionInterface {
     );
   }
 
-  public function generateMapping(EntityInterface $entity, string $projectId) {
-    $bundles = $this->entityTypeBundleInfo->getBundleInfo($entity->getEntityTypeId());
-    $templateName = $entity->label();
-    if (!empty($bundles[$entity->bundle()]['label'])) {
-      $templateName = $bundles[$entity->bundle()]['label'];
+  /**
+   * Generates template, mapping and migration definition for given entity type and bundle.
+   *
+   * @param string $entityTypeId
+   *   Entity type.
+   * @param string $bundle
+   *   Bundle.
+   * @param string $projectId
+   *   Project ID.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
+   * @throws \Drupal\Core\Entity\EntityStorageException
+   */
+  public function generateMapping(string $entityTypeId, string $bundle, string $projectId) {
+    $bundles = $this->entityTypeBundleInfo->getBundleInfo($entityTypeId);
+    $templateName = ucfirst($bundle);
+    if (!empty($bundles[$bundle]['label'])) {
+      $templateName = $bundles[$bundle]['label'];
     }
 
     $structureData = [
@@ -139,12 +152,12 @@ class MappingCreator implements ContainerInjectionInterface {
       'date' => 'plain',
       'datetime' => 'plain',
     ];
-    $fields = $this->entityFieldManager->getFieldDefinitions($entity->getEntityTypeId(), $entity->bundle());
+    $fields = $this->entityFieldManager->getFieldDefinitions($entityTypeId, $bundle);
 
     $languages = [$this->languageManager->getDefaultLanguage()];
 
     if (isset($this->contentTranslation)
-      && $this->contentTranslation->isEnabled($entity->getEntityTypeId(), $entity->bundle())
+      && $this->contentTranslation->isEnabled($entityTypeId, $bundle)
     ) {
       $languages = $this->languageManager->getLanguages();
     }

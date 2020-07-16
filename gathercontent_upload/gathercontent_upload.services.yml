@@ -10,3 +10,12 @@ services:
   gathercontent_upload.migrate_updater:
     class: Drupal\gathercontent_upload\Export\MigrateUpdater
     arguments: ['@plugin.manager.migration', '@database']
+  gathercontent_upload.mapping_creator:
+    class: Drupal\gathercontent_upload\Export\MappingCreator
+    arguments: ['@gathercontent.client',
+                '@entity_type.manager',
+                '@entity_field.manager',
+                '@entity_type.bundle.info',
+                '@uuid',
+                '@module_handler',
+                '@language_manager']

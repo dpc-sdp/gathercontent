@@ -2,13 +2,23 @@
 
 namespace Drupal\gathercontent_upload_ui\Form;
 
+use Cheppers\GatherContent\GatherContentClientInterface;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\gathercontent\DrupalGatherContentClient;
+use Drupal\gathercontent_upload\Export\MappingCreator;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class CreateTemplateForm extends FormBase {
+
+  /**
+   * Drupal GatherContent Client.
+   *
+   * @var \Drupal\gathercontent\DrupalGatherContentClient
+   */
+  protected $client;
 
   /**
    * The entity bundle info.
@@ -18,10 +28,23 @@ class CreateTemplateForm extends FormBase {
   protected $entityTypeBundleInfo;
 
   /**
+   * Mapping creator.
+   *
+   * @var \Drupal\gathercontent_upload\Export\MappingCreator
+   */
+  protected $mappingCreator;
+
+  /**
    * MappingCreator constructor.
    */
-  public function __construct(EntityTypeBundleInfoInterface $entityTypeBundleInfo) {
+  public function __construct(
+    GatherContentClientInterface $client,
+    EntityTypeBundleInfoInterface $entityTypeBundleInfo,
+    MappingCreator $mappingCreator
+  ) {
+    $this->client = $client;
     $this->entityTypeBundleInfo = $entityTypeBundleInfo;
+    $this->mappingCreator = $mappingCreator;
   }
 
   /**
@@ -29,7 +52,9 @@ class CreateTemplateForm extends FormBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('entity_type.bundle.info')
+      $container->get('gathercontent.client'),
+      $container->get('entity_type.bundle.info'),
+      $container->get('gathercontent_upload.mapping_creator')
     );
   }
 
@@ -76,6 +101,18 @@ class CreateTemplateForm extends FormBase {
       '#prefix' => '<div id="content-type-select">',
       '#suffix' => '</div>',
     ];
+    $form['gathercontent']['project_id'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Project ID'),
+      '#options' => $this->getProjects(),
+      '#required' => TRUE,
+      '#wrapper_attributes' => [
+        'class' => [
+          'inline-label',
+        ],
+      ],
+      '#default_value' => $form_state->getValue('project_id'),
+    ];
 
     $form['actions']['#type'] = 'actions';
     $form['actions']['submit'] = [
@@ -89,7 +126,11 @@ class CreateTemplateForm extends FormBase {
   }
 
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    // TODO: Implement submitForm() method.
+    $this->mappingCreator->generateMapping(
+      $form_state->getValue('entity_type'),
+      $form_state->getValue('content_type'),
+      $form_state->getValue('project_id')
+    );
   }
 
   /**
@@ -152,6 +193,27 @@ class CreateTemplateForm extends FormBase {
   public function getContentTypes(array &$form, FormStateInterface $form_state) {
     $form_state->setRebuild(TRUE);
     return $form['gathercontent']['content_type'];
+  }
+
+  /**
+   * Returns all projects for given account.
+   *
+   * @return array
+   */
+  public function getProjects() {
+    $account_id = DrupalGatherContentClient::getAccountId();
+    /** @var \Cheppers\GatherContent\DataTypes\Project[] $projects */
+    $projects = [];
+    if ($account_id) {
+      $projects = $this->client->getActiveProjects($account_id);
+    }
+
+    $formattedProjects = [];
+    foreach ($projects['data'] as $project) {
+      $formattedProjects[$project->id] = $project->name;
+    }
+
+    return $formattedProjects;
   }
 
 }
