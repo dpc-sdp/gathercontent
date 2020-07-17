@@ -83,6 +83,13 @@ class Exporter implements ContainerInjectionInterface {
   protected $collectedReferenceRevisions = [];
 
   /**
+   * Collected file fields.
+   *
+   * @var array
+   */
+  protected $collectedFileFields = [];
+
+  /**
    * Exporter constructor.
    */
   public function __construct(
@@ -154,13 +161,15 @@ class Exporter implements ContainerInjectionInterface {
     $data = $event->getGathercontentValues();
 
     if (!empty($gcId)) {
-      $this->client->itemUpdatePost($gcId, $data['content'], $data['assets']);
+      $item = $this->client->itemUpdatePost($gcId, $data['content'], $data['assets']);
+      $this->updateFileGcIds($item->assets);
     }
     else {
       $data['name'] = $entity->label();
       $data['template_id'] = $mapping->getGathercontentTemplateId();
       $item = $this->client->itemPost($mapping->getGathercontentProjectId(), new Item($data));
-      $gcId = $item->id;
+      $gcId = $item['data']->id;
+      $this->updateFileGcIds($item['meta']->assets);
     }
 
     $this->eventDispatcher
@@ -599,10 +608,48 @@ class Exporter implements ContainerInjectionInterface {
 
           $value[] = $this->fileSystem->realpath($file->getFileUri());
         }
+
+        $this->collectedFileFields[$field->uuid] = $targets;
         break;
     }
 
     return $value;
+  }
+
+  /**
+   * Updates the file managed table to include the new GC ID for given file.
+   *
+   * @param array $returnedAssets
+   *   The assets returned by GC.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
+   * @throws \Drupal\Core\Entity\EntityStorageException
+   */
+  public function updateFileGcIds(array $returnedAssets) {
+    if (empty($this->collectedFileFields) || empty($returnedAssets)) {
+      return;
+    }
+
+    foreach ($this->collectedFileFields as $fieldUuid => $fileField) {
+      if (empty($returnedAssets[$fieldUuid])) {
+        continue;
+      }
+
+      foreach ($fileField as $delta => $target) {
+        /** @var \Drupal\file\FileInterface $file */
+        $file = $this->entityTypeManager
+          ->getStorage('file')
+          ->load($target['target_id']);
+
+        if (empty($file) || empty($returnedAssets[$fieldUuid][$delta])) {
+          continue;
+        }
+
+        $file->set('gc_file_id', $returnedAssets[$fieldUuid][$delta]);
+        $file->save();
+      }
+    }
   }
 
   /**

@@ -3,6 +3,7 @@
 namespace Drupal\gathercontent_upload_ui\Form;
 
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -10,6 +11,13 @@ use Drupal\gathercontent_upload\Export\MappingCreator;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class CreateTemplateForm extends FormBase {
+
+  /**
+   * Entity type manager.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected $entityTypeManager;
 
   /**
    * The entity bundle info.
@@ -29,9 +37,11 @@ class CreateTemplateForm extends FormBase {
    * MappingCreator constructor.
    */
   public function __construct(
+    EntityTypeManagerInterface $entityTypeManager,
     EntityTypeBundleInfoInterface $entityTypeBundleInfo,
     MappingCreator $mappingCreator
   ) {
+    $this->entityTypeManager = $entityTypeManager;
     $this->entityTypeBundleInfo = $entityTypeBundleInfo;
     $this->mappingCreator = $mappingCreator;
   }
@@ -41,6 +51,7 @@ class CreateTemplateForm extends FormBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
+      $container->get('entity_type.manager'),
       $container->get('entity_type.bundle.info'),
       $container->get('gathercontent_upload.mapping_creator')
     );
@@ -134,14 +145,27 @@ class CreateTemplateForm extends FormBase {
    *
    * @return array
    *   Assoc array of bundle types.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
   public function getBundles($entityType) {
+    $mappingStorage = $this->entityTypeManager->getStorage('gathercontent_mapping');
     $bundleTypes = $this->entityTypeBundleInfo->getBundleInfo($entityType);
     $response = [];
 
     foreach ($bundleTypes as $key => $value) {
+      $mapping = $mappingStorage->loadByProperties([
+        'entity_type' => $entityType,
+        'content_type' => $key,
+      ]);
+
+      if ($mapping) {
+        continue;
+      }
+
       $response[$key] = $value['label'];
-    };
+    }
 
     return $response;
   }
