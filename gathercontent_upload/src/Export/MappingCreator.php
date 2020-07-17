@@ -10,7 +10,11 @@ use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
+use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Language\LanguageManagerInterface;
+use Drupal\gathercontent\DrupalGatherContentClient;
+use Drupal\gathercontent\Entity\Mapping;
+use Drupal\gathercontent\MigrationDefinitionCreator;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -68,6 +72,13 @@ class MappingCreator implements ContainerInjectionInterface {
   protected $languageManager;
 
   /**
+   * Migration definition creator.
+   *
+   * @var \Drupal\gathercontent\MigrationDefinitionCreator
+   */
+  protected $migrationDefinitionCreator;
+
+  /**
    * Content translation manager.
    *
    * @var \Drupal\content_translation\ContentTranslationManagerInterface
@@ -84,7 +95,8 @@ class MappingCreator implements ContainerInjectionInterface {
     EntityTypeBundleInfoInterface $entityTypeBundleInfo,
     UuidInterface $uuidService,
     ModuleHandlerInterface $moduleHandler,
-    LanguageManagerInterface $languageManager
+    LanguageManagerInterface $languageManager,
+    MigrationDefinitionCreator $migrationDefinitionCreator
   ) {
     $this->client = $client;
     $this->entityTypeManager = $entityTypeManager;
@@ -93,6 +105,7 @@ class MappingCreator implements ContainerInjectionInterface {
     $this->uuidService = $uuidService;
     $this->moduleHandler = $moduleHandler;
     $this->languageManager = $languageManager;
+    $this->migrationDefinitionCreator = $migrationDefinitionCreator;
 
     if ($this->moduleHandler->moduleExists('content_translation')) {
       $this->contentTranslation = \Drupal::service('content_translation.manager');
@@ -110,7 +123,8 @@ class MappingCreator implements ContainerInjectionInterface {
       $container->get('entity_type.bundle.info'),
       $container->get('uuid'),
       $container->get('module_handler'),
-      $container->get('language_manager')
+      $container->get('language_manager'),
+      $container->get('gathercontent.migration_creator')
     );
   }
 
@@ -129,17 +143,10 @@ class MappingCreator implements ContainerInjectionInterface {
    * @throws \Drupal\Core\Entity\EntityStorageException
    */
   public function generateMapping(string $entityTypeId, string $bundle, string $projectId) {
-    $bundles = $this->entityTypeBundleInfo->getBundleInfo($entityTypeId);
-    $templateName = ucfirst($bundle);
-    if (!empty($bundles[$bundle]['label'])) {
-      $templateName = $bundles[$bundle]['label'];
-    }
-
-    $structureData = [
-      'uuid' => $this->uuidService->generate(),
-      'groups' => [],
-    ];
-    $mappingArray = [
+    $projects = $this->getProjects();
+    $groups = [];
+    $mappingData = [];
+    $fieldCombinations = [
       'file' => 'attachment',
       'image' => 'attachment',
       'text' => 'text',
@@ -152,8 +159,13 @@ class MappingCreator implements ContainerInjectionInterface {
       'date' => 'plain',
       'datetime' => 'plain',
     ];
-    $fields = $this->entityFieldManager->getFieldDefinitions($entityTypeId, $bundle);
 
+    $bundles = $this->entityTypeBundleInfo->getBundleInfo($entityTypeId);
+    $templateName = ucfirst($bundle);
+    if (!empty($bundles[$bundle]['label'])) {
+      $templateName = $bundles[$bundle]['label'];
+    }
+    $fields = $this->entityFieldManager->getFieldDefinitions($entityTypeId, $bundle);
     $languages = [$this->languageManager->getDefaultLanguage()];
 
     if (isset($this->contentTranslation)
@@ -162,16 +174,31 @@ class MappingCreator implements ContainerInjectionInterface {
       $languages = $this->languageManager->getLanguages();
     }
 
+    $entityDefinition = $this->entityTypeManager->getDefinition($entityTypeId);
+    $titleKey = $entityDefinition->getKey('label');
+
     foreach ($languages as $language) {
+      $uuid = $this->uuidService->generate();
       $group = [
-        'uuid' => $this->uuidService->generate(),
+        'uuid' => $uuid,
         'name' => $language->getName(),
         'fields' => [],
       ];
+      $mappingData[$uuid] = [
+        'type' => 'content',
+        'language' => $language->getId(),
+        'elements' => [],
+      ];
 
       foreach ($fields as $field) {
-        if (empty($mappingArray[$field->getType()])
-          || $field->getType() !== 'entity_reference'
+        if ($field instanceof BaseFieldDefinition
+          && $titleKey !== $field->getName()
+        ) {
+          continue;
+        }
+
+        if (empty($fieldCombinations[$field->getType()])
+          && $field->getType() !== 'entity_reference'
         ) {
           continue;
         }
@@ -181,21 +208,35 @@ class MappingCreator implements ContainerInjectionInterface {
           'is_plain' => FALSE,
         ];
 
+        if (!empty($fieldCombinations[$field->getType()])) {
+          $fieldType = $fieldCombinations[$field->getType()];
+        }
+
+        if ($fieldType === 'plain') {
+          $fieldType = 'text';
+          $metadata = [
+            'is_plain' => TRUE,
+          ];
+        }
+
         if ($field->getType() === 'entity_reference') {
-          if ($field->getTargetEntityTypeId() !== 'taxonomy_term') {
+          if ($field->getSetting('handler') !== 'default:taxonomy_term') {
             continue;
           }
 
           $fieldType = 'choice_checkbox';
-          if (!$field->isMultiple()) {
+          if (!$field->getFieldStorageDefinition()->isMultiple()) {
             $fieldType = 'choice_radio';
           }
 
           $termStorage = $this->entityTypeManager->getStorage('taxonomy_term');
-          $values = [];
+          $values = [
+            'langcode' => $language->getId(),
+          ];
+          $settings = $field->getSetting('handler_settings');
 
-          if ($field->getTargetBundle()) {
-            $values['vid'] = $field->getTargetBundle();
+          if (!empty($settings['target_bundles'])) {
+            $values['vid'] = $settings['target_bundles'];
           }
 
           $terms = $termStorage->loadByProperties($values);
@@ -203,13 +244,9 @@ class MappingCreator implements ContainerInjectionInterface {
           $options = [];
           foreach ($terms as $term) {
             $uuid = $this->uuidService->generate();
-            if ($term->hasTranslation($language->getId())) {
-              $term = $term->getTranslation($language->getId());
-            }
-
             $options[] = [
               'optionId' => $uuid,
-              'label' => $term->getLabel(),
+              'label' => $term->label(),
             ];
 
             $optionIds = $term->get('gathercontent_option_ids')->getValue();
@@ -230,30 +267,68 @@ class MappingCreator implements ContainerInjectionInterface {
           ];
         }
 
-        if (!empty($mappingArray[$field->getType()])) {
-          $fieldType = $mappingArray[$field->getType()];
-        }
-
-        if ($fieldType === 'plain') {
-          $fieldType = 'text';
-          $metadata = [
-            'is_plain' => TRUE,
-          ];
-        }
-
+        $fieldUuid = $this->uuidService->generate();
         $group['fields'][] = [
-          'uuid' => $this->uuidService->generate(),
+          'uuid' => $fieldUuid,
           'field_type' => $fieldType,
-          'label' => $field->getName(),
+          'label' => (string) $field->getLabel(),
           'metadata' => $metadata,
         ];
+        $mappingData[$uuid]['elements'][$fieldUuid] = $field->id();
       }
 
-      $structureData['groups'][] = $group;
+      $groups[] = $group;
     }
 
-    $template = $this->client->templatePost($projectId, $templateName, new Structure($structureData));
-    var_dump($template->id);
+    $template = $this->client->templatePost($projectId, $templateName, new Structure([
+      'uuid' => $this->uuidService->generate(),
+      'groups' => $groups,
+    ]));
+    $this->client->templateGet($template->id);
+
+    /** @var \Drupal\gathercontent\Entity\Mapping $mapping */
+    $mapping = Mapping::create([
+      'id' => $template->id,
+      'gathercontent_project_id' => $projectId,
+      'gathercontent_project' => $projects[$projectId],
+      'gathercontent_template_id' => $template->id,
+      'gathercontent_template' => $templateName,
+      'template' => serialize($this->client->getBody(TRUE)),
+    ]);
+    $mapping->setMappedEntityType($entityTypeId);
+    $mapping->setContentType($bundle);
+    $mapping->setContentTypeName($templateName);
+    $mapping->setData(serialize($mappingData));
+    $mapping->setUpdatedDrupal(time());
+    $mapping->save();
+
+    if (!empty($mappingData)) {
+      $this->migrationDefinitionCreator
+        ->setMapping($mapping)
+        ->setMappingData($mappingData)
+        ->createMigrationDefinition();
+    }
+  }
+
+  /**
+   * Returns all projects for given account.
+   *
+   * @return array
+   */
+  public function getProjects() {
+    $accountId = DrupalGatherContentClient::getAccountId();
+    /** @var \Cheppers\GatherContent\DataTypes\Project[] $projects */
+    $projects = [];
+    if ($accountId) {
+      $projects = $this->client->getActiveProjects($accountId);
+    }
+
+    $formattedProjects = [];
+    foreach ($projects['data'] as $project) {
+      $formattedProjects[$project->id] = $project->name;
+    }
+
+    return $formattedProjects;
   }
 
 }

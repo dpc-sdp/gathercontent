@@ -18,4 +18,5 @@ services:
                 '@entity_type.bundle.info',
                 '@uuid',
                 '@module_handler',
-                '@language_manager']
+                '@language_manager',
+                '@gathercontent.migration_creator']

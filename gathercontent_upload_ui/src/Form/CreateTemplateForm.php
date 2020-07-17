@@ -2,23 +2,14 @@
 
 namespace Drupal\gathercontent_upload_ui\Form;
 
-use Cheppers\GatherContent\GatherContentClientInterface;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\gathercontent\DrupalGatherContentClient;
 use Drupal\gathercontent_upload\Export\MappingCreator;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class CreateTemplateForm extends FormBase {
-
-  /**
-   * Drupal GatherContent Client.
-   *
-   * @var \Drupal\gathercontent\DrupalGatherContentClient
-   */
-  protected $client;
 
   /**
    * The entity bundle info.
@@ -38,11 +29,9 @@ class CreateTemplateForm extends FormBase {
    * MappingCreator constructor.
    */
   public function __construct(
-    GatherContentClientInterface $client,
     EntityTypeBundleInfoInterface $entityTypeBundleInfo,
     MappingCreator $mappingCreator
   ) {
-    $this->client = $client;
     $this->entityTypeBundleInfo = $entityTypeBundleInfo;
     $this->mappingCreator = $mappingCreator;
   }
@@ -52,7 +41,6 @@ class CreateTemplateForm extends FormBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('gathercontent.client'),
       $container->get('entity_type.bundle.info'),
       $container->get('gathercontent_upload.mapping_creator')
     );
@@ -125,12 +113,17 @@ class CreateTemplateForm extends FormBase {
     return $form;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $this->mappingCreator->generateMapping(
       $form_state->getValue('entity_type'),
       $form_state->getValue('content_type'),
       $form_state->getValue('project_id')
     );
+
+    $this->messenger()->addMessage('Mapping created successfully');
   }
 
   /**
@@ -201,19 +194,7 @@ class CreateTemplateForm extends FormBase {
    * @return array
    */
   public function getProjects() {
-    $account_id = DrupalGatherContentClient::getAccountId();
-    /** @var \Cheppers\GatherContent\DataTypes\Project[] $projects */
-    $projects = [];
-    if ($account_id) {
-      $projects = $this->client->getActiveProjects($account_id);
-    }
-
-    $formattedProjects = [];
-    foreach ($projects['data'] as $project) {
-      $formattedProjects[$project->id] = $project->name;
-    }
-
-    return $formattedProjects;
+    return $this->mappingCreator->getProjects();
   }
 
 }
