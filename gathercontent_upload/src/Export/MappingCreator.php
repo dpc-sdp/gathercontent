@@ -85,6 +85,20 @@ class MappingCreator implements ContainerInjectionInterface {
    */
   protected $contentTranslation;
 
+  const FIELD_COMBINATIONS = [
+    'file' => 'attachment',
+    'image' => 'attachment',
+    'text' => 'text',
+    'text_long' => 'text',
+    'text_with_summary' => 'text',
+    'string_long' => 'plain',
+    'string' => 'plain',
+    'email' => 'plain',
+    'telephone' => 'plain',
+    'date' => 'plain',
+    'datetime' => 'plain',
+  ];
+
   /**
    * MappingCreator constructor.
    */
@@ -146,19 +160,6 @@ class MappingCreator implements ContainerInjectionInterface {
     $projects = $this->getProjects();
     $groups = [];
     $mappingData = [];
-    $fieldCombinations = [
-      'file' => 'attachment',
-      'image' => 'attachment',
-      'text' => 'text',
-      'text_long' => 'text',
-      'text_with_summary' => 'text',
-      'string_long' => 'plain',
-      'string' => 'plain',
-      'email' => 'plain',
-      'telephone' => 'plain',
-      'date' => 'plain',
-      'datetime' => 'plain',
-    ];
 
     $bundles = $this->entityTypeBundleInfo->getBundleInfo($entityTypeId);
     $templateName = ucfirst($bundle);
@@ -178,104 +179,19 @@ class MappingCreator implements ContainerInjectionInterface {
     $titleKey = $entityDefinition->getKey('label');
 
     foreach ($languages as $language) {
-      $uuid = $this->uuidService->generate();
+      $groupUuid = $this->uuidService->generate();
       $group = [
-        'uuid' => $uuid,
+        'uuid' => $groupUuid,
         'name' => $language->getName(),
         'fields' => [],
       ];
-      $mappingData[$uuid] = [
+      $mappingData[$groupUuid] = [
         'type' => 'content',
         'language' => $language->getId(),
         'elements' => [],
       ];
 
-      foreach ($fields as $field) {
-        if ($field instanceof BaseFieldDefinition
-          && $titleKey !== $field->getName()
-        ) {
-          continue;
-        }
-
-        if (empty($fieldCombinations[$field->getType()])
-          && $field->getType() !== 'entity_reference'
-        ) {
-          continue;
-        }
-
-        $fieldType = 'text';
-        $metadata = [
-          'is_plain' => FALSE,
-        ];
-
-        if (!empty($fieldCombinations[$field->getType()])) {
-          $fieldType = $fieldCombinations[$field->getType()];
-        }
-
-        if ($fieldType === 'plain') {
-          $fieldType = 'text';
-          $metadata = [
-            'is_plain' => TRUE,
-          ];
-        }
-
-        if ($field->getType() === 'entity_reference') {
-          if ($field->getSetting('handler') !== 'default:taxonomy_term') {
-            continue;
-          }
-
-          $fieldType = 'choice_checkbox';
-          if (!$field->getFieldStorageDefinition()->isMultiple()) {
-            $fieldType = 'choice_radio';
-          }
-
-          $termStorage = $this->entityTypeManager->getStorage('taxonomy_term');
-          $values = [
-            'langcode' => $language->getId(),
-          ];
-          $settings = $field->getSetting('handler_settings');
-
-          if (!empty($settings['target_bundles'])) {
-            $values['vid'] = $settings['target_bundles'];
-          }
-
-          $terms = $termStorage->loadByProperties($values);
-
-          $options = [];
-          foreach ($terms as $term) {
-            $uuid = $this->uuidService->generate();
-            $options[] = [
-              'optionId' => $uuid,
-              'label' => $term->label(),
-            ];
-
-            $optionIds = $term->get('gathercontent_option_ids')->getValue();
-            $mappedValues = array_map(function ($array) {
-              return $array['value'];
-            }, $optionIds);
-
-            if (!in_array($uuid, $mappedValues)) {
-              $term->gathercontent_option_ids->appendItem($uuid);
-            }
-            $term->save();
-          }
-
-          $metadata = [
-            'choice_fields' => [
-              'options' => $options,
-            ],
-          ];
-        }
-
-        $fieldUuid = $this->uuidService->generate();
-        $group['fields'][] = [
-          'uuid' => $fieldUuid,
-          'field_type' => $fieldType,
-          'label' => (string) $field->getLabel(),
-          'metadata' => $metadata,
-        ];
-        $mappingData[$uuid]['elements'][$fieldUuid] = $field->id();
-      }
+      $this->processFields($fields, $titleKey, $language, $group, $mappingData, $groupUuid);
 
       $groups[] = $group;
     }
@@ -307,6 +223,167 @@ class MappingCreator implements ContainerInjectionInterface {
         ->setMapping($mapping)
         ->setMappingData($mappingData)
         ->createMigrationDefinition();
+    }
+  }
+
+  /**
+   * Process the fields.
+   *
+   * @param array $fields
+   *   Fields list.
+   * @param string $titleKey
+   *   Title key.
+   * @param \Drupal\Core\Language\LanguageInterface $language
+   *   Language object.
+   * @param array $group
+   *   Group array.
+   * @param array $mappingData
+   *   Mapping data array.
+   * @param string $groupUuid
+   *   Group's UUID.
+   * @param string $parentFieldId
+   *   Parent field's ID.
+   * @param string $parentFieldLabel
+   *   Parent field's Label.
+   *
+   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
+   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
+   * @throws \Drupal\Core\Entity\EntityStorageException
+   */
+  protected function processFields(array $fields, string $titleKey, $language, array &$group, array &$mappingData, string $groupUuid, string $parentFieldId = '', string $parentFieldLabel = '') {
+    foreach ($fields as $field) {
+      if ($field instanceof BaseFieldDefinition
+        && $titleKey !== $field->getName()
+      ) {
+        continue;
+      }
+
+      if (empty(static::FIELD_COMBINATIONS[$field->getType()])
+        && $field->getType() !== 'entity_reference'
+        && $field->getType() !== 'entity_reference_revisions'
+      ) {
+        continue;
+      }
+
+      $fieldType = 'text';
+      $metadata = [
+        'is_plain' => FALSE,
+      ];
+
+      if (!empty(static::FIELD_COMBINATIONS[$field->getType()])) {
+        $fieldType = static::FIELD_COMBINATIONS[$field->getType()];
+      }
+
+      if ($fieldType === 'plain') {
+        $fieldType = 'text';
+        $metadata = [
+          'is_plain' => TRUE,
+        ];
+      }
+
+      if ($field->getType() === 'entity_reference') {
+        if ($field->getSetting('handler') !== 'default:taxonomy_term') {
+          continue;
+        }
+
+        $fieldType = 'choice_checkbox';
+        if (!$field->getFieldStorageDefinition()->isMultiple()) {
+          $fieldType = 'choice_radio';
+        }
+
+        $termStorage = $this->entityTypeManager->getStorage('taxonomy_term');
+        $values = [
+          'langcode' => $language->getId(),
+        ];
+        $settings = $field->getSetting('handler_settings');
+
+        if (!empty($settings['target_bundles'])) {
+          $values['vid'] = $settings['target_bundles'];
+        }
+
+        $terms = $termStorage->loadByProperties($values);
+
+        $options = [];
+        foreach ($terms as $term) {
+          $uuid = $this->uuidService->generate();
+          $options[] = [
+            'optionId' => $uuid,
+            'label' => $term->label(),
+          ];
+
+          $optionIds = $term->get('gathercontent_option_ids')->getValue();
+          $mappedValues = array_map(function ($array) {
+            return $array['value'];
+          }, $optionIds);
+
+          if (!in_array($uuid, $mappedValues)) {
+            $term->gathercontent_option_ids->appendItem($uuid);
+          }
+          $term->save();
+        }
+
+        $metadata = [
+          'choice_fields' => [
+            'options' => $options,
+          ],
+        ];
+      }
+
+      if ($field->getType() === 'entity_reference_revisions') {
+        $settings = $field->getSetting('handler_settings');
+
+        if (!empty($settings['target_bundles'])) {
+          $bundles = $settings['target_bundles'];
+
+          if (!empty($settings['negate']) && !empty($settings['target_bundles_drag_drop'])) {
+            $negated_bundles = array_filter(
+              $settings['target_bundles_drag_drop'],
+              function ($v) {
+                return !$v['enabled'];
+              }
+            );
+
+            $bundles = array_combine(array_keys($negated_bundles), array_keys($negated_bundles));
+          }
+
+          $targetType = $field->getFieldStorageDefinition()
+            ->getSetting('target_type');
+
+          foreach ($bundles as $bundle) {
+            $childFields = $this->entityFieldManager->getFieldDefinitions($targetType, $bundle);
+            $entityDefinition = $this->entityTypeManager->getDefinition($targetType);
+            $childTitleKey = $entityDefinition->getKey('label');
+
+            $this->processFields($childFields, $childTitleKey, $language, $group, $mappingData, $groupUuid, $field->id(), (string) $field->getLabel());
+          }
+        }
+        continue;
+      }
+
+      $fieldUuid = $this->uuidService->generate();
+      $fieldLabel = (string) $field->getLabel();
+      if (!empty($parentFieldLabel)) {
+        $fieldLabel = $parentFieldLabel . ' ' . $fieldLabel;
+      }
+
+      $group['fields'][] = [
+        'uuid' => $fieldUuid,
+        'field_type' => $fieldType,
+        'label' => $fieldLabel,
+        'metadata' => $metadata,
+      ];
+
+      if ($titleKey !== $field->getName()) {
+        $fieldId = $field->id();
+        if (!empty($parentFieldId)) {
+          $fieldId = $parentFieldId . '||' . $fieldId;
+        }
+
+        $mappingData[$groupUuid]['elements'][$fieldUuid] = $fieldId;
+      }
+      else {
+        $mappingData[$groupUuid]['elements'][$fieldUuid] = $titleKey;
+      }
     }
   }
 
