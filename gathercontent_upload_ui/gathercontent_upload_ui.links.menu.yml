@@ -3,3 +3,8 @@ gathercontent_upload_ui.upload_select_form:
   route_name: gathercontent_upload_ui.upload_select_form
   parent: system.admin_content
   weight: 100
+entity.gathercontent_mapping.create_template:
+  title: 'Create Template from Entity type'
+  route_name: entity.gathercontent_mapping.create_template
+  parent: gathercontent.admin_gathercontent
+  weight: 4
