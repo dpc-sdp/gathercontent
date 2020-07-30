@@ -116,11 +116,11 @@ class MigrateUpdater implements ContainerInjectionInterface {
       }
       $idMap->saveIdMapping($row, $destinationIds);
 
-      $this->processLanguages($migration, $entity, $row);
+      $this->processLanguages($migration, $entity, $row, $destinationIds);
     }
   }
 
-  protected function processLanguages(MigrationInterface $migration, EntityInterface $entity, Row $row) {
+  protected function processLanguages(MigrationInterface $migration, EntityInterface $entity, Row $row, array $destinationIds) {
     $idMap = $migration->getIdMap();
     $languages = $entity->getTranslationLanguages();
     $sourceId = $row->getSourceIdValues();
