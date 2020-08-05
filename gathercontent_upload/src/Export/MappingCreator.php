@@ -12,7 +12,6 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Language\LanguageManagerInterface;
-use Drupal\gathercontent\DrupalGatherContentClient;
 use Drupal\gathercontent\Entity\Mapping;
 use Drupal\gathercontent\MigrationDefinitionCreator;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -157,7 +156,6 @@ class MappingCreator implements ContainerInjectionInterface {
    * @throws \Drupal\Core\Entity\EntityStorageException
    */
   public function generateMapping(string $entityTypeId, string $bundle, string $projectId) {
-    $projects = $this->getProjects();
     $groups = [];
     $mappingData = [];
 
@@ -206,7 +204,7 @@ class MappingCreator implements ContainerInjectionInterface {
     $mapping = Mapping::create([
       'id' => $template->id,
       'gathercontent_project_id' => $projectId,
-      'gathercontent_project' => $projects[$projectId],
+      'gathercontent_project' => $this->getProjectName($projectId),
       'gathercontent_template_id' => $template->id,
       'gathercontent_template' => $templateName,
       'template' => serialize($this->client->getBody(TRUE)),
@@ -388,24 +386,22 @@ class MappingCreator implements ContainerInjectionInterface {
   }
 
   /**
-   * Returns all projects for given account.
+   * Returns the name of a given project.
    *
-   * @return array
+   * @return string
    */
-  public function getProjects() {
-    $accountId = DrupalGatherContentClient::getAccountId();
-    /** @var \Cheppers\GatherContent\DataTypes\Project[] $projects */
-    $projects = [];
-    if ($accountId) {
-      $projects = $this->client->getActiveProjects($accountId);
+  public function getProjectName($projectId) {
+    if (empty($projectId)) {
+      return '';
     }
 
-    $formattedProjects = [];
-    foreach ($projects['data'] as $project) {
-      $formattedProjects[$project->id] = $project->name;
+    $project = $this->client->projectGet($projectId);
+
+    if (empty($project)) {
+      return '';
     }
 
-    return $formattedProjects;
+    return $project->name;
   }
 
 }

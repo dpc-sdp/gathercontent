@@ -617,7 +617,7 @@ class Exporter implements ContainerInjectionInterface {
   }
 
   /**
-   * Updates the file managed table to include the new GC ID for given file.
+   * Updates the file managed table to include the new GC ID for a given file.
    *
    * @param array $returnedAssets
    *   The assets returned by GC.

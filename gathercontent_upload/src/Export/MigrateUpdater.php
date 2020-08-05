@@ -70,10 +70,9 @@ class MigrateUpdater implements ContainerInjectionInterface {
 
   protected function processMappings(array $mapping) {
     $migrationIds = $mapping['mapping']->getMigrations();
-    $gcIds = $mapping['gcIds'];
 
     foreach ($migrationIds as $migrationId) {
-      $this->processMigration($migrationId, $gcIds);
+      $this->processMigration($migrationId, $mapping['gcIds']);
     }
   }
 
