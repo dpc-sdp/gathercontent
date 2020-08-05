@@ -55,16 +55,16 @@ class MappingStepEntityReference extends MappingSteps {
       foreach ($gcMapping as $lang => $fieldSettings) {
         foreach ($this->template['related']->structure->groups as $group) {
           if ($group->id === $fieldSettings['tab']) {
-            foreach ($group->fields as $field) {
-              if ($field->id == $fieldSettings['name']) {
+            foreach ($group->fields as $gcField) {
+              if ($gcField->id == $fieldSettings['name']) {
                 $header[$lang] = $this->t('@field (@lang values)', [
-                  '@field' => $field->label,
+                  '@field' => $gcField->label,
                   '@lang' => strtoupper($lang),
                 ]);
                 if (count($header) === 1 && $this->erImportType === 'manual') {
                   $header['terms'] = $this->t('Terms');
                 }
-                foreach ($field->metaData->choiceFields['options'] as $option) {
+                foreach ($gcField->metaData->choiceFields['options'] as $option) {
                   $options[$lang][$option['optionId']] = $option['label'];
                 }
               }

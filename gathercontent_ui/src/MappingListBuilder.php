@@ -7,9 +7,11 @@ use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityStorageInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\gathercontent\DrupalGatherContentClient;
+use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Provides a listing of GatherContent Mapping entities.
@@ -33,15 +35,33 @@ class MappingListBuilder extends ConfigEntityListBuilder {
   protected $client;
 
   /**
+   * Entity query service.
+   *
+   * @var \Drupal\Core\Entity\EntityTypeManagerInterface
+   */
+  protected $entityTypeManager;
+
+  /**
+   * Request service.
+   *
+   * @var \Symfony\Component\HttpFoundation\Request
+   */
+  protected $request;
+
+  /**
    * {@inheritdoc}
    */
   public function __construct(
     EntityTypeInterface $entity_type,
     EntityStorageInterface $storage,
-    GatherContentClientInterface $client
+    GatherContentClientInterface $client,
+    EntityTypeManagerInterface $entityTypeManager,
+    Request $request
   ) {
     parent::__construct($entity_type, $storage);
     $this->client = $client;
+    $this->entityTypeManager = $entityTypeManager;
+    $this->request = $request;
   }
 
   /**
@@ -51,7 +71,9 @@ class MappingListBuilder extends ConfigEntityListBuilder {
     return new static(
       $entity_type,
       $container->get('entity_type.manager')->getStorage($entity_type->id()),
-      $container->get('gathercontent.client')
+      $container->get('gathercontent.client'),
+      $container->get('entity_type.manager'),
+      $container->get('request_stack')->getCurrentRequest()
     );
   }
 
@@ -59,10 +81,9 @@ class MappingListBuilder extends ConfigEntityListBuilder {
    * {@inheritdoc}
    */
   public function load() {
-    /** @var \Drupal\Core\Config\Entity\ConfigEntityStorageInterface|\Drupal\Core\Entity\Query\QueryInterface $entity_query */
-    $entity_query = \Drupal::service('entity.query')
-      ->get('gathercontent_mapping');
-    $query_string = \Drupal::request()->query;
+    $entity_query = $this->entityTypeManager->getStorage('gathercontent_mapping')
+      ->getQuery();
+    $query_string = $this->request->query;
     $headers = $this->buildHeader();
 
     $entity_query->pager(100);
@@ -132,9 +153,7 @@ class MappingListBuilder extends ConfigEntityListBuilder {
     $row['updated_gathercontent'] = ($exists ? \Drupal::service('date.formatter')
       ->format($this->templates[$entity->getGathercontentTemplateId()], 'custom', 'M d, Y - H:i') : $this->t("Deleted"));
     $row['updated_drupal'] = $entity->getFormatterUpdatedDrupal();
-    if ($exists) {
-      $row = $row + parent::buildRow($entity);
-    }
+    $row = $row + parent::buildRow($entity);
     return $row;
   }
 
@@ -147,9 +166,18 @@ class MappingListBuilder extends ConfigEntityListBuilder {
       return parent::render();
     }
 
+    $entityStorage = $this->entityTypeManager->getStorage('gathercontent_mapping');
     $projects = $this->client->getActiveProjects($account_id);
 
     foreach ($projects['data'] as $project) {
+      $mappings = $entityStorage->loadByProperties([
+        'gathercontent_project_id' => $project->id,
+      ]);
+
+      if (!$mappings) {
+        continue;
+      }
+
       $remote_templates = $this->client->templatesGet($project->id);
       foreach ($remote_templates['data'] as $remote_template) {
         $this->templates[$remote_template->id] = strtotime($remote_template->updatedAt);
@@ -163,8 +191,9 @@ class MappingListBuilder extends ConfigEntityListBuilder {
    * {@inheritdoc}
    */
   public function getDefaultOperations(EntityInterface $entity) {
+    $exists = isset($this->templates[$entity->getGathercontentTemplateId()]);
     $operations = [];
-    if ($entity->access('update') && $entity->hasLinkTemplate('edit-form')) {
+    if ($exists && $entity->access('update') && $entity->hasLinkTemplate('edit-form')) {
       $operations['edit'] = [
         'title' => $entity->hasMapping() ? $this->t('Edit') : $this->t('Create'),
         'weight' => 10,
