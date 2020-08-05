@@ -175,7 +175,6 @@ class MappingCreator implements ContainerInjectionInterface {
     }
 
     $entityDefinition = $this->entityTypeManager->getDefinition($entityTypeId);
-    $titleKey = $entityDefinition->getKey('label');
 
     foreach ($languages as $language) {
       $groupUuid = $this->uuidService->generate();
@@ -190,7 +189,7 @@ class MappingCreator implements ContainerInjectionInterface {
         'elements' => [],
       ];
 
-      $this->processFields($fields, $titleKey, $language, $group, $mappingData, $groupUuid);
+      $this->processFields($fields, $language, $group, $mappingData, $groupUuid);
 
       $groups[] = $group;
     }
@@ -200,6 +199,7 @@ class MappingCreator implements ContainerInjectionInterface {
       'groups' => $groups,
     ]));
     $this->client->templateGet($template->id);
+    $templateData = serialize($this->client->getBody(TRUE));
 
     /** @var \Drupal\gathercontent\Entity\Mapping $mapping */
     $mapping = Mapping::create([
@@ -208,7 +208,7 @@ class MappingCreator implements ContainerInjectionInterface {
       'gathercontent_project' => $this->getProjectName($projectId),
       'gathercontent_template_id' => $template->id,
       'gathercontent_template' => $templateName,
-      'template' => serialize($this->client->getBody(TRUE)),
+      'template' => $templateData,
     ]);
     $mapping->setMappedEntityType($entityTypeId);
     $mapping->setContentType($bundle);
@@ -230,8 +230,6 @@ class MappingCreator implements ContainerInjectionInterface {
    *
    * @param array $fields
    *   Fields list.
-   * @param string $titleKey
-   *   Title key.
    * @param \Drupal\Core\Language\LanguageInterface $language
    *   Language object.
    * @param array $group
@@ -249,11 +247,9 @@ class MappingCreator implements ContainerInjectionInterface {
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    * @throws \Drupal\Core\Entity\EntityStorageException
    */
-  protected function processFields(array $fields, string $titleKey, $language, array &$group, array &$mappingData, string $groupUuid, string $parentFieldId = '', string $parentFieldLabel = '') {
+  protected function processFields(array $fields, $language, array &$group, array &$mappingData, string $groupUuid, string $parentFieldId = '', string $parentFieldLabel = '') {
     foreach ($fields as $field) {
-      if ($field instanceof BaseFieldDefinition
-        && $titleKey !== $field->getName()
-      ) {
+      if ($field instanceof BaseFieldDefinition) {
         continue;
       }
 
@@ -372,17 +368,12 @@ class MappingCreator implements ContainerInjectionInterface {
         'metadata' => $metadata,
       ];
 
-      if ($titleKey !== $field->getName()) {
-        $fieldId = $field->id();
-        if (!empty($parentFieldId)) {
-          $fieldId = $parentFieldId . '||' . $fieldId;
-        }
+      $fieldId = $field->id();
+      if (!empty($parentFieldId)) {
+        $fieldId = $parentFieldId . '||' . $fieldId;
+      }
 
-        $mappingData[$groupUuid]['elements'][$fieldUuid] = $fieldId;
-      }
-      else {
-        $mappingData[$groupUuid]['elements'][$fieldUuid] = $titleKey;
-      }
+      $mappingData[$groupUuid]['elements'][$fieldUuid] = $fieldId;
     }
   }
 
