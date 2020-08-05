@@ -12,6 +12,7 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Language\LanguageManagerInterface;
+use Drupal\gathercontent\DrupalGatherContentClient;
 use Drupal\gathercontent\Entity\Mapping;
 use Drupal\gathercontent\MigrationDefinitionCreator;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -383,6 +384,27 @@ class MappingCreator implements ContainerInjectionInterface {
         $mappingData[$groupUuid]['elements'][$fieldUuid] = $titleKey;
       }
     }
+  }
+
+  /**
+   * Returns all projects for given account.
+   *
+   * @return array
+   */
+  public function getProjects() {
+    $accountId = DrupalGatherContentClient::getAccountId();
+    /** @var \Cheppers\GatherContent\DataTypes\Project[] $projects */
+    $projects = [];
+    if ($accountId) {
+      $projects = $this->client->getActiveProjects($accountId);
+    }
+
+    $formattedProjects = [];
+    foreach ($projects['data'] as $project) {
+      $formattedProjects[$project->id] = $project->name;
+    }
+
+    return $formattedProjects;
   }
 
   /**
