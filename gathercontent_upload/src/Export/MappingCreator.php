@@ -174,8 +174,6 @@ class MappingCreator implements ContainerInjectionInterface {
       $languages = $this->languageManager->getLanguages();
     }
 
-    $entityDefinition = $this->entityTypeManager->getDefinition($entityTypeId);
-
     foreach ($languages as $language) {
       $groupUuid = $this->uuidService->generate();
       $group = [
@@ -327,31 +325,31 @@ class MappingCreator implements ContainerInjectionInterface {
       if ($field->getType() === 'entity_reference_revisions') {
         $settings = $field->getSetting('handler_settings');
 
-        if (!empty($settings['target_bundles'])) {
-          $bundles = $settings['target_bundles'];
-
-          if (!empty($settings['negate']) && !empty($settings['target_bundles_drag_drop'])) {
-            $negated_bundles = array_filter(
-              $settings['target_bundles_drag_drop'],
-              function ($v) {
-                return !$v['enabled'];
-              }
-            );
-
-            $bundles = array_combine(array_keys($negated_bundles), array_keys($negated_bundles));
-          }
-
-          $targetType = $field->getFieldStorageDefinition()
-            ->getSetting('target_type');
-
-          foreach ($bundles as $bundle) {
-            $childFields = $this->entityFieldManager->getFieldDefinitions($targetType, $bundle);
-            $entityDefinition = $this->entityTypeManager->getDefinition($targetType);
-            $childTitleKey = $entityDefinition->getKey('label');
-
-            $this->processFields($childFields, $childTitleKey, $language, $group, $mappingData, $groupUuid, $field->id(), (string) $field->getLabel());
-          }
+        if (empty($settings['target_bundles'])) {
+          continue;
         }
+
+        $bundles = $settings['target_bundles'];
+
+        if (!empty($settings['negate']) && !empty($settings['target_bundles_drag_drop'])) {
+          $negated_bundles = array_filter(
+            $settings['target_bundles_drag_drop'],
+            function ($v) {
+              return !$v['enabled'];
+            }
+          );
+
+          $bundles = array_combine(array_keys($negated_bundles), array_keys($negated_bundles));
+        }
+
+        $targetType = $field->getFieldStorageDefinition()
+          ->getSetting('target_type');
+
+        foreach ($bundles as $bundle) {
+          $childFields = $this->entityFieldManager->getFieldDefinitions($targetType, $bundle);
+          $this->processFields($childFields, $language, $group, $mappingData, $groupUuid, $field->id(), (string) $field->getLabel());
+        }
+
         continue;
       }
 
