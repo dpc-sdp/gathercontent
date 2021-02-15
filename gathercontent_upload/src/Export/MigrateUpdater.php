@@ -31,6 +31,9 @@ class MigrateUpdater implements ContainerInjectionInterface {
 
   /**
    * DI GatherContent Client.
+   *
+   * @param \Drupal\migrate\Plugin\MigrationPluginManagerInterface $migrationService
+   * @param \Drupal\Core\Database\Connection $database
    */
   public function __construct(
     MigrationPluginManagerInterface $migrationService,
@@ -55,8 +58,6 @@ class MigrateUpdater implements ContainerInjectionInterface {
    *
    * @param array $context
    *   Batch context.
-   *
-   * @throws \Drupal\Component\Plugin\Exception\PluginException
    */
   public function updateIdMap(array $context = []) {
     if (empty($context['results']['mappings'])) {

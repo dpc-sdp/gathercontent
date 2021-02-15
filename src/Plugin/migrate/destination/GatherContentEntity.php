@@ -15,7 +15,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 /**
  * Custom migrate entity.
  *
- * @MigrateDestination(
+ * @\Drupal\migrate\Annotation\MigrateDestination(
  *   id = "gc_entity",
  *   deriver = "Drupal\gathercontent\Plugin\Derivative\MigrateEntity"
  * )
@@ -104,6 +104,18 @@ class GatherContentEntity extends EntityContentBase {
     }
 
     return $entity;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function fields(MigrationInterface $migration = NULL) {
+    $fields = parent::fields();
+    $fields += [
+      'delta' => $this->t('The delta of this body and version in the source node'),
+    ];
+
+    return $fields;
   }
 
 }

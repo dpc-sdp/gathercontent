@@ -35,6 +35,10 @@ class CreateTemplateForm extends FormBase {
 
   /**
    * MappingCreator constructor.
+   *
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
+   * @param \Drupal\Core\Entity\EntityTypeBundleInfoInterface $entityTypeBundleInfo
+   * @param \Drupal\gathercontent_upload\Export\MappingCreator $mappingCreator
    */
   public function __construct(
     EntityTypeManagerInterface $entityTypeManager,
@@ -90,7 +94,7 @@ class CreateTemplateForm extends FormBase {
     $form['gathercontent']['content_type'] = [
       '#type' => 'select',
       '#title' => $this->t('Drupal bundle type'),
-      '#options' => $this->getBundles($form_state->getValue('entity_type')),
+      '#options' => $form_state->getValue('entity_type') ? $this->getBundles($form_state->getValue('entity_type')) : [],
       '#required' => TRUE,
       '#wrapper_attributes' => [
         'class' => [
@@ -149,7 +153,7 @@ class CreateTemplateForm extends FormBase {
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
-  public function getBundles($entityType) {
+  public function getBundles(string $entityType): array {
     $mappingStorage = $this->entityTypeManager->getStorage('gathercontent_mapping');
     $bundleTypes = $this->entityTypeBundleInfo->getBundleInfo($entityType);
     $response = [];
@@ -177,7 +181,7 @@ class CreateTemplateForm extends FormBase {
    *   Assoc array of entity types.
    */
   public function getEntityTypes() {
-    $entityTypes = \Drupal::entityTypeManager()->getDefinitions();
+    $entityTypes = $this->entityTypeManager->getDefinitions();
     $unsupportedTypes = [
       'user',
       'file',
@@ -202,10 +206,11 @@ class CreateTemplateForm extends FormBase {
   /**
    * Ajax callback for mapping multistep form.
    *
+   * @param array $form
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *
    * @return array
    *   Array of form elements.
-   *
-   * @inheritdoc
    */
   public function getContentTypes(array &$form, FormStateInterface $form_state) {
     $form_state->setRebuild(TRUE);
