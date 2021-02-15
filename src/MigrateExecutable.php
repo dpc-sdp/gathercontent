@@ -140,10 +140,13 @@ class MigrateExecutable extends MigrateExecutableBase {
 
         if (!empty($parentMenuItem) && $parentMenuItem != '0') {
           // TODO: Use the entity type from the mapping, not the node!
+          /** @var \Drupal\node\NodeInterface $entity */
           $entity = Node::load($row['destid1']);
 
           // TODO: Rewrite menu creator to support none node entities too.
-          MenuCreator::createMenu($entity, $parentMenuItem);
+          if ($entity) {
+            MenuCreator::createMenu($entity, $parentMenuItem);
+          }
         }
 
         $newGcStatus = $options->getNewStatus();

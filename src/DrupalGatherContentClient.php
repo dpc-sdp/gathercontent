@@ -143,6 +143,10 @@ class DrupalGatherContentClient extends GatherContentClient {
 
     $requests = function () use ($httpClient, $files, $options) {
       foreach ($files as $file) {
+        if (!$file) {
+          continue;
+        }
+
         yield function () use ($httpClient, $file, $options) {
           return $httpClient->getAsync($file->url, $options);
         };

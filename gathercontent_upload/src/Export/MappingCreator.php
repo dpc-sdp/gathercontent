@@ -6,11 +6,13 @@ use Cheppers\GatherContent\DataTypes\Structure;
 use Cheppers\GatherContent\GatherContentClientInterface;
 use Drupal\Component\Uuid\UuidInterface;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
+use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityTypeBundleInfoInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
+use Drupal\Core\Language\LanguageInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Drupal\gathercontent\DrupalGatherContentClient;
 use Drupal\gathercontent\Entity\Mapping;
@@ -85,6 +87,13 @@ class MappingCreator implements ContainerInjectionInterface {
    */
   protected $contentTranslation;
 
+  /**
+   * Entity display repository.
+   *
+   * @var \Drupal\Core\Entity\EntityDisplayRepositoryInterface
+   */
+  protected $entityDisplayRepository;
+
   const FIELD_COMBINATIONS = [
     'file' => 'attachment',
     'image' => 'attachment',
@@ -101,6 +110,16 @@ class MappingCreator implements ContainerInjectionInterface {
 
   /**
    * MappingCreator constructor.
+   *
+   * @param \Cheppers\GatherContent\GatherContentClientInterface $client
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
+   * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entityFieldManager
+   * @param \Drupal\Core\Entity\EntityTypeBundleInfoInterface $entityTypeBundleInfo
+   * @param \Drupal\Component\Uuid\UuidInterface $uuidService
+   * @param \Drupal\Core\Extension\ModuleHandlerInterface $moduleHandler
+   * @param \Drupal\Core\Language\LanguageManagerInterface $languageManager
+   * @param \Drupal\gathercontent\MigrationDefinitionCreator $migrationDefinitionCreator
+   * @param \Drupal\Core\Entity\EntityDisplayRepositoryInterface $entityDisplayRepository
    */
   public function __construct(
     GatherContentClientInterface $client,
@@ -110,7 +129,8 @@ class MappingCreator implements ContainerInjectionInterface {
     UuidInterface $uuidService,
     ModuleHandlerInterface $moduleHandler,
     LanguageManagerInterface $languageManager,
-    MigrationDefinitionCreator $migrationDefinitionCreator
+    MigrationDefinitionCreator $migrationDefinitionCreator,
+    EntityDisplayRepositoryInterface $entityDisplayRepository
   ) {
     $this->client = $client;
     $this->entityTypeManager = $entityTypeManager;
@@ -120,6 +140,7 @@ class MappingCreator implements ContainerInjectionInterface {
     $this->moduleHandler = $moduleHandler;
     $this->languageManager = $languageManager;
     $this->migrationDefinitionCreator = $migrationDefinitionCreator;
+    $this->entityDisplayRepository = $entityDisplayRepository;
 
     if ($this->moduleHandler->moduleExists('content_translation')) {
       $this->contentTranslation = \Drupal::service('content_translation.manager');
@@ -138,7 +159,8 @@ class MappingCreator implements ContainerInjectionInterface {
       $container->get('uuid'),
       $container->get('module_handler'),
       $container->get('language_manager'),
-      $container->get('gathercontent.migration_creator')
+      $container->get('gathercontent.migration_creator'),
+      $container->get('entity_display.repository')
     );
   }
 
@@ -186,6 +208,27 @@ class MappingCreator implements ContainerInjectionInterface {
         'language' => $language->getId(),
         'elements' => [],
       ];
+
+      $formDisplay = $this
+        ->entityDisplayRepository
+        ->getFormDisplay($entityTypeId, $bundle);
+
+      $components = $formDisplay->getComponents();
+      if (!empty($components)) {
+        $fieldsOrderedByWeight = [];
+
+        foreach ($components as $componentName => $componentValue) {
+          $fieldsOrderedByWeight[$componentValue['weight']] = $componentName;
+        }
+
+        krsort($fieldsOrderedByWeight);
+
+        foreach ($fieldsOrderedByWeight as $fieldName) {
+          if (array_key_exists($fieldName, $fields)) {
+            $fields = [$fieldName => $fields[$fieldName]] + $fields;
+          }
+        }
+      }
 
       $this->processFields($fields, $language, $group, $mappingData, $groupUuid);
 
@@ -245,12 +288,21 @@ class MappingCreator implements ContainerInjectionInterface {
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    * @throws \Drupal\Core\Entity\EntityStorageException
    */
-  protected function processFields(array $fields, $language, array &$group, array &$mappingData, string $groupUuid, string $parentFieldId = '', string $parentFieldLabel = '') {
+  protected function processFields(
+    array $fields,
+    LanguageInterface $language,
+    array &$group,
+    array &$mappingData,
+    string $groupUuid,
+    string $parentFieldId = '',
+    string $parentFieldLabel = ''
+  ) {
     foreach ($fields as $field) {
       if ($field instanceof BaseFieldDefinition) {
         continue;
       }
 
+      /** @var \Drupal\field\Entity\FieldConfig $field */
       if (empty(static::FIELD_COMBINATIONS[$field->getType()])
         && $field->getType() !== 'entity_reference'
         && $field->getType() !== 'entity_reference_revisions'
@@ -272,6 +324,26 @@ class MappingCreator implements ContainerInjectionInterface {
         $metadata = [
           'is_plain' => TRUE,
         ];
+      }
+
+      if ($fieldType === 'text') {
+        $fieldStorageDefinition = $field->getFieldStorageDefinition();
+
+        $metadata['repeatable'] = [
+          'isRepeatable' => FALSE,
+          'limitEnabled' => FALSE,
+          'limit' => 1,
+        ];
+
+        if ($fieldStorageDefinition->isMultiple()) {
+          $metadata['repeatable']['isRepeatable'] = TRUE;
+
+          $fieldCardinality = $fieldStorageDefinition->getCardinality();
+          if ($fieldCardinality > 1) {
+            $metadata['repeatable']['limitEnabled'] = TRUE;
+            $metadata['repeatable']['limit'] = $fieldCardinality;
+          }
+        }
       }
 
       if ($field->getType() === 'entity_reference') {
@@ -399,9 +471,11 @@ class MappingCreator implements ContainerInjectionInterface {
   /**
    * Returns the name of a given project.
    *
+   * @param string $projectId
+   *
    * @return string
    */
-  public function getProjectName($projectId) {
+  public function getProjectName(string $projectId) {
     if (empty($projectId)) {
       return '';
     }

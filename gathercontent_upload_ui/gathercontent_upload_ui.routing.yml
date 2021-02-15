@@ -1,17 +1,18 @@
-gathercontent_upload_ui.upload_select_form:
-  path: '/admin/content/upload'
-  defaults:
-    _form: '\Drupal\gathercontent_upload_ui\Form\ContentUploadSelectForm'
-    _title: 'Upload changes to GatherContent'
-  requirements:
-    _permission: 'administer gathercontent'
-  options:
-    _admin_route: TRUE
 entity.gathercontent_mapping.create_template:
   path: '/admin/config/gathercontent/create-template'
   defaults:
     _form: '\Drupal\gathercontent_upload_ui\Form\CreateTemplateForm'
-    _title: 'Create Template from Entity type'
+    _title: 'Create template from entity type'
+  requirements:
+    _permission: 'administer gathercontent'
+  options:
+    _admin_route: TRUE
+
+gathercontent_upload_ui.upload_select_form:
+  path: '/admin/content/gc-upload'
+  defaults:
+    _form: '\Drupal\gathercontent_upload_ui\Form\ContentUploadSelectForm'
+    _title: 'Upload changes to GatherContent'
   requirements:
     _permission: 'administer gathercontent'
   options:

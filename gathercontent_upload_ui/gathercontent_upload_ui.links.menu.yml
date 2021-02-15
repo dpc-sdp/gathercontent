@@ -1,10 +1,13 @@
+entity.gathercontent_mapping.create_template:
+  title: 'Create template from entity type'
+  route_name: entity.gathercontent_mapping.create_template
+  parent: gathercontent.admin_gathercontent
+  description: 'Create a new template in GatherContent from a Drupal entity type.'
+  weight: 4
+
 gathercontent_upload_ui.upload_select_form:
   title: 'Upload changes to GatherContent'
   route_name: gathercontent_upload_ui.upload_select_form
   parent: system.admin_content
-  weight: 100
-entity.gathercontent_mapping.create_template:
-  title: 'Create Template from Entity type'
-  route_name: entity.gathercontent_mapping.create_template
-  parent: gathercontent.admin_gathercontent
-  weight: 4
+  description: 'Upload new content or content changes from Drupal to GatherContent.'
+  weight: 6
