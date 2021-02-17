@@ -165,7 +165,7 @@ class MigrationDefinitionCreator {
   protected function getGroupedDefinitions() {
     $groupedData = [];
 
-    foreach ($this->mappingData as $tabId => $data) {
+    foreach ($this->mappingData as $data) {
       $language = $this->siteDefaultLangCode;
 
       if (isset($data['language'])) {
@@ -401,13 +401,16 @@ class MigrationDefinitionCreator {
       $elementKeys = explode('||', $element, 2);
 
       $targetFieldInfo = NULL;
+      /** @var \Drupal\field\Entity\FieldConfig $fieldInfo */
       $fieldInfo = FieldConfig::load($elementKeys[0]);
       $fieldType = 'string';
       $isTranslatable = TRUE;
+      $isMultiple = FALSE;
 
       if (!empty($fieldInfo)) {
         $fieldType = $fieldInfo->getType();
         $isTranslatable = $fieldInfo->isTranslatable();
+        $isMultiple = $fieldInfo->getFieldStorageDefinition()->isMultiple();
       }
 
       $element = $this->getElementLastPart($elementKeys[0]);
@@ -427,7 +430,7 @@ class MigrationDefinitionCreator {
       }
 
       $definition['source']['fields'][] = $elementId;
-      $this->setFieldDefinition($definition, $data, $elementId, $element, $fieldInfo, $fieldType, $targetFieldInfo, $isTranslatable);
+      $this->setFieldDefinition($definition, $data, $elementId, $element, $fieldInfo, $fieldType, $targetFieldInfo, $isTranslatable, $isMultiple);
     }
 
     if (!$labelSet) {
@@ -455,7 +458,7 @@ class MigrationDefinitionCreator {
   /**
    * Set field definition.
    */
-  private function setFieldDefinition(array &$definition, array $data, $elementId, $element, EntityInterface $fieldInfo = NULL, string $fieldType, EntityInterface $targetFieldInfo = NULL, bool $isTranslatable) {
+  private function setFieldDefinition(array &$definition, array $data, $elementId, $element, EntityInterface $fieldInfo = NULL, string $fieldType, EntityInterface $targetFieldInfo = NULL, bool $isTranslatable, bool $isMultiple) {
     switch ($fieldType) {
       case 'image':
       case 'file':
@@ -499,8 +502,8 @@ class MigrationDefinitionCreator {
       case 'text':
       case 'text_long':
       case 'text_with_summary':
-        $this->setTextFieldDefinition($definition, $element, $elementId);
-        $this->setTextFormat($definition, $data, $elementId, $element);
+        $this->setTextFieldDefinition($definition, $element, $elementId, $isMultiple);
+        $this->setTextFormat($definition, $data, $elementId, $element, $isMultiple);
         break;
 
       case 'entity_reference':
@@ -551,7 +554,7 @@ class MigrationDefinitionCreator {
         break;
 
       default:
-        $this->setTextFieldDefinition($definition, $element, $elementId);
+        $this->setTextFieldDefinition($definition, $element, $elementId, $isMultiple);
         break;
     }
 
@@ -568,25 +571,38 @@ class MigrationDefinitionCreator {
   /**
    * Set the text format for the text type fields.
    */
-  protected function setTextFormat(array &$definition, array $data, string $elementId, string $element) {
+  protected function setTextFormat(array &$definition, array $data, string $elementId, string $element, bool $isMultiple) {
     if (isset($data['element_text_formats'][$elementId])
       && !empty($data['element_text_formats'][$elementId])
       && isset($definition['process'][$element])
     ) {
-      $origElement = $definition['process'][$element];
-      unset($definition['process'][$element]);
+      if (!$isMultiple) {
+        $origElement = $definition['process'][$element];
+        unset($definition['process'][$element]);
 
-      $definition['process'][$element . '/format'] = [
-        'plugin' => 'default_value',
-        'default_value' => $data['element_text_formats'][$elementId],
-      ];
-      $definition['process'][$element . '/value'] = $origElement;
+        $definition['process'][$element . '/format'] = [
+          'plugin' => 'default_value',
+          'default_value' => $data['element_text_formats'][$elementId],
+        ];
+        $definition['process'][$element . '/value'] = $origElement;
+      }
+      else {
+        $definition['process'][$element]['process']['format'] = [
+          'plugin' => 'default_value',
+          'default_value' => $data['element_text_formats'][$elementId],
+        ];
+      }
 
       if (
         $definition['langcode'] != $this->siteDefaultLangCode &&
         $definition['langcode'] != 'und'
       ) {
-        $definition['process'][$element . '/value']['language'] = $definition['langcode'];
+        if (!$isMultiple) {
+          $definition['process'][$element . '/value']['language'] = $definition['langcode'];
+        }
+        else {
+          $definition['process'][$element]['process']['language'] = $definition['langcode'];
+        }
       }
     }
   }
@@ -594,7 +610,7 @@ class MigrationDefinitionCreator {
   /**
    * Set the text definition. Set concatenation if needed.
    */
-  protected function setTextFieldDefinition(array &$definition, string $element, string $elementId) {
+  protected function setTextFieldDefinition(array &$definition, string $element, string $elementId, bool $isMultiple) {
     // Check if the field has a /value element to support different formats.
     $key = $element . '/value';
     if (!isset($definition['process'][$key])) {
@@ -602,24 +618,55 @@ class MigrationDefinitionCreator {
     }
 
     if (isset($definition['process'][$key])) {
-      $definition['process'][$key]['plugin'] = 'concat';
+      if (!$isMultiple) {
+        $definition['process'][$key]['plugin'] = 'concat';
 
-      if (!is_array($definition['process'][$key]['source'])) {
-        $definition['process'][$key]['source'] = [
-          $definition['process'][$key]['source'],
-        ];
+        if (!is_array($definition['process'][$key]['source'])) {
+          $definition['process'][$key]['source'] = [
+            $definition['process'][$key]['source'],
+          ];
+        }
+
+        $definition['process'][$key]['source'][] = $elementId;
+        $definition['process'][$key]['delimiter'] = ' ';
       }
+      else {
+        $concatFieldName = 'concat_' . $element;
 
-      $definition['process'][$key]['source'][] = $elementId;
-      $definition['process'][$key]['delimiter'] = ' ';
+        if (!array_key_exists($concatFieldName, $definition['process'])) {
+          $concatElement[$concatFieldName] = [
+            'plugin' => 'gather_content_concat',
+            'source' => [
+              $definition['process'][$element]['source'],
+            ],
+            'delimiter' => ' ',
+          ];
+
+          $definition['process'] = $concatElement + $definition['process'];
+          $definition['process'][$element]['source'] = '@' . $concatFieldName;
+        }
+
+        $definition['process'][$concatFieldName]['source'][] = $elementId;
+      }
 
       return;
     }
 
-    $definition['process'][$element] = [
-      'plugin' => 'gather_content_get',
-      'source' => $elementId,
-    ];
+    if ($isMultiple) {
+      $definition['process'][$element] = [
+        'plugin' => 'gather_content_sub_process',
+        'source' => $elementId,
+        'process' => [
+          'value' => 'value',
+        ],
+      ];
+    }
+    else {
+      $definition['process'][$element] = [
+        'plugin' => 'gather_content_get',
+        'source' => $elementId,
+      ];
+    }
   }
 
   /**

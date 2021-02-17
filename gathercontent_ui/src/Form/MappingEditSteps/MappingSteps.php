@@ -431,6 +431,8 @@ abstract class MappingSteps {
             break;
         }
 
+        $fieldStorageDefinition = $instance->getFieldStorageDefinition();
+
         if ($instance->getType() === 'entity_reference_revisions') {
           $settings = $instance->getSetting('handler_settings');
 
@@ -448,8 +450,7 @@ abstract class MappingSteps {
               $bundles = array_combine(array_keys($negated_bundles), array_keys($negated_bundles));
             }
 
-            $target_type = $instance->getFieldStorageDefinition()
-              ->getSetting('target_type');
+            $target_type = $fieldStorageDefinition->getSetting('target_type');
             $bundle_entity_type = $entityTypeManager
               ->getStorage($target_type)
               ->getEntityType()
@@ -477,6 +478,38 @@ abstract class MappingSteps {
         }
         else {
           $key = $instance->id();
+
+          $instanceIsMultiple = $fieldStorageDefinition->isMultiple();
+
+          // GC field is a multi value field.
+          if (!empty($gc_field->metaData->repeatable['isRepeatable'])
+            && $gc_field->metaData->repeatable['isRepeatable']
+          ) {
+            if (!$instanceIsMultiple) {
+              continue;
+            }
+
+            $instanceCardinality = $fieldStorageDefinition->getCardinality();
+
+            // Has unlimited values.
+            if ($gc_field->metaData->repeatable['limitEnabled'] === FALSE) {
+              if ($instanceCardinality > 0) {
+                continue;
+              }
+            }
+            else {
+              // Has limited values.
+              if ($gc_field->metaData->repeatable['limit'] !== $instanceCardinality) {
+                continue;
+              }
+            }
+          }
+          else {
+            // Single values.
+            if ($instanceIsMultiple) {
+              continue;
+            }
+          }
 
           if (!empty($nested_ids)) {
             $new_nested_ids = $nested_ids;

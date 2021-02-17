@@ -16,7 +16,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 /**
  * A source class for Gathercontent API.
  *
- * @MigrateSource(
+ * @\Drupal\migrate\Annotation\MigrateSource(
  *   id = "gathercontent_migration"
  * )
  */
@@ -158,7 +158,7 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
    * @return mixed
    *   Value of the property.
    */
-  public function get($property) {
+  public function get(string $property) {
     return $this->{$property};
   }
 
@@ -181,8 +181,12 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
 
   /**
    * Convert items to array.
+   *
+   * @param array $items
+   *
+   * @return array
    */
-  protected function convertItemsToArray($items) {
+  protected function convertItemsToArray(array $items) {
     $converted = [];
 
     if ($items !== NULL) {
@@ -246,6 +250,14 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
         if (array_key_exists($fieldId, $this->metatagFields)) {
           $collectedMetaTags[$this->metatagFields[$fieldId]] = $value;
           continue;
+        }
+
+        if (is_array($field)) {
+          foreach ($field as $subObject) {
+            $value[] = [
+              'value' => $this->getFieldValue($subObject),
+            ];
+          }
         }
 
         $row->setSourceProperty($fieldId, $value);

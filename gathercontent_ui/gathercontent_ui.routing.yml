@@ -1,8 +1,8 @@
 gathercontent_ui.import_select_form:
-  path: '/admin/config/gathercontent/import'
+  path: '/admin/content/gc-import'
   defaults:
     _form: '\Drupal\gathercontent_ui\Form\ContentImportSelectForm'
-    _title: 'Import content'
+    _title: 'Import content from GatherContent'
   requirements:
     _permission: 'administer gathercontent'
   options:
@@ -19,10 +19,10 @@ gathercontent_ui.mapping_controller_testConnectionPage:
     _admin_route: TRUE
 
 gathercontent_ui.tracked_entities_list:
-  path: '/admin/config/gathercontent/import/results'
+  path: '/admin/content/gc-import/results'
   defaults:
     _controller: '\Drupal\gathercontent_ui\Controller\TrackedEntitiesController::listTrackedEntities'
-    _title: 'Test connection'
+    _title: 'Import content result'
   requirements:
     _permission: 'administer gathercontent'
   options:

@@ -4,10 +4,12 @@ namespace Drupal\gathercontent_upload\Export;
 
 use Cheppers\GatherContent\DataTypes\Item;
 use Cheppers\GatherContent\GatherContentClientInterface;
+use Drupal;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
+use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Language\Language;
 use Drupal\Core\Language\LanguageInterface;
@@ -90,7 +92,25 @@ class Exporter implements ContainerInjectionInterface {
   protected $collectedFileFields = [];
 
   /**
+   * List of allowed repeatable Drupal field types.
+   *
+   * @var array
+   */
+  const ALLOWED_MULTI_VALUE_TYPES = [
+    'text',
+    'text_long',
+    'text_with_summary',
+  ];
+
+  /**
    * Exporter constructor.
+   *
+   * @param \Cheppers\GatherContent\GatherContentClientInterface $client
+   * @param \Drupal\gathercontent\MetatagQuery $metatag
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
+   * @param \Symfony\Component\EventDispatcher\EventDispatcherInterface $eventDispatcher
+   * @param \Drupal\Core\Extension\ModuleHandlerInterface $moduleHandler
+   * @param \Drupal\Core\File\FileSystemInterface $fileSystem
    */
   public function __construct(
     GatherContentClientInterface $client,
@@ -108,7 +128,7 @@ class Exporter implements ContainerInjectionInterface {
     $this->fileSystem = $fileSystem;
 
     if ($this->moduleHandler->moduleExists('content_translation')) {
-      $this->contentTranslation = \Drupal::service('content_translation.manager');
+      $this->contentTranslation = Drupal::service('content_translation.manager');
     }
   }
 
@@ -150,7 +170,7 @@ class Exporter implements ContainerInjectionInterface {
    *
    * @throws \Exception
    */
-  public function export(EntityInterface $entity, MappingInterface $mapping, $gcId = NULL, &$context = []) {
+  public function export(EntityInterface $entity, MappingInterface $mapping, $gcId = NULL, array &$context = []) {
     $this->collectedReferenceRevisions = [];
     $data = $this->processGroups($entity, $mapping);
 
@@ -260,7 +280,7 @@ class Exporter implements ContainerInjectionInterface {
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
-  public function processFields($group, EntityInterface $entity, array $mappingData, $isTranslatable, $language) {
+  public function processFields(object $group, EntityInterface $entity, array $mappingData, bool $isTranslatable, string $language) {
     $exportedFields = [];
     $fields = [];
     $assets = [];
@@ -277,6 +297,7 @@ class Exporter implements ContainerInjectionInterface {
         || !isset($mappingData[$group->uuid]['type'])
       ) {
         $localIdArray = explode('||', $localFieldId);
+        /** @var \Drupal\field\Entity\FieldConfig $fieldInfo */
         $fieldInfo = FieldConfig::load($localIdArray[0]);
         $currentEntity = $entity;
         $type = '';
@@ -299,7 +320,38 @@ class Exporter implements ContainerInjectionInterface {
         $this->processTargets($currentEntity, $currentFieldName, $type, $bundle, $exportedFields, $localIdArray, $isTranslatable, $language);
         $this->collectedReferenceRevisions[] = $currentEntity;
 
-        $value = $this->processSetFields($field, $currentEntity, $isTranslatable, $language, $currentFieldName, $bundle);
+        $isRepeatable = FALSE;
+        if ($fieldInfo) {
+          $fieldType = $fieldInfo->getType();
+
+          // Field can be an entity reference.
+          if (!in_array($fieldType, self::ALLOWED_MULTI_VALUE_TYPES)) {
+            if (!empty($localIdArray[1])) {
+              $fieldInfo = FieldConfig::load($localIdArray[1]);
+            }
+          }
+
+          if ($fieldInfo) {
+            $fieldType = $fieldInfo->getType();
+            $isMultiple = $fieldInfo->getFieldStorageDefinition()->isMultiple();
+
+            $isGcFieldRepeatable = FALSE;
+            if (property_exists($field, 'metadata')) {
+              if (!empty($field->metadata) && property_exists($field->metadata, 'repeatable')) {
+                $isGcFieldRepeatable = $field->metadata->repeatable->isRepeatable;
+              }
+            }
+
+            if ($isMultiple
+              && $isGcFieldRepeatable
+              && in_array($fieldType, self::ALLOWED_MULTI_VALUE_TYPES)
+            ) {
+              $isRepeatable = TRUE;
+            }
+          }
+        }
+
+        $value = $this->processSetFields($field, $currentEntity, $isTranslatable, $language, $currentFieldName, $bundle, $isRepeatable);
 
         if (!empty($value)) {
           $fields[$field->uuid] = $value;
@@ -349,7 +401,7 @@ class Exporter implements ContainerInjectionInterface {
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
-  public function processTargets(EntityInterface &$currentEntity, &$currentFieldName, &$type, &$bundle, array &$exportedFields, array $localIdArray, $isTranslatable, $language) {
+  public function processTargets(EntityInterface &$currentEntity, string &$currentFieldName, string &$type, string &$bundle, array &$exportedFields, array $localIdArray, bool $isTranslatable, string $language) {
     $idCount = count($localIdArray);
 
     // Loop through the references, going deeper and deeper.
@@ -420,7 +472,7 @@ class Exporter implements ContainerInjectionInterface {
    * @return string
    *   Returns value.
    */
-  public function processMetaTagFields(EntityInterface $entity, $localFieldName, $isTranslatable, $language) {
+  public function processMetaTagFields(EntityInterface $entity, string $localFieldName, bool $isTranslatable, string $language) {
     $fieldName = $this->metatag->getFirstMetatagField($entity->getEntityTypeId(), $entity->bundle());
 
     if ($isTranslatable && $entity->hasTranslation($language)) {
@@ -448,6 +500,8 @@ class Exporter implements ContainerInjectionInterface {
    *   Field Name.
    * @param string $bundle
    *   Local field Info bundle string.
+   * @param bool $isRepeatable
+   *   Repeatable bool.
    *
    * @return array|string
    *   Returns value.
@@ -455,7 +509,7 @@ class Exporter implements ContainerInjectionInterface {
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
-  public function processSetFields($field, EntityInterface $entity, $isTranslatable, $language, $localFieldName, $bundle) {
+  public function processSetFields(object $field, EntityInterface $entity, bool $isTranslatable, string $language, string $localFieldName, string $bundle, bool $isRepeatable) {
     $value = NULL;
 
     switch ($field->field_type) {
@@ -550,10 +604,20 @@ class Exporter implements ContainerInjectionInterface {
         }
         else {
           if ($isTranslatable && $entity->hasTranslation($language)) {
-            $value = $entity->getTranslation($language)->{$localFieldName}->value;
+            if ($isRepeatable) {
+              $value = $this->getRepeatableFieldValues($entity->getTranslation($language)->{$localFieldName});
+            }
+            else {
+              $value = $entity->getTranslation($language)->{$localFieldName}->value;
+            }
           }
           else {
-            $value = $entity->{$localFieldName}->value;
+            if ($isRepeatable) {
+              $value = $this->getRepeatableFieldValues($entity->{$localFieldName});
+            }
+            else {
+              $value = $entity->{$localFieldName}->value;
+            }
           }
         }
         break;
@@ -582,7 +646,7 @@ class Exporter implements ContainerInjectionInterface {
    * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
    * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
-  public function processSetAssets($field, EntityInterface $entity, $isTranslatable, $language, $localFieldName) {
+  public function processSetAssets(object $field, EntityInterface $entity, bool $isTranslatable, string $language, string $localFieldName) {
     $value = NULL;
 
     switch ($field->field_type) {
@@ -663,7 +727,7 @@ class Exporter implements ContainerInjectionInterface {
    * @return bool
    *   Returns if the option ID is valid for a given template.
    */
-  protected function validOptionId(array $options, $optionId) {
+  protected function validOptionId(array $options, string $optionId) {
     foreach ($options as $option) {
       if ($option->optionId === $optionId) {
         return TRUE;
@@ -671,6 +735,26 @@ class Exporter implements ContainerInjectionInterface {
     }
 
     return FALSE;
+  }
+
+  /**
+   * Moves field values into an array.
+   *
+   * @param \Drupal\Core\Field\FieldItemListInterface $fieldItemList
+   *   The list of field values.
+   *
+   * @return array
+   *   Field values in an array.
+   */
+  protected function getRepeatableFieldValues(FieldItemListInterface $fieldItemList): array {
+    $fieldValues = $fieldItemList->getValue();
+    $values = [];
+
+    foreach ($fieldValues as $fieldValue) {
+      $values[] = $fieldValue['value'];
+    }
+
+    return $values;
   }
 
 }

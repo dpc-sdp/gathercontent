@@ -6,6 +6,6 @@ gathercontent.config_form:
 
 gathercontent.import_config_form:
   route_name: gathercontent.import_config_form
-  title: 'Import configuration'
+  title: 'Default import configuration'
   base_route: gathercontent.config_form
   weight: 1

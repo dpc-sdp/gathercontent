@@ -19,4 +19,5 @@ services:
                 '@uuid',
                 '@module_handler',
                 '@language_manager',
-                '@gathercontent.migration_creator']
+                '@gathercontent.migration_creator',
+                '@entity_display.repository']
