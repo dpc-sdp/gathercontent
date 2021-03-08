@@ -56,16 +56,18 @@ class GatherContentTaxonomy extends ProcessPluginBase implements ContainerFactor
    * {@inheritdoc}
    */
   public function transform($value, MigrateExecutableInterface $migrate_executable, Row $row, $destination_property) {
-    $taxonomy = $this->entityTypeManager
-      ->getStorage('taxonomy_term')
-      ->loadByProperties([
-        'gathercontent_option_ids' => $value,
-        'vid' => $this->configuration['bundle'],
-      ]);
+    if ($value) {
+      $taxonomy = $this->entityTypeManager
+        ->getStorage('taxonomy_term')
+        ->loadByProperties([
+          'gathercontent_option_ids' => $value,
+          'vid' => $this->configuration['bundle'],
+        ]);
 
-    if ($taxonomy) {
-      $selected_options = array_keys($taxonomy);
-      return reset($selected_options);
+      if ($taxonomy) {
+        $selected_options = array_keys($taxonomy);
+        return reset($selected_options);
+      }
     }
 
     return NULL;
