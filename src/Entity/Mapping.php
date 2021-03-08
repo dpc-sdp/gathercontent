@@ -16,6 +16,21 @@ use Drupal\Core\StringTranslation\StringTranslationTrait;
  *   entity_keys = {
  *     "id" = "id",
  *     "uuid" = "uuid"
+ *   },
+ *   config_export = {
+ *     "id",
+ *     "uuid",
+ *     "gathercontent_project_id",
+ *     "gathercontent_project",
+ *     "gathercontent_template_id",
+ *     "gathercontent_template",
+ *     "entity_type",
+ *     "content_type",
+ *     "content_type_name",
+ *     "updated_drupal",
+ *     "data",
+ *     "template",
+ *     "migration_definitions"
  *   }
  * )
  */
