@@ -506,7 +506,7 @@ abstract class MappingSteps {
           }
           else {
             // Single values.
-            if ($instanceIsMultiple) {
+            if ($instanceIsMultiple && $gc_field->type === 'text') {
               continue;
             }
           }
