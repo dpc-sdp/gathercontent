@@ -4,6 +4,7 @@ package: GatherContent
 core: 8.x
 core_version_requirement: ^8 || ^9
 type: module
+configure: gathercontent.admin_gathercontent
 dependencies:
   - drupal:node
   - drupal:taxonomy
