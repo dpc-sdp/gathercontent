@@ -174,6 +174,26 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
         $this->projectId,
         ['template_id' => $this->templateId]
       );
+
+      // The first response will reveal the total number of pages. If there
+      // is more than one page, continue until total pages has been reached.
+      if (!empty($this->items['data'])) {
+        /** @var \Cheppers\GatherContent\DataTypes\Pagination $pagination */
+        $pagination = $this->items['pagination'];
+        $total_pages = $pagination->totalPages;
+        $current_page = $pagination->currentPage;
+        while ($current_page <= $total_pages) {
+          $query = [
+            'template_id' => $this->templateId,
+            'page' => ($current_page + 1),
+          ];
+          $next_items = $this->client->itemsGet($this->projectId, $query);
+          if (!empty($next_items['data'])) {
+            $this->items['data'] = array_merge($this->items['data'], $next_items['data']);
+          }
+          $current_page++;
+        }
+      }
     }
 
     return $this->convertItemsToArray($this->items['data']);
