@@ -15,7 +15,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 /**
  * Perform custom value transformation.
  *
- * @MigrateProcessPlugin(
+ * @\Drupal\migrate\Annotation\MigrateProcessPlugin(
  *   id = "gather_content_file"
  * )
  *
@@ -71,7 +71,7 @@ class GatherContentFile extends ProcessPluginBase implements ContainerFactoryPlu
    */
   public function transform($value, MigrateExecutableInterface $migrate_executable, Row $row, $destination_property) {
     if (empty($value)) {
-      return $value;
+      return NULL;
     }
 
     $language = $this->configuration['language'];
@@ -83,9 +83,18 @@ class GatherContentFile extends ProcessPluginBase implements ContainerFactoryPlu
       return $this->client->downloadFiles($value, $this->configuration['uri_scheme'] . $fileDir, $language);
     }
 
-    $result = $this->client->downloadFiles([$value], $this->configuration['uri_scheme'] . $fileDir, $language);
+    $fileId = $this->client->downloadFiles([$value], $this->configuration['uri_scheme'] . $fileDir, $language);
 
-    return $result[0] ?? NULL;
+    if (empty($fileId[0])) {
+      return NULL;
+    }
+
+    $result['target_id'] = $fileId[0];
+    if ($value->altText) {
+      $result['alt'] = $value->altText;
+    }
+
+    return $result;
   }
 
 }
