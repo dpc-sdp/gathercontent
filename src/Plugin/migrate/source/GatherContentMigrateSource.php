@@ -9,6 +9,7 @@ use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\gathercontent\DrupalGatherContentClient;
 use Drupal\migrate\MigrateException;
 use Drupal\migrate\Plugin\migrate\source\SourcePluginBase;
+use Drupal\migrate\Plugin\MigrateIdMapInterface;
 use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\migrate\Row;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -203,8 +204,10 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
    * Convert items to array.
    *
    * @param array $items
+   *   Items to covert.
    *
    * @return array
+   *   The converted array.
    */
   protected function convertItemsToArray(array $items) {
     $converted = [];
@@ -272,8 +275,22 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
           continue;
         }
 
+        /* @todo This section should be moved to getFieldValue() */
         if (is_array($field)) {
           foreach ($field as $subObject) {
+            if ($subObject instanceof ElementSimpleFile) {
+              /* Entity with image needs to update as the alt_text property of
+               * the image may have been updated/changed in GatherContent.
+               */
+              if (in_array($fieldId, $this->fields)) {
+                $idMap = $row->getIdMap();
+                $idMap['source_row_status'] = MigrateIdMapInterface::STATUS_NEEDS_UPDATE;
+                $row->setIdMap($idMap);
+              }
+
+              continue;
+            }
+
             $value[] = [
               'value' => $this->getFieldValue($subObject),
             ];
