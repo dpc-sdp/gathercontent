@@ -5,8 +5,8 @@
   "license": "GPL-2.0+",
   "require": {
     "cheppers/gathercontent-client": "^2.0",
-    "drupal/core": "^8.7",
-    "drupal/migrate_tools": "4.x-dev"
+    "drupal/core": "^8.7 || ^9",
+    "drupal/migrate_tools": "^4 || ^5"
   },
   "minimum-stability": "dev"
 }
