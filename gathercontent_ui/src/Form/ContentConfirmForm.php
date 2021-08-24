@@ -3,14 +3,14 @@
 namespace Drupal\gathercontent_ui\Form;
 
 use Cheppers\GatherContent\GatherContentClientInterface;
-use Drupal\Core\Entity\EntityManagerInterface;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\ConfirmFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Link;
 use Drupal\Core\Url;
 use Drupal\gathercontent\Entity\Mapping;
 use Drupal\node\Entity\Node;
-use Drupal\user\PrivateTempStoreFactory;
+use Drupal\Core\TempStore\PrivateTempStoreFactory;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -49,14 +49,14 @@ class ContentConfirmForm extends ConfirmFormBase {
   /**
    * Constructs a DeleteMultiple form object.
    *
-   * @param \Drupal\user\PrivateTempStoreFactory $temp_store_factory
+   * @param Drupal\Core\TempStore\PrivateTempStoreFactory $temp_store_factory
    *   The tempstore factory.
-   * @param \Drupal\Core\Entity\EntityManagerInterface $manager
+   * @param \Drupal\Core\Entity\EntityTypeManagerInterface $manager
    *   The entity manager.
    */
   public function __construct(
     PrivateTempStoreFactory $temp_store_factory,
-    EntityManagerInterface $manager,
+    EntityTypeManagerInterface $manager,
     GatherContentClientInterface $client
   ) {
     $this->tempStore = $temp_store_factory->get('gathercontent_multistep_data');
@@ -70,8 +70,8 @@ class ContentConfirmForm extends ConfirmFormBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('user.private_tempstore'),
-      $container->get('entity.manager'),
+      $container->get('tempstore.private'),
+      $container->get('entity_type.manager'),
       $container->get('gathercontent.client')
     );
   }

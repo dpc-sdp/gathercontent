@@ -43,7 +43,7 @@ class MappingListBuilder extends ConfigEntityListBuilder {
   public static function createInstance(ContainerInterface $container, EntityTypeInterface $entity_type) {
     return new static(
       $entity_type,
-      $container->get('entity.manager')->getStorage($entity_type->id()),
+      $container->get('entity_type.manager')->getStorage($entity_type->id()),
       $container->get('gathercontent.client')
     );
   }
@@ -64,7 +64,7 @@ class MappingListBuilder extends ConfigEntityListBuilder {
         if (is_array($header) && $header['data'] === $query_string->get('order')) {
           $sort = 'ASC';
           if ($query_string->has('sort') && $query_string->get('sort') === 'asc' || $query_string->get('sort') === 'desc') {
-            $sort = Unicode::strtoupper($query_string->get('sort'));
+            $sort = Unicode::mb_strtoupper($query_string->get('sort'));
           }
           $entity_query->sort($header['field'], $sort);
         }
@@ -152,17 +152,21 @@ class MappingListBuilder extends ConfigEntityListBuilder {
   public function getDefaultOperations(EntityInterface $entity) {
     $operations = [];
     if ($entity->access('update') && $entity->hasLinkTemplate('edit-form')) {
+      // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+      // Please confirm that `$entity` is an instance of `Drupal\Core\Entity\EntityInterface`. Only the method name and not the class name was checked for this replacement, so this may be a false positive.
       $operations['edit'] = [
         'title' => $entity->hasMapping() ? $this->t('Edit') : $this->t('Create'),
         'weight' => 10,
-        'url' => $entity->urlInfo('edit-form'),
+        'url' => $entity->toUrl('edit-form'),
       ];
     }
     if ($entity->access('delete') && $entity->hasLinkTemplate('delete-form')) {
+      // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+      // Please confirm that `$entity` is an instance of `Drupal\Core\Entity\EntityInterface`. Only the method name and not the class name was checked for this replacement, so this may be a false positive.
       $operations['delete'] = [
         'title' => $this->t('Delete'),
         'weight' => 100,
-        'url' => $entity->urlInfo('delete-form'),
+        'url' => $entity->toUrl('delete-form'),
       ];
     }
     return $operations;

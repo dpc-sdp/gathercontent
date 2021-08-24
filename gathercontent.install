@@ -78,7 +78,9 @@ function gathercontent_update_8302() {
  * Create fields for gathercontent_operation_item entity.
  */
 function gathercontent_update_8303() {
-  $entity_manager = \Drupal::entityManager();
+  // TODO: Drupal Rector Notice: Please delete the following comment after you've made any necessary changes.
+  // We are assuming that we want to use the `entity_type.manager` service since no method was called here directly. Please confirm this is the case. See https://www.drupal.org/node/2549139 for more information.
+  $entity_manager = \Drupal::service('entity_type.manager');
   $definition = $entity_manager->getFieldStorageDefinitions('gathercontent_operation_item')['created'];
   $entity_manager->onFieldStorageDefinitionCreate($definition);
   $definition = $entity_manager->getFieldStorageDefinitions('gathercontent_operation_item')['changed'];

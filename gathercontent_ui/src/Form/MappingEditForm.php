@@ -262,14 +262,14 @@ class MappingEditForm extends MappingEditFormBase {
         }
 
         if ($this->new) {
-          drupal_set_message(t('Mapping has been created.'));
+          $this->messenger()->addStatus(t('Mapping has been created.'));
         }
         else {
-          drupal_set_message(t('Mapping has been updated.'));
+          $this->messenger()->addStatus(t('Mapping has been updated.'));
         }
 
         if (!empty($this->entityReferenceFields)) {
-          drupal_set_message($this->formatPlural($this->erImported, '@count term was imported', '@count terms were imported'));
+          $this->messenger()->addStatus($this->formatPlural($this->erImported, '@count term was imported', '@count terms were imported'));
         }
 
         $form_state->setRedirect('entity.gathercontent_mapping.collection');
