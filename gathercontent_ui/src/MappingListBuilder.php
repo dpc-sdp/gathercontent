@@ -53,8 +53,7 @@ class MappingListBuilder extends ConfigEntityListBuilder {
    */
   public function load() {
     /** @var \Drupal\Core\Config\Entity\ConfigEntityStorageInterface|\Drupal\Core\Entity\Query\QueryInterface $entity_query */
-    $entity_query = \Drupal::service('entity.query')
-      ->get('gathercontent_mapping');
+    $entity_query = \Drupal::entityQuery('gathercontent_mapping');
     $query_string = \Drupal::request()->query;
     $headers = $this->buildHeader();
 
