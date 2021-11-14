@@ -2,6 +2,7 @@
 
 namespace Drupal\gathercontent;
 
+use function GuzzleHttp\json_decode;
 use Cheppers\GatherContent\GatherContentClient;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Pool;
@@ -104,7 +105,7 @@ class DrupalGatherContentClient extends GatherContentClient {
     $body = $this->getResponse()->getBody();
 
     if ($json_decoded) {
-      return \GuzzleHttp\json_decode($body);
+      return json_decode($body);
     }
 
     return $body;

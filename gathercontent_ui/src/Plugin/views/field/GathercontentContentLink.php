@@ -4,7 +4,7 @@ namespace Drupal\gathercontent_ui\Plugin\views\field;
 
 use Drupal\Core\Link;
 use Drupal\Core\Url;
-use Drupal\node\Plugin\views\field\Path;
+use Drupal\views\Plugin\views\field\EntityLink;
 use Drupal\views\Plugin\views\display\DisplayPluginBase;
 use Drupal\views\ResultRow;
 use Drupal\views\ViewExecutable;
@@ -16,7 +16,7 @@ use Drupal\views\ViewExecutable;
  *
  * @ViewsField("gathercontent_content_link")
  */
-class GathercontentContentLink extends Path {
+class GathercontentContentLink extends EntityLink {
 
   /**
    * {@inheritdoc}

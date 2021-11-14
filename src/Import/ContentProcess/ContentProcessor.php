@@ -2,6 +2,8 @@
 
 namespace Drupal\gathercontent\Import\ContentProcess;
 
+use Drupal\datetime\Plugin\Field\FieldType\DateTimeItemInterface;
+use Drupal\Core\File\FileSystemInterface;
 use Cheppers\GatherContent\DataTypes\Item;
 use Cheppers\GatherContent\GatherContentClientInterface;
 use Drupal\Component\Datetime\TimeInterface;
@@ -434,7 +436,7 @@ class ContentProcessor implements ContainerInjectionInterface {
           return;
         }
         $target->{$local_field_name} = [
-          'value' => gmdate(DATETIME_DATETIME_STORAGE_FORMAT, $value),
+          'value' => gmdate(DateTimeItemInterface::DATETIME_STORAGE_FORMAT, $value),
         ];
         break;
 
@@ -444,7 +446,7 @@ class ContentProcessor implements ContainerInjectionInterface {
           return;
         }
         $target->{$local_field_name} = [
-          'value' => gmdate(DATETIME_DATE_STORAGE_FORMAT, $value),
+          'value' => gmdate(DateTimeItemInterface::DATE_STORAGE_FORMAT, $value),
         ];
         break;
 
@@ -740,7 +742,7 @@ class ContentProcessor implements ContainerInjectionInterface {
       $uri_scheme = $translatable_file_config->getFieldStorageDefinition()->getSetting('uri_scheme') . '://';
 
       $create_dir = \Drupal::service('file_system')->realpath($uri_scheme) . '/' . $file_dir;
-      file_prepare_directory($create_dir, FILE_CREATE_DIRECTORY);
+      \Drupal::service('file_system')->prepareDirectory($create_dir, FileSystemInterface::CREATE_DIRECTORY);
 
       $imported_files = $this->client->downloadFiles($files, $uri_scheme . $file_dir, $language);
 

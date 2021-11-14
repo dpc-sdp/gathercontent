@@ -9,7 +9,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Link;
 use Drupal\Core\Url;
 use Drupal\gathercontent\Entity\Mapping;
-use Drupal\user\PrivateTempStoreFactory;
+use Drupal\Core\TempStore\PrivateTempStoreFactory;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -44,7 +44,7 @@ class ContentSelectForm extends MultistepFormBase {
     return new static(
       $container->get('entity_type.manager'),
       $container->get('date.formatter'),
-      $container->get('user.private_tempstore'),
+      $container->get('tempstore.private'),
       $container->get('gathercontent.client')
     );
   }

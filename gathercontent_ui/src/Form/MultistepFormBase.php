@@ -6,7 +6,7 @@ use Drupal\Core\Datetime\DateFormatterInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
-use Drupal\user\PrivateTempStoreFactory;
+use Drupal\Core\TempStore\PrivateTempStoreFactory;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -34,14 +34,14 @@ abstract class MultistepFormBase extends FormBase {
   /**
    * Drupal\user\PrivateTempStoreFactory definition.
    *
-   * @var \Drupal\user\PrivateTempStoreFactory
+   * @var \Drupal\Core\TempStore\PrivateTempStoreFactory
    */
   protected $tempStoreFactory;
 
   /**
    * Drupal\user\PrivateTempStore definition.
    *
-   * @var \Drupal\user\PrivateTempStore
+   * @var \Drupal\Core\TempStore\PrivateTempStore
    */
   protected $store;
 
@@ -52,7 +52,7 @@ abstract class MultistepFormBase extends FormBase {
    *   EntityTypeManagerInterface object.
    * @param \Drupal\Core\Datetime\DateFormatterInterface $date_formatter
    *   DateFormatterInterface object.
-   * @param \Drupal\user\PrivateTempStoreFactory $temp_store_factory
+   * @param \Drupal\Core\TempStore\PrivateTempStoreFactory $temp_store_factory
    *   PrivateTempStoreFactory object.
    */
   public function __construct(
@@ -73,7 +73,7 @@ abstract class MultistepFormBase extends FormBase {
     return new static(
       $container->get('entity_type.manager'),
       $container->get('date.formatter'),
-      $container->get('user.private_tempstore')
+      $container->get('tempstore.private')
     );
   }
 

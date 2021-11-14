@@ -156,7 +156,7 @@ class ConfigForm extends ConfigFormBase {
           if ($account->id == $submitted_account_id) {
             $account_name = $account->name;
             $this->config('gathercontent.settings')->set('gathercontent_account', serialize([$submitted_account_id => $account_name]))->save();
-            drupal_set_message(t("Credentials and project were saved."));
+            $this->messenger()->addStatus(t("Credentials and project were saved."));
             $this->config('gathercontent.settings')->set('gathercontent_urlkey', $account->slug)->save();
             break;
           }
