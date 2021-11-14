@@ -11,6 +11,22 @@ use Drupal\Core\Config\Entity\ConfigEntityBase;
  *   id = "gathercontent_mapping",
  *   label = @Translation("GatherContent Mapping"),
  *   config_prefix = "gathercontent_mapping",
+ *   config_export = {
+ *     "id",
+ *     "langcode",
+ *     "status",
+ *     "uuid",
+ *     "dependencies",
+ *     "gathercontent_project_id",
+ *     "gathercontent_project",
+ *     "gathercontent_template_id",
+ *     "gathercontent_template",
+ *     "content_type",
+ *     "content_type_name",
+ *     "updated_drupal",
+ *     "data",
+ *     "template",
+ *   },
  *   entity_keys = {
  *     "id" = "id",
  *     "uuid" = "uuid"
