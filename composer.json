@@ -1,7 +1,10 @@
 {
-  "name": "drupal/gathercontent",
+  "name": "dpc-sdp/gathercontent",
   "type": "drupal-module",
   "description": "GatherContent for Drupal",
+  "replace": {
+    "drupal/gathercontent":"*"
+  },
   "license": "GPL-2.0+",
   "require": {
     "cheppers/gathercontent-client": "^1.0"
