@@ -16,7 +16,7 @@ use Drupal\taxonomy\Entity\Term;
  *
  * @package Drupal\Tests\gathercontent_upload\Kernel
  */
-class GatherContentUploadTestBase extends EntityKernelTestBase {
+abstract class GatherContentUploadTestBase extends EntityKernelTestBase {
 
   /**
    * Exporter class.
@@ -30,7 +30,7 @@ class GatherContentUploadTestBase extends EntityKernelTestBase {
    *
    * @var array
    */
-  public static $modules = [
+  protected static $modules = [
     'node',
     'field',
     'image',

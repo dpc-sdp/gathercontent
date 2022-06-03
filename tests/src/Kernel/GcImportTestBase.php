@@ -10,7 +10,7 @@ use Drupal\KernelTests\KernelTestBase;
 /**
  * Base class for import kernel tests.
  */
-class GcImportTestBase extends KernelTestBase {
+abstract class GcImportTestBase extends KernelTestBase {
 
   /**
    * {@inheritdoc}

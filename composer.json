@@ -8,5 +8,12 @@
     "drupal/core": "^8.7 || ^9",
     "drupal/migrate_tools": "^4 || ^5"
   },
+  "require-dev": {
+      "drupal/entity_reference_revisions": "*",
+      "drupal/migrate_plus": "*",
+      "drupal/token": "*",
+      "drupal/paragraphs": "*",
+      "drupal/metatag": "*"
+  },
   "minimum-stability": "dev"
 }

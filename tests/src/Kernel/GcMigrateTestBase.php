@@ -9,7 +9,7 @@ use Drupal\Tests\migrate\Kernel\MigrateTestBase;
 /**
  * Base class for import kernel tests.
  */
-class GcMigrateTestBase extends MigrateTestBase {
+abstract class GcMigrateTestBase extends MigrateTestBase {
 
   /**
    * {@inheritdoc}

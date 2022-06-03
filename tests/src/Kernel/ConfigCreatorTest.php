@@ -9,7 +9,7 @@ use Symfony\Component\Yaml\Yaml;
 /**
  * Class ConfigCreatorTest.
  *
- * @package Drupal\Tests\gathercontent\Kernel
+ * @group gathercontent
  */
 class ConfigCreatorTest extends GcMigrateTestBase {
 
@@ -55,7 +55,7 @@ class ConfigCreatorTest extends GcMigrateTestBase {
 
       foreach ($testFiles as $configName => $testFile) {
         $configCreatedByService = $configFactory->getEditable($configName);
-        $testYml = file_get_contents(DRUPAL_ROOT . "/modules/custom/gathercontent/tests/modules/gathercontent_test/test_definition/$templateId/" . $testFile);
+        $testYml = file_get_contents(__DIR__ . "/../../modules/gathercontent_test/test_definition/$templateId/" . $testFile);
         if (!$testYml) {
           continue;
         }
