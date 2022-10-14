@@ -46,3 +46,20 @@ migrate_plus.destination.gc_entity:
   mapping:
     translations:
       type: boolean
+
+migrate_plus.process.gather_content_media:
+  type: migrate_process
+  label: 'media'
+  mapping:
+    uri_scheme:
+      type: string
+      label: 'uri scheme'
+    file_dir:
+      type: string
+      label: 'File directory'
+    language:
+      type: string
+      label: 'Language'
+    bundle:
+      type: string
+      label: 'Bundle'

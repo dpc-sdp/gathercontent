@@ -11,6 +11,7 @@ use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\datetime\Plugin\Field\FieldType\DateTimeItemInterface;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\gathercontent\Entity\MappingInterface;
+use Drupal\media\Entity\MediaType;
 use Drupal\migrate_plus\Entity\Migration;
 
 /**
@@ -507,26 +508,55 @@ class MigrationDefinitionCreator {
         break;
 
       case 'entity_reference':
-        if (!empty($fieldInfo->getSetting('handler_settings')['auto_create_bundle'])) {
-          $bundle = $fieldInfo->getSetting('handler_settings')['auto_create_bundle'];
+        $handler_settings = $fieldInfo->getSetting('handler_settings');
+        if (count($handler_settings['target_bundles']) == 1 || !$fieldInfo->getSetting('handler_settings')['auto_create']) {
+          $bundle = reset($handler_settings['target_bundles']);
         }
         else {
-          $handler_settings = $fieldInfo->getSetting('handler_settings');
-          $handler_settings = reset($handler_settings);
-          $bundle = array_shift($handler_settings);
+          $bundle = $fieldInfo->getSetting('handler_settings')['auto_create_bundle'];
         }
-
-        $definition['process'][$element] = [
-          'plugin' => 'sub_process',
-          'source' => $elementId,
-          'process' => [
-            'target_id' => [
-              'plugin' => 'gather_content_taxonomy',
-              'bundle' => $bundle,
-              'source' => 'gc_id',
+        if ($fieldInfo->getSetting('target_type') == 'taxonomy_term') {
+          $definition['process'][$element] = [
+            'plugin' => 'sub_process',
+            'source' => $elementId,
+            'process' => [
+              'target_id' => [
+                'plugin' => 'gather_content_taxonomy',
+                'bundle' => $bundle,
+                'source' => 'gc_id',
+              ],
             ],
-          ],
-        ];
+          ];
+        }
+        elseif ($fieldInfo->getSetting('target_type') == 'media') {
+          $media_type = MediaType::load($bundle);
+          $source = $media_type->getSource();
+          $media_image_field = $source->getSourceFieldDefinition($media_type);
+          if (!$media_image_field) {
+            break;
+          }
+          $media_image_field_type = $media_image_field->getType();
+
+          if (!in_array($media_image_field_type, ['image', 'file'])) {
+            break;
+          }
+
+          $fileDir = $media_image_field->getSetting('file_directory');
+          $uriScheme = $media_image_field->getFieldStorageDefinition()->getSetting('uri_scheme') . '://';
+
+          $definition['process'][$element] = [
+            'plugin' => 'gather_content_media',
+            'source' => $elementId,
+            'uri_scheme' => $uriScheme,
+            'file_dir' => $fileDir,
+            'language' => $this->siteDefaultLangCode,
+            'bundle' => $bundle,
+          ];
+
+          if ($definition['langcode'] == 'und') {
+            $definition['process'][$element]['language'] = 'und';
+          }
+        }
         break;
 
       case 'entity_reference_revisions':

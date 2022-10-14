@@ -7,6 +7,8 @@ use Drupal\Component\Render\PlainTextOutput;
 use Drupal\Core\File\FileSystem;
 use Drupal\Core\File\FileSystemInterface;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
+use Drupal\media\Entity\Media;
+use Drupal\media\Entity\MediaType;
 use Drupal\migrate\MigrateExecutableInterface;
 use Drupal\migrate\ProcessPluginBase;
 use Drupal\migrate\Row;
@@ -16,19 +18,19 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * Perform custom value transformation.
  *
  * @\Drupal\migrate\Annotation\MigrateProcessPlugin(
- *   id = "gather_content_file"
+ *   id = "gather_content_media"
  * )
  *
  * @code
  * file:
- *   plugin: gather_content_file
+ *   plugin: gather_content_media
  *   source: file
  *   uri_scheme: string
  *   file_dir: string
  *   language: string
  * @endcode
  */
-class GatherContentFile extends ProcessPluginBase implements ContainerFactoryPluginInterface {
+class GatherContentMedia extends ProcessPluginBase implements ContainerFactoryPluginInterface {
 
   /**
    * GatherContent client.
@@ -73,7 +75,6 @@ class GatherContentFile extends ProcessPluginBase implements ContainerFactoryPlu
     if (empty($value)) {
       return NULL;
     }
-
     $language = $this->configuration['language'];
     $fileDir = PlainTextOutput::renderFromHtml(\Drupal::token()->replace($this->configuration['file_dir'], []));
     $createDir = $this->fileSystem->realpath($this->configuration['uri_scheme']) . '/' . $fileDir;
@@ -81,17 +82,32 @@ class GatherContentFile extends ProcessPluginBase implements ContainerFactoryPlu
 
     // The plugin does not handle_multiples, so we know that there is always one value.
     $fileId = $this->client->downloadFiles([$value], $this->configuration['uri_scheme'] . $fileDir, $language);
-
-    if (empty($fileId[0])) {
+    $media_type = MediaType::load($this->configuration['bundle']);
+    $fileId = reset($fileId);
+    if (!$fileId) {
       return NULL;
     }
-
-    $result['target_id'] = $fileId[0];
-    if ($value->altText) {
-      $result['alt'] = $value->altText;
+    $entity_ids = \Drupal::entityQuery('media')
+      ->condition($media_type->getSource()->getSourceFieldDefinition($media_type)->getName() . '.target_id', $fileId)
+      ->execute();
+    if ($entity_ids) {
+      $media_id = reset($entity_ids);
     }
-
-    return $result;
+    else {
+      $mediaData = [
+        'bundle' => $this->configuration['bundle'],
+        'status' => 1,
+        'title' => $value->filename,
+        $media_type->getSource()->getSourceFieldDefinition($media_type)->getName() => [
+          'target_id' => $fileId,
+          'alt' => $value->altText,
+        ],
+      ];
+      $media = Media::create($mediaData);
+      $media->save();
+      $media_id = $media->id();
+    }
+    return ['target_id' => $media_id];
   }
 
 }

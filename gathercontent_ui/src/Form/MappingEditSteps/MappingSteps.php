@@ -328,6 +328,8 @@ abstract class MappingSteps {
    *   Nested ID array.
    * @param string $bundle_label
    *   Bundle label string.
+   * @param int $counter
+   *   Field depth, to avoid infinite recursion.
    *
    * @return array
    *   Associative array with equivalent fields.
@@ -337,6 +339,7 @@ abstract class MappingSteps {
       'attachment' => [
         'file',
         'image',
+        'entity_reference',
         'entity_reference_revisions',
       ],
       'guidelines' => [
