@@ -334,7 +334,10 @@ abstract class MappingSteps {
    * @return array
    *   Associative array with equivalent fields.
    */
-  protected function filterFieldsRecursively($gc_field, $content_type, $entity_type = 'node', array $nested_ids = [], $bundle_label = '') {
+  protected function filterFieldsRecursively($gc_field, $content_type, $entity_type = 'node', array $nested_ids = [], $bundle_label = '', int $counter = 0) {
+    if ($counter > 2) {
+      return [];
+    }
     $mapping_array = [
       'attachment' => [
         'file',
@@ -471,7 +474,7 @@ abstract class MappingSteps {
 
               $new_bundle_label .= ' (bundle: ' . $bundle_name . ')';
 
-              $targetFields = $this->filterFieldsRecursively($gc_field, $bundle, $target_type, $new_nested_ids, $new_bundle_label);
+              $targetFields = $this->filterFieldsRecursively($gc_field, $bundle, $target_type, $new_nested_ids, $new_bundle_label, $counter + 1);
 
               if (!empty($targetFields)) {
                 $fields = $fields + $targetFields;
