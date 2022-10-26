@@ -1,5 +1,5 @@
 gathercontent.admin_gathercontent:
-  path: '/admin/config/gathercontent'
+  path: '/admin/config/services/gathercontent'
   defaults:
     _controller: '\Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
     _title: 'GatherContent'
@@ -7,7 +7,7 @@ gathercontent.admin_gathercontent:
     _permission: 'administer gathercontent'
 
 gathercontent.config_form:
-  path: '/admin/config/gathercontent/config'
+  path: '/admin/config/services/gathercontent/config'
   defaults:
     _form: '\Drupal\gathercontent\Form\ConfigForm'
     _title: 'Authentication'
@@ -17,7 +17,7 @@ gathercontent.config_form:
     _admin_route: TRUE
 
 gathercontent.import_config_form:
-  path: '/admin/config/gathercontent/import-config'
+  path: '/admin/config/services/gathercontent/import-config'
   defaults:
     _form: '\Drupal\gathercontent\Form\ImportConfigForm'
     _title: 'Import configuration'

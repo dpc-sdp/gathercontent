@@ -26,11 +26,11 @@ function gathercontent_ui_entity_type_alter(array &$entity_types) {
 
     $entity_types['gathercontent_mapping']->set('admin_permission', 'administer gathercontent');
 
-    $entity_types['gathercontent_mapping']->setLinkTemplate('canonical', '/admin/config/gathercontent/mapping/{gathercontent_mapping}');
-    $entity_types['gathercontent_mapping']->setLinkTemplate('add-form', '/admin/config/gathercontent/mapping/create');
-    $entity_types['gathercontent_mapping']->setLinkTemplate('edit-form', '/admin/config/gathercontent/mapping/{gathercontent_mapping}/edit');
-    $entity_types['gathercontent_mapping']->setLinkTemplate('delete-form', '/admin/config/gathercontent/mapping/{gathercontent_mapping}/delete');
-    $entity_types['gathercontent_mapping']->setLinkTemplate('collection', '/admin/config/gathercontent/mapping');
+    $entity_types['gathercontent_mapping']->setLinkTemplate('canonical', '/admin/config/services/gathercontent/mapping/{gathercontent_mapping}');
+    $entity_types['gathercontent_mapping']->setLinkTemplate('add-form', '/admin/config/services/gathercontent/mapping/create');
+    $entity_types['gathercontent_mapping']->setLinkTemplate('edit-form', '/admin/config/services/gathercontent/mapping/{gathercontent_mapping}/edit');
+    $entity_types['gathercontent_mapping']->setLinkTemplate('delete-form', '/admin/config/services/gathercontent/mapping/{gathercontent_mapping}/delete');
+    $entity_types['gathercontent_mapping']->setLinkTemplate('collection', '/admin/config/services/gathercontent/mapping');
   }
 }
 

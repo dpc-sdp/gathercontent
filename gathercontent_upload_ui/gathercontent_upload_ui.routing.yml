@@ -1,5 +1,5 @@
 entity.gathercontent_mapping.create_template:
-  path: '/admin/config/gathercontent/create-template'
+  path: '/admin/config/services/gathercontent/create-template'
   defaults:
     _form: '\Drupal\gathercontent_upload_ui\Form\CreateTemplateForm'
     _title: 'Create template from entity type'

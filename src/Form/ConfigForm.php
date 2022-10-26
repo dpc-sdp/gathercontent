@@ -67,7 +67,7 @@ class ConfigForm extends ConfigFormBase {
     $form['gathercontent_api_key'] = [
       '#type' => 'textfield',
       '#title' => $this->t('GatherContent API key'),
-      '#description' => Link::fromTextAndUrl($this->t('Click to find out where you can generate your API Key'), Url::fromUri('https://gathercontent.com/developers/authentication/')),
+      '#description' => Link::fromTextAndUrl($this->t('Click to find out where you can generate your API Key'), Url::fromUri('https://help.gathercontent.com/en/articles/369871-generating-an-api-key-the-api-documentation#generate-an-api-key')),
       '#maxlength' => 64,
       '#size' => 64,
       '#default_value' => $config->get('gathercontent_api_key'),
@@ -138,6 +138,19 @@ class ConfigForm extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+    $this->client->setEmail($form_state->getValue('gathercontent_username'));
+    $this->client->setApiKey($form_state->getValue('gathercontent_api_key'));
+    try {
+      $this->client->accountsGet();
+    }
+    catch (\Exception $e) {
+      $form_state->setErrorByName('gathercontent_api_key', $this->t('Authentication failed, please check the credentials.'));
+    }
+  }
+  /**
+   * {@inheritdoc}
+   */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $triggering_element = $form_state->getTriggeringElement();
     if ($triggering_element['#id'] === 'edit-submit') {
@@ -146,7 +159,6 @@ class ConfigForm extends ConfigFormBase {
           ->set('gathercontent_username', $form_state->getValue('gathercontent_username'))
           ->set('gathercontent_api_key', $form_state->getValue('gathercontent_api_key'))
           ->save();
-        $this->client->setCredentials();
         $form_state->setSubmitted()->setRebuild();
       }
       else {

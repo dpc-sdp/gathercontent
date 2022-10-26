@@ -9,7 +9,7 @@ gathercontent_ui.import_select_form:
     _admin_route: TRUE
 
 gathercontent_ui.mapping_controller_testConnectionPage:
-  path: '/admin/config/gathercontent/config/test'
+  path: '/admin/config/services/gathercontent/config/test'
   defaults:
     _controller: '\Drupal\gathercontent_ui\Controller\MappingController::testConnectionPage'
     _title: 'Test connection'

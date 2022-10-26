@@ -1,7 +1,7 @@
 gathercontent.admin_gathercontent:
   title: 'GatherContent'
   route_name: gathercontent.admin_gathercontent
-  parent: system.admin_config
+  parent: system.admin_config_services
   description: 'GatherContent module configuration settings.'
   weight: 0
 
