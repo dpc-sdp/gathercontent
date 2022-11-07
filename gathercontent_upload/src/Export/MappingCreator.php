@@ -2,8 +2,8 @@
 
 namespace Drupal\gathercontent_upload\Export;
 
-use Cheppers\GatherContent\DataTypes\Structure;
-use Cheppers\GatherContent\GatherContentClientInterface;
+use GatherContent\DataTypes\Structure;
+use GatherContent\GatherContentClientInterface;
 use Drupal\Component\Uuid\UuidInterface;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\EntityDisplayRepositoryInterface;
@@ -111,7 +111,7 @@ class MappingCreator implements ContainerInjectionInterface {
   /**
    * MappingCreator constructor.
    *
-   * @param \Cheppers\GatherContent\GatherContentClientInterface $client
+   * @param \GatherContent\GatherContentClientInterface $client
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
    * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entityFieldManager
    * @param \Drupal\Core\Entity\EntityTypeBundleInfoInterface $entityTypeBundleInfo
@@ -454,7 +454,7 @@ class MappingCreator implements ContainerInjectionInterface {
    */
   public function getProjects() {
     $accountId = DrupalGatherContentClient::getAccountId();
-    /** @var \Cheppers\GatherContent\DataTypes\Project[] $projects */
+    /** @var \GatherContent\DataTypes\Project[] $projects */
     $projects = [];
     if ($accountId) {
       $projects = $this->client->getActiveProjects($accountId);

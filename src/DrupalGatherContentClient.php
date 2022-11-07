@@ -3,7 +3,7 @@
 namespace Drupal\gathercontent;
 
 use function GuzzleHttp\json_decode;
-use Cheppers\GatherContent\GatherContentClient;
+use GatherContent\GatherContentClient;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Pool;
 

@@ -2,7 +2,7 @@
 
 namespace Drupal\gathercontent_ui\Form;
 
-use Cheppers\GatherContent\GatherContentClientInterface;
+use GatherContent\GatherContentClientInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
@@ -67,7 +67,7 @@ class ContentImportSelectForm extends FormBase {
   /**
    * GatherCotnent client.
    *
-   * @var \Cheppers\GatherContent\GatherContentClientInterface
+   * @var \GatherContent\GatherContentClientInterface
    */
   protected $client;
 
@@ -418,7 +418,7 @@ class ContentImportSelectForm extends FormBase {
       ];
 
       $options = [];
-      /** @var \Cheppers\GatherContent\DataTypes\Status[] $statuses */
+      /** @var \GatherContent\DataTypes\Status[] $statuses */
       $statuses = $this->client->projectStatusesGet($this->projectId);
 
       foreach ($statuses['data'] as $status) {
@@ -493,7 +493,7 @@ class ContentImportSelectForm extends FormBase {
         $importOptions = [];
 
         foreach ($importContent as $value) {
-          /** @var \Cheppers\GatherContent\DataTypes\Item $item */
+          /** @var \GatherContent\DataTypes\Item $item */
           $gcItem = $this->client->itemGet($value);
           /** @var \Drupal\gathercontent\Entity\MappingInterface $mapping */
           $mapping = MappingLoader::load($gcItem);

@@ -2,9 +2,9 @@
 
 namespace Drupal\gathercontent\Plugin\migrate\source;
 
-use Cheppers\GatherContent\DataTypes\Element;
-use Cheppers\GatherContent\DataTypes\ElementSimpleChoice;
-use Cheppers\GatherContent\DataTypes\ElementSimpleFile;
+use GatherContent\DataTypes\Element;
+use GatherContent\DataTypes\ElementSimpleChoice;
+use GatherContent\DataTypes\ElementSimpleFile;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\gathercontent\DrupalGatherContentClient;
 use Drupal\migrate\MigrateException;
@@ -179,7 +179,7 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
       // The first response will reveal the total number of pages. If there
       // is more than one page, continue until total pages has been reached.
       if (!empty($this->items['data'])) {
-        /** @var \Cheppers\GatherContent\DataTypes\Pagination $pagination */
+        /** @var \GatherContent\DataTypes\Pagination $pagination */
         $pagination = $this->items['pagination'];
         $total_pages = $pagination->totalPages;
         $current_page = $pagination->currentPage;
@@ -226,7 +226,7 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
    *
    * @param array $gcFiles
    *   Gathercontent file array.
-   * @param \Cheppers\GatherContent\DataTypes\Element $field
+   * @param \GatherContent\DataTypes\Element $field
    *   Gathercontent field.
    *
    * @return array

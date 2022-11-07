@@ -2,8 +2,8 @@
 
 namespace Drupal\gathercontent_ui\Form\MappingEditSteps;
 
-use Cheppers\GatherContent\DataTypes\Element;
-use Cheppers\GatherContent\DataTypes\ElementText;
+use GatherContent\DataTypes\Element;
+use GatherContent\DataTypes\ElementText;
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
@@ -32,7 +32,7 @@ abstract class MappingSteps {
   /**
    * Template object.
    *
-   * @var \Cheppers\GatherContent\DataTypes\Template
+   * @var \GatherContent\DataTypes\Template
    */
   public $template;
 
@@ -299,7 +299,7 @@ abstract class MappingSteps {
    *
    * Use for filtering only equivalent fields.
    *
-   * @param \Cheppers\GatherContent\DataTypes\Element $gc_field
+   * @param \GatherContent\DataTypes\Element $gc_field
    *   Type of field in GatherContent.
    * @param string $content_type
    *   Name of Drupal content type.

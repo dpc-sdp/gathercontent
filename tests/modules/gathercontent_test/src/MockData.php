@@ -2,11 +2,11 @@
 
 namespace Drupal\gathercontent_test;
 
-use Cheppers\GatherContent\DataTypes\ElementFiles;
-use Cheppers\GatherContent\DataTypes\File;
-use Cheppers\GatherContent\DataTypes\Item;
-use Cheppers\GatherContent\DataTypes\Status;
-use Cheppers\GatherContent\DataTypes\Tab;
+use GatherContent\DataTypes\ElementFiles;
+use GatherContent\DataTypes\File;
+use GatherContent\DataTypes\Item;
+use GatherContent\DataTypes\Status;
+use GatherContent\DataTypes\Tab;
 use Drupal\gathercontent\Entity\Mapping;
 use Drupal\taxonomy\Entity\Term;
 

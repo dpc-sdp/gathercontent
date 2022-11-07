@@ -2,7 +2,7 @@
 
 namespace Drupal\Tests\gathercontent_upload\Kernel;
 
-use Cheppers\GatherContent\DataTypes\Item;
+use GatherContent\DataTypes\Item;
 use Drupal\file\Entity\File;
 use Drupal\gathercontent\MappingLoader;
 use Drupal\gathercontent_upload\Export\Exporter;
@@ -71,7 +71,7 @@ abstract class GatherContentUploadTestBase extends EntityKernelTestBase {
   /**
    * Returns mapping for a GatherContent Item.
    *
-   * @param \Cheppers\GatherContent\DataTypes\Item $gcItem
+   * @param \GatherContent\DataTypes\Item $gcItem
    *   GatherContent Item object.
    *
    * @return mixed
@@ -142,7 +142,7 @@ abstract class GatherContentUploadTestBase extends EntityKernelTestBase {
   /**
    * Returns Item for the simple ProcessPane test.
    *
-   * @return \Cheppers\GatherContent\DataTypes\Item
+   * @return \GatherContent\DataTypes\Item
    *   Item object.
    */
   public function getSimpleItem() {
@@ -268,7 +268,7 @@ abstract class GatherContentUploadTestBase extends EntityKernelTestBase {
   /**
    * Returns Item for the multilang ProcessPane test.
    *
-   * @return \Cheppers\GatherContent\DataTypes\Item
+   * @return \GatherContent\DataTypes\Item
    *   Item object.
    */
   public function getMultilangItem() {
@@ -301,7 +301,7 @@ abstract class GatherContentUploadTestBase extends EntityKernelTestBase {
   /**
    * Returns Item for the meta tag ProcessPane test.
    *
-   * @return \Cheppers\GatherContent\DataTypes\Item
+   * @return \GatherContent\DataTypes\Item
    *   Item object.
    */
   public function getMetatagItem() {
@@ -334,7 +334,7 @@ abstract class GatherContentUploadTestBase extends EntityKernelTestBase {
   /**
    * Returns Item for the meta tag multilang ProcessPane test.
    *
-   * @return \Cheppers\GatherContent\DataTypes\Item
+   * @return \GatherContent\DataTypes\Item
    *   Item object.
    */
   public function getMetatagMultilangItem() {

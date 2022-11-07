@@ -2,7 +2,7 @@
 
 namespace Drupal\gathercontent_upload_ui\Form;
 
-use Cheppers\GatherContent\GatherContentClientInterface;
+use GatherContent\GatherContentClientInterface;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Form\FormBase;
@@ -52,7 +52,7 @@ class ContentUploadSelectForm extends FormBase {
   /**
    * Client object.
    *
-   * @var \Cheppers\GatherContent\GatherContentClientInterface
+   * @var \GatherContent\GatherContentClientInterface
    */
   protected $client;
 

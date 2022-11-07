@@ -2,8 +2,8 @@
 
 namespace Drupal\gathercontent_upload\Export;
 
-use Cheppers\GatherContent\DataTypes\Item;
-use Cheppers\GatherContent\GatherContentClientInterface;
+use GatherContent\DataTypes\Item;
+use GatherContent\GatherContentClientInterface;
 use Drupal;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\EntityInterface;
@@ -105,7 +105,7 @@ class Exporter implements ContainerInjectionInterface {
   /**
    * Exporter constructor.
    *
-   * @param \Cheppers\GatherContent\GatherContentClientInterface $client
+   * @param \GatherContent\GatherContentClientInterface $client
    * @param \Drupal\gathercontent\MetatagQuery $metatag
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
    * @param \Symfony\Component\EventDispatcher\EventDispatcherInterface $eventDispatcher

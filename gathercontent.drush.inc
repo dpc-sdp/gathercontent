@@ -204,7 +204,7 @@ function drush_gathercontent_import($mapping_id = NULL, $status_id = '', $parent
 
   /** @var \Drupal\gathercontent\DrupalGatherContentClient $client */
   $client = \Drupal::service('gathercontent.client');
-  /** @var \Cheppers\GatherContent\DataTypes\Item[] $items */
+  /** @var \GatherContent\DataTypes\Item[] $items */
   $items = $client->itemsGet($project_id);
 
   $publish = drush_get_option('publish', \Drupal::config('gathercontent.import')->get('node_default_status'));

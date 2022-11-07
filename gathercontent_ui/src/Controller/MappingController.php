@@ -2,7 +2,7 @@
 
 namespace Drupal\gathercontent_ui\Controller;
 
-use Cheppers\GatherContent\GatherContentClientInterface;
+use GatherContent\GatherContentClientInterface;
 use Drupal\Core\Controller\ControllerBase;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 

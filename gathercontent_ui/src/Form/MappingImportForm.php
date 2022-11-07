@@ -2,7 +2,7 @@
 
 namespace Drupal\gathercontent_ui\Form;
 
-use Cheppers\GatherContent\GatherContentClientInterface;
+use GatherContent\GatherContentClientInterface;
 use Drupal\Core\Entity\EntityForm;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
@@ -29,7 +29,7 @@ class MappingImportForm extends EntityForm {
   /**
    * MappingImportForm constructor.
    *
-   * @param \Cheppers\GatherContent\GatherContentClientInterface $client
+   * @param \GatherContent\GatherContentClientInterface $client
    *   GatherContent client.
    */
   public function __construct(GatherContentClientInterface $client) {
@@ -52,7 +52,7 @@ class MappingImportForm extends EntityForm {
     $form = parent::form($form, $form_state);
 
     $account_id = DrupalGatherContentClient::getAccountId();
-    /** @var \Cheppers\GatherContent\DataTypes\Project[] $projects */
+    /** @var \GatherContent\DataTypes\Project[] $projects */
     $projects = [];
     if ($account_id) {
       $projects = $this->client->getActiveProjects($account_id);
@@ -136,7 +136,7 @@ class MappingImportForm extends EntityForm {
         return;
       }
 
-      /** @var \Cheppers\GatherContent\DataTypes\Project[] $projects */
+      /** @var \GatherContent\DataTypes\Project[] $projects */
       $projects = $this->client->getActiveProjects($account_id);
 
       $values = $form_state->getValues();

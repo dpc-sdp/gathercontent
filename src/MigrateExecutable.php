@@ -32,7 +32,7 @@ class MigrateExecutable extends MigrateExecutableBase {
   /**
    * Latest GatherContent status.
    *
-   * @var \Cheppers\GatherContent\DataTypes\Status
+   * @var \GatherContent\DataTypes\Status
    */
   protected $latestGcStatus;
 
@@ -53,7 +53,7 @@ class MigrateExecutable extends MigrateExecutableBase {
   /**
    * Statuses.
    *
-   * @var \Cheppers\GatherContent\DataTypes\Status[]
+   * @var \GatherContent\DataTypes\Status[]
    */
   protected $statuses;
 

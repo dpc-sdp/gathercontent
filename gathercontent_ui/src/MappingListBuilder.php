@@ -2,7 +2,7 @@
 
 namespace Drupal\gathercontent_ui;
 
-use Cheppers\GatherContent\GatherContentClientInterface;
+use GatherContent\GatherContentClientInterface;
 use Drupal\Core\Config\Entity\ConfigEntityListBuilder;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityStorageInterface;

@@ -2,7 +2,7 @@
 
 namespace Drupal\gathercontent;
 
-use Cheppers\GatherContent\DataTypes\Item;
+use GatherContent\DataTypes\Item;
 use Drupal\gathercontent\Entity\Mapping;
 
 /**

@@ -2,7 +2,7 @@
 
 namespace Drupal\gathercontent_ui\Form;
 
-use Cheppers\GatherContent\GatherContentClientInterface;
+use GatherContent\GatherContentClientInterface;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Language\LanguageInterface;
@@ -54,7 +54,7 @@ class MappingEditForm extends MappingEditFormBase {
    *
    * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entityFieldManager
    *   EntityFieldManagerInterface.
-   * @param \Cheppers\GatherContent\GatherContentClientInterface $client
+   * @param \GatherContent\GatherContentClientInterface $client
    *   GatherContent client.
    * @param \Drupal\gathercontent_ui\Form\MappingEditSteps\MappingStepService $mapping_service
    *   MappingStepService.

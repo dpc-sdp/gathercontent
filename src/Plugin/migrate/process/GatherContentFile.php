@@ -2,7 +2,7 @@
 
 namespace Drupal\gathercontent\Plugin\migrate\process;
 
-use Cheppers\GatherContent\GatherContentClientInterface;
+use GatherContent\GatherContentClientInterface;
 use Drupal\Component\Render\PlainTextOutput;
 use Drupal\Core\File\FileSystem;
 use Drupal\Core\File\FileSystemInterface;

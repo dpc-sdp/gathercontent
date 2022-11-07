@@ -2,7 +2,7 @@
 
 namespace Drupal\gathercontent_ui\Form;
 
-use Cheppers\GatherContent\DataTypes\Template;
+use GatherContent\DataTypes\Template;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
 use Drupal\Core\Entity\EntityForm;
@@ -264,7 +264,7 @@ class MappingEditFormBase extends EntityForm implements ContainerInjectionInterf
   /**
    * Prepare options for every language for every field.
    *
-   * @param \Cheppers\GatherContent\DataTypes\Template $template
+   * @param \GatherContent\DataTypes\Template $template
    *   GatherContent template object.
    *
    * @return array
