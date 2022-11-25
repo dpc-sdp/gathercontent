@@ -100,7 +100,8 @@ class MappingStepEdit extends MappingSteps {
         ];
       }
 
-      foreach ($group->fields as $gc_field) {
+      $flat_fields = $this->flattenGroup($group->fields);
+      foreach ($flat_fields as $gc_field) {
         $d_fields = [];
         if (isset($formState->getTriggeringElement()['#name'])) {
           // We need different handling for changed group.

@@ -128,7 +128,8 @@ class MappingStepNew extends MappingSteps {
           ];
         }
 
-        foreach ($group->fields as $gc_field) {
+        $flat_fields = $this->flattenGroup($group->fields);
+        foreach ($flat_fields as $gc_field) {
           $d_fields = [];
           if ($formState->getTriggeringElement()['#name'] !== 'content_type') {
             // We need different handling for changed fieldset.
@@ -152,12 +153,16 @@ class MappingStepNew extends MappingSteps {
           else {
             $d_fields = $this->filterFields($gc_field, $contentType, $entityType);
           }
+          $default_value = NULL;
+          if ($formState->hasValue($group->id) && $formState->getValue($group->id)['elements'][$gc_field->id]) {
+            $default_value = $formState->getValue($group->id)['elements'][$gc_field->id];
+          }
           $form['mapping'][$group->id]['elements'][$gc_field->id] = [
             '#type' => 'select',
             '#options' => $d_fields,
             '#title' => (!empty($gc_field->label) ? $gc_field->label : $gc_field->title),
             '#empty_option' => $this->t("Don't map"),
-            '#default_value' => $formState->hasValue($group->id)['elements'][$gc_field->id] ? $formState->getValue($group->id)['elements'][$gc_field->id] : NULL,
+            '#default_value' => $default_value,
             '#attributes' => [
               'class' => [
                 'gathercontent-ct-element',

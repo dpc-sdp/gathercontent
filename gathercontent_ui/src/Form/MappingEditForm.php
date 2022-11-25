@@ -200,7 +200,7 @@ class MappingEditForm extends MappingEditFormBase {
 
         // We need to modify field for checkboxes and field instance for radios.
         foreach ($template['related']->structure->groups as $group) {
-          foreach ($group->fields as $gcField) {
+          foreach ($this->flattenGroup($group->fields) as $gcField) {
             $local_field_id = $this->mappingData[$group->id]['elements'][$gcField->id];
             if ($gcField->type === 'choice_checkbox') {
               if (!empty($local_field_id)) {

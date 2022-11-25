@@ -2,6 +2,7 @@
 
 namespace Drupal\gathercontent_ui\Form;
 
+use Drupal\gathercontent_ui\Traits\MappingTrait;
 use GatherContent\DataTypes\Template;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Entity\EntityFieldManagerInterface;
@@ -21,6 +22,8 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  * @package Drupal\gathercontent_ui\Form
  */
 class MappingEditFormBase extends EntityForm implements ContainerInjectionInterface {
+
+  use MappingTrait;
 
   /**
    * Flag for mapping if it's new.

@@ -2,6 +2,7 @@
 
 namespace Drupal\gathercontent_ui\Form\MappingEditSteps;
 
+use Drupal\gathercontent_ui\Traits\MappingTrait;
 use GatherContent\DataTypes\Element;
 use GatherContent\DataTypes\ElementText;
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
@@ -21,6 +22,7 @@ abstract class MappingSteps {
 
   use StringTranslationTrait;
   use DependencySerializationTrait;
+  use MappingTrait;
 
   /**
    * Mapping object.
@@ -231,37 +233,18 @@ abstract class MappingSteps {
             continue;
           }
 
+          $lang_code = 'und';
           if ($translatable) {
-            if (
-              ($groupType == 'content' &&
-                in_array($this->template['related']->structure->groups[$groupId]->fields[$k]->type, ['text', 'guidelines'])
-              ) ||
-              !in_array($element, ${$groupType . '_fields'}[$group['language']])
-            ) {
-              ${$groupType . '_fields'}[$group['language']][] = $element;
-            }
-            else {
-              if (!strpos($element, '||')) {
-                $formState->setErrorByName($groupId,
-                  $this->t('A GatherContent field can only be mapped to a single Drupal field. So each field can only be mapped to once.'));
-              }
-            }
+            $lang_code = $group['language'];
           }
-          else {
-            if (
-              ($groupType == 'content'
-                && in_array($this->template['related']->structure->groups[$groupId]->fields[$k]->type, ['text', 'guidelines'])
-              ) ||
-              !in_array($element, ${$groupType . '_fields'})
-            ) {
-              ${$groupType . '_fields'}[] = $element;
-            }
-            else {
-              if (!strpos($element, '||')) {
-                $formState->setErrorByName($groupId,
-                  $this->t('A GatherContent field can only be mapped to a single Drupal field. So each field can only be mapped to once.'));
-              }
-            }
+          if (isset(${$groupType . '_fields'}[$lang_code]) && in_array($element, ${$groupType . '_fields'}[$lang_code])) {
+            $formState->setErrorByName($groupId,
+              $this->t('A GatherContent field can only be mapped to a single Drupal field. So each field can only be mapped to once.'));
+            continue;
+          }
+
+          if ($groupType == 'content' && in_array($this->getFieldFromId($k, $groupId)->type, ['text', 'guidelines'])) {
+            ${$groupType . '_fields'}[$lang_code][] = $element;
           }
         }
       }
@@ -291,6 +274,31 @@ abstract class MappingSteps {
           $formState->setErrorByName('form', $this->t('You have to map Drupal Title field for translatable content.'));
         }
       }
+    }
+  }
+
+  /**
+   * Wrapper function for filterFieldsRecursively.
+   *
+   * Use for filtering only equivalent fields.
+   *
+   * @param string $id
+   *   GatherContent id of the field to retrieve.
+   * @param string $group_id
+   *   GatherContent id of the group containing the field.
+   *
+   * @return \GatherContent\DataTypes\Element
+   *   The GatherContent field..
+   */
+  protected function getFieldFromId($id, $group_id) {
+    if ($group_id && !strpos($id, '/')) {
+      return $this->template['related']->structure->groups[$group_id]->fields[$id];
+    }
+    if ($group_id && strpos($id, '/')) {
+      $ids = explode('/', $id);
+      $component = $this->template['related']->structure->groups[$group_id]->fields[$ids[0]];
+      $children = $component->getChildrenFields();
+      return $children[$ids[1]];
     }
   }
 

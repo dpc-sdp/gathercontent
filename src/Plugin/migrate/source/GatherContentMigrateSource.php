@@ -287,13 +287,7 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
                 $idMap['source_row_status'] = MigrateIdMapInterface::STATUS_NEEDS_UPDATE;
                 $row->setIdMap($idMap);
               }
-
-              continue;
             }
-
-            $value[] = [
-              'value' => $this->getFieldValue($subObject),
-            ];
           }
         }
 
@@ -340,14 +334,20 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
 
     $value = [];
 
-    foreach ($field as $item) {
+    foreach ($field as $key => $item) {
       if ($item instanceof ElementSimpleChoice) {
-        $value[] = [
+        $value[$key] = [
           'gc_id' => $item->id,
         ];
       }
-      if ($item instanceof ElementSimpleFile) {
-        $value[] = $item;
+      elseif ($item instanceof ElementSimpleFile) {
+        $value[$key] = $item;
+      }
+      elseif (!is_array($item)) {
+        $value[$key] = $item->getValue();
+      }
+      else {
+        $value[$key] = $this->getFieldValue($item);
       }
     }
 
