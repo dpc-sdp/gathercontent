@@ -2,7 +2,7 @@ name: 'GC Test'
 description: 'Tests of import functionality.'
 package: 'Testing'
 type: module
-core_version_requirement: ^8 || ^9
+core_version_requirement: ^9.2 || ^10
 dependencies:
   - gathercontent:gathercontent
   - paragraph:paragraph

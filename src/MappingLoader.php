@@ -32,6 +32,7 @@ class MappingLoader {
    */
   public static function getMapping(Item $gcItem) {
     $mappingId = \Drupal::entityQuery('gathercontent_mapping')
+      ->accessCheck(TRUE)
       ->condition('gathercontent_project_id', $gcItem->projectId)
       ->condition('gathercontent_template_id', $gcItem->templateId)
       ->execute();

@@ -175,7 +175,7 @@ class Exporter implements ContainerInjectionInterface {
     $data = $this->processGroups($entity, $mapping);
 
     $event = $this->eventDispatcher
-      ->dispatch(GatherUploadContentEvents::PRE_NODE_UPLOAD, new PreNodeUploadEvent($entity, $data));
+      ->dispatch(new PreNodeUploadEvent($entity, $data), GatherUploadContentEvents::PRE_NODE_UPLOAD);
 
     /** @var \Drupal\gathercontent_upload\Event\PreNodeUploadEvent $event */
     $data = $event->getGathercontentValues();
@@ -193,7 +193,7 @@ class Exporter implements ContainerInjectionInterface {
     }
 
     $this->eventDispatcher
-      ->dispatch(GatherUploadContentEvents::POST_NODE_UPLOAD, new PostNodeUploadEvent($entity, $data));
+      ->dispatch(new PostNodeUploadEvent($entity, $data), GatherUploadContentEvents::POST_NODE_UPLOAD);
 
     if (empty($context['results']['mappings'][$mapping->id()])) {
       $context['results']['mappings'][$mapping->id()] = [

@@ -88,6 +88,7 @@ class GatherContentMedia extends ProcessPluginBase implements ContainerFactoryPl
       return NULL;
     }
     $entity_ids = \Drupal::entityQuery('media')
+      ->accessCheck(FALSE)
       ->condition($media_type->getSource()->getSourceFieldDefinition($media_type)->getName() . '.target_id', $fileId)
       ->execute();
     if ($entity_ids) {

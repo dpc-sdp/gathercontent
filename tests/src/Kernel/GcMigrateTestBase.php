@@ -14,7 +14,7 @@ abstract class GcMigrateTestBase extends MigrateTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = [
+  protected static $modules = [
     'node', 'text', 'field', 'user', 'image', 'file', 'taxonomy', 'language',
     'content_translation', 'paragraphs', 'entity_reference_revisions', 'system',
     'metatag', 'menu_ui', 'menu_link_content', 'link', 'gathercontent', 'gathercontent_test',
@@ -24,7 +24,7 @@ abstract class GcMigrateTestBase extends MigrateTestBase {
   /**
    * {@inheritdoc}
    */
-  public function setUp() {
+  public function setUp(): void {
     parent::setUp();
     $this->installSchema('node', 'node_access');
     $this->installEntitySchema('node');
@@ -35,7 +35,6 @@ abstract class GcMigrateTestBase extends MigrateTestBase {
     $this->installEntitySchema('user');
     $this->installEntitySchema('menu_link_content');
     $this->installConfig(['gathercontent_test']);
-    $this->installSchema('system', ['key_value_expire']);
     MockData::$drupalRoot = $this->getDrupalRoot();
     /** @var \Drupal\taxonomy\Entity\Term[] $terms */
     $terms = MockData::createTaxonomyTerms();

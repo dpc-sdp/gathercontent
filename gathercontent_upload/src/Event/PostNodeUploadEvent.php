@@ -2,8 +2,8 @@
 
 namespace Drupal\gathercontent_upload\Event;
 
+use Symfony\Contracts\EventDispatcher\Event;
 use Drupal\Core\Entity\EntityInterface;
-use Symfony\Component\EventDispatcher\Event;
 
 /**
  * Wraps a post node upload event for event listeners.

@@ -178,7 +178,7 @@ class MockData {
       $file->userId = static::getUniqueInt();
       $file->itemId = $item->id;
       $file->field = $element->id;
-      $file->url = static::$drupalRoot . '/' . drupal_get_path('module', 'gathercontent_test') . '/images/test.png';
+      $file->url = static::$drupalRoot . '/' . \Drupal::service('extension.list.module')->getPath('gathercontent_test') . '/images/test.png';
       $file->fileName = 'test.jpg';
       $file->size = 60892;
       $file->type = 'field';
@@ -194,7 +194,7 @@ class MockData {
    * After installing the test configs read the mapping.
    */
   public static function getMapping() {
-    $mapping_id = \Drupal::entityQuery('gathercontent_mapping')->execute();
+    $mapping_id = \Drupal::entityQuery('gathercontent_mapping')->accessCheck(FALSE)->execute();
     $mapping_id = reset($mapping_id);
     return Mapping::load($mapping_id);
   }
@@ -204,6 +204,7 @@ class MockData {
    */
   public static function getSpecificMapping(string $templateId) {
     $mapping_id = \Drupal::entityQuery('gathercontent_mapping')
+      ->accessCheck(FALSE)
       ->condition('gathercontent_template_id', $templateId)
       ->execute();
     $mapping_id = reset($mapping_id);

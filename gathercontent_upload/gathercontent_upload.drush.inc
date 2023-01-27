@@ -48,6 +48,7 @@ function drush_gathercontent_upload() {
   $operation->save();
 
   $node_ids = \Drupal::entityQuery('node')
+    ->accessCheck(TRUE)
     ->condition('gc_id', '', '<>')
     ->condition('gc_mapping_id', '', '<>')
     ->execute();
@@ -80,6 +81,7 @@ function drush_gathercontent_upload() {
 
   $mappings = [];
   $operation_item_ids = \Drupal::entityQuery('gathercontent_operation_item')
+    ->accessCheck(TRUE)
     ->condition('operation_uuid', $operation->uuid())
     ->execute();
   if (!empty($operation_item_ids)) {

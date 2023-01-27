@@ -144,7 +144,7 @@ function gathercontent_update_8303() {
  * Convert previous version mapping type to the new one.
  */
 function gathercontent_update_8401() {
-  $mapping_ids = \Drupal::entityQuery('gathercontent_mapping')->execute();
+  $mapping_ids = \Drupal::entityQuery('gathercontent_mapping')->accessCheck(FALSE)->execute();
 
   if (empty($mapping_ids)) {
     throw new Exception("Operation failed: Template not mapped.");
@@ -211,7 +211,7 @@ function gathercontent_update_8501() {
   }
 
   // Convert mappings.
-  $mapping_ids = \Drupal::entityQuery('gathercontent_mapping')->execute();
+  $mapping_ids = \Drupal::entityQuery('gathercontent_mapping')->accessCheck(FALSE)->execute();
 
   if (empty($mapping_ids)) {
     return;
@@ -321,7 +321,7 @@ function gathercontent_update_8505() {
  * Refresh all the migrate definitions to the new format.
  */
 function gathercontent_update_8506() {
-  $mapping_ids = \Drupal::entityQuery('gathercontent_mapping')->execute();
+  $mapping_ids = \Drupal::entityQuery('gathercontent_mapping')->accessCheck(FALSE)->execute();
 
   if (empty($mapping_ids)) {
     throw new Exception("Operation failed: Template not mapped.");

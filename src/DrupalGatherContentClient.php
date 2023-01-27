@@ -171,7 +171,7 @@ class DrupalGatherContentClient extends GatherContentClient {
 
             $path = $directory . '/' . $files[$index]->filename;
 
-            $importedFile = file_save_data($response->getBody(), $path);
+            $importedFile = \Drupal::service('file.repository')->writeData($response->getBody(), $path);
 
             if ($importedFile) {
               $importedFile

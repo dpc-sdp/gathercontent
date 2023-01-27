@@ -414,7 +414,7 @@ class ContentUploadSelectForm extends FormBase {
           'title' => $this->t('Uploading content ...'),
           'operations' => $operations,
           'finished' => 'gathercontent_upload_finished',
-          'file' => drupal_get_path('module', 'gathercontent_upload_ui') . '/gathercontent_upload_ui.module',
+          'file' => \Drupal::service('extension.list.module')->getPath('gathercontent_upload_ui') . '/gathercontent_upload_ui.module',
           'init_message' => $this->t('Upload is starting ...'),
           'progress_message' => $this->t('Processed @current out of @total.'),
           'error_message' => $this->t('An error occurred during processing'),

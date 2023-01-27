@@ -2,7 +2,7 @@ name: GatherContent Upload UI
 description: 'GatherContent Upload User Interface module'
 package: GatherContent
 core: 8.x
-core_version_requirement: ^8 || ^9
+core_version_requirement: ^9.2 || ^10
 type: module
 dependencies:
   - drupal:gathercontent

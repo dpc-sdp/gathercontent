@@ -123,12 +123,14 @@ class MenuCreator {
   protected static function getMenuByGcId(&$mlid, &$menu_name, $language = NULL) {
     // Load node by gc_id.
     $node_ids = \Drupal::entityQuery('node')
+      ->accessCheck(FALSE)
       ->condition('gc_id', $mlid)
       ->execute();
     if (!empty($node_ids)) {
       // Load menu_link by node_id.
       $node = reset($node_ids);
       $ml_result = \Drupal::entityQuery('menu_link_content')
+        ->accessCheck(FALSE)
         ->condition('link.uri', 'entity:node/' . $node);
       if (!is_null($language)) {
         $ml_result->condition('langcode', $language);

@@ -15,7 +15,7 @@ abstract class GcImportTestBase extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = [
+  protected static $modules = [
     'node', 'text', 'field', 'user', 'image', 'file', 'taxonomy', 'language',
     'content_translation', 'paragraphs', 'entity_reference_revisions', 'system',
     'metatag', 'menu_ui', 'menu_link_content', 'link', 'gathercontent', 'gathercontent_test',
@@ -25,7 +25,7 @@ abstract class GcImportTestBase extends KernelTestBase {
   /**
    * {@inheritdoc}
    */
-  protected function setUp() {
+  protected function setUp(): void {
     parent::setUp();
     $this->installSchema('node', 'node_access');
     $this->installEntitySchema('node');

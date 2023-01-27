@@ -527,7 +527,7 @@ class ContentImportSelectForm extends FormBase {
           'title' => $this->t('Importing content ...'),
           'operations' => $operations,
           'finished' => 'gathercontent_ui_import_finished',
-          'file' => drupal_get_path('module', 'gathercontent') . '/gathercontent.module',
+          'file' => \Drupal::service('extension.list.module')->getPath('gathercontent') . '/gathercontent.module',
           'init_message' => $this->t('Import is starting ...'),
           'progress_message' => $this->t('Processed @current out of @total.'),
           'error_message' => $this->t('An error occurred during processing'),
