@@ -254,7 +254,7 @@ class ContentImportSelectForm extends FormBase {
 
             $this->items[$item->id] = [
               'color' => $statuses['data'][$item->statusId]->color,
-              'label' => $statuses['data'][$item->statusId]->name,
+              'label' => $statuses['data'][$item->statusId]->display_name,
               'template' => $mappingArray[$item->templateId]['gc_template'],
               'title' => $item->name,
             ];

@@ -4,7 +4,7 @@
   "description": "GatherContent for Drupal",
   "license": "GPL-2.0+",
   "require": {
-    "gathercontent/client": "^1.0",
+    "gathercontent/client": "^1.1",
     "drupal/core": "^9.2 || ^10",
     "drupal/migrate_tools": "^4 || ^5 || ^6"
   },
