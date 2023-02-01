@@ -282,7 +282,7 @@ class ContentImportSelectForm extends FormBase {
                   ],
                 ],
                 'label' => [
-                  '#plain_text' => $statuses['data'][$item->statusId]->name,
+                  '#plain_text' => $statuses['data'][$item->statusId]->display_name,
                 ],
               ],
               'title' => [
@@ -422,7 +422,7 @@ class ContentImportSelectForm extends FormBase {
       $statuses = $this->client->projectStatusesGet($this->projectId);
 
       foreach ($statuses['data'] as $status) {
-        $options[$status->id] = $status->name;
+        $options[$status->id] = $status->display_name;
       }
 
       $form['status'] = [
