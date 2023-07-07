@@ -89,6 +89,13 @@ class TrackedEntitiesController extends ControllerBase {
 
       /** @var \Drupal\Core\Entity\EntityInterface $entity */
       $entity = $storages[$item['entity_type']]->load($item['id']);
+      if (!$entity) {
+        if (isset($item['id']) && isset($item['entity_type'])) {
+          $messenger = \Drupal::messenger();
+          $messenger->addWarning(t('Could not fetch entity @id of type @type.', ['@id' => $item['id'], '@type' => $item['entity_type']]));
+        }
+        continue;
+      }
       $gcStatus = '';
 
       if (!empty($item['status'])) {

@@ -2,9 +2,6 @@
 
 namespace Drupal\gathercontent\Plugin\migrate\source;
 
-use GatherContent\DataTypes\Element;
-use GatherContent\DataTypes\ElementSimpleChoice;
-use GatherContent\DataTypes\ElementSimpleFile;
 use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\gathercontent\DrupalGatherContentClient;
 use Drupal\migrate\MigrateException;
@@ -12,6 +9,10 @@ use Drupal\migrate\Plugin\migrate\source\SourcePluginBase;
 use Drupal\migrate\Plugin\MigrateIdMapInterface;
 use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\migrate\Row;
+use GatherContent\DataTypes\Element;
+use GatherContent\DataTypes\ElementSimpleChoice;
+use GatherContent\DataTypes\ElementSimpleFile;
+use GatherContent\DataTypes\ElementSimpleText;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -342,6 +343,9 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
       }
       elseif ($item instanceof ElementSimpleFile) {
         $value[$key] = $item;
+      }
+      elseif ($item instanceof ElementSimpleText) {
+        $value[$key] = ['value' => $item->getValue()];
       }
       elseif (!is_array($item)) {
         $value[$key] = $item->getValue();
