@@ -507,6 +507,19 @@ class MigrationDefinitionCreator {
         $this->setTextFormat($definition, $data, $elementId, $element, $isMultiple);
         break;
 
+      case 'list_string':
+        $definition['process'][$element] = [
+          'plugin' => 'sub_process',
+          'source' => $elementId,
+          'process' => [
+            'value' => [
+              'plugin' => 'gather_content_get',
+              'source' => 'gc_id',
+            ],
+          ],
+        ];
+        break;
+
       case 'entity_reference':
         $handler_settings = $fieldInfo->getSetting('handler_settings');
         if (count($handler_settings['target_bundles']) == 1 || !$fieldInfo->getSetting('handler_settings')['auto_create']) {

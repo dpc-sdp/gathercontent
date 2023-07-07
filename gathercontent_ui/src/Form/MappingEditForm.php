@@ -246,16 +246,15 @@ class MappingEditForm extends MappingEditFormBase {
                   }
                 }
                 else {
-                  $new_local_options = [];
-                  foreach ($local_options as $name => $label) {
-                    $new_local_options[] = $name . '|' . $label;
+                  $field_info = $field_info->getFieldStorageDefinition();
+                  // Make the change.
+                  $field_info->setSetting('allowed_values', $local_options);
+                  try {
+                    $field_info->save();
                   }
-                  $entity = \Drupal::entityTypeManager()
-                    ->getStorage('entity_form_display')
-                    ->load('node.' . $mapping->getContentType() . '.default');
-                  /** @var \Drupal\Core\Entity\Entity\EntityFormDisplay $entity */
-                  $entity->getRenderer($field_info->getName())
-                    ->setSetting('available_options', implode("\n", $new_local_options));
+                  catch (\Exception $e) {
+                    // Log something.
+                  }
                 }
               }
             }

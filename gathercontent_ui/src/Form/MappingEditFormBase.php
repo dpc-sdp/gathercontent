@@ -209,6 +209,7 @@ class MappingEditFormBase extends EntityForm implements ContainerInjectionInterf
 
     foreach ($localOptions as $id => $localOption) {
       $query = $this->entityTypeManager->getStorage('taxonomy_term')->getQuery();
+      $query->accessCheck(TRUE);
       $group = $query->orConditionGroup()
         ->condition('gathercontent_option_ids', $id)
         ->condition('name', $localOption);

@@ -370,7 +370,7 @@ abstract class MappingSteps {
         'entity_reference_revisions',
       ],
       'choice_radio' => [
-        'string',
+        'list_string',
         'entity_reference',
         'entity_reference_revisions',
       ],
@@ -437,7 +437,7 @@ abstract class MappingSteps {
           case 'choice_radio':
           case 'choice_checkbox':
             if (
-              $instance->getType() !== 'entity_reference_revisions' &&
+              $instance->getType() == 'entity_reference' &&
               $instance->getSetting('handler') !== 'default:taxonomy_term'
             ) {
               continue 2;
