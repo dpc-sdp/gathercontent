@@ -1,0 +1,9 @@
+services:
+  gathercontent.commands:
+    class: Drupal\gathercontent\Commands\GatherContentCommands
+    arguments:
+      - '@gathercontent.client'
+      - '@config.factory'
+      - '@entity_type.manager'
+    tags:
+      - { name: drush.command }
