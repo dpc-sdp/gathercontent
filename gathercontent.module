@@ -9,6 +9,7 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\gathercontent\Entity\MappingInterface;
+use Drupal\gathercontent\Plugin\migrate\source\GatherContentMigrateSource;
 use Drupal\migrate\Plugin\MigrationInterface;
 use Drupal\gathercontent\MigrateExecutable;
 use Drupal\gathercontent\MigrateMessageCapture;
@@ -68,9 +69,19 @@ function gathercontent_import_process($gc_ids, array $import_options, MappingInt
         ->createInstance($migrationId);
 
       if ($migration) {
+
+        // Do not use the item list feature of the parent migration class,
+        // limit the source directly as this is more efficient and sources
+        // may be multiplied to support repeatable components.
+        $source = $migration->getSourcePlugin();
+        if (!$source instanceof GatherContentMigrateSource) {
+          $context['results']['messages'][] = (string) t('Migration source must be an instance of GatherContentMigrateSource');
+          \Drupal::logger('gathercontent')->error('Migration source must be an instance of GatherContentMigrateSource');
+        }
+        $source->setItemIds($gc_ids);
+
         $messages = new MigrateMessageCapture();
         $executable = new MigrateExecutable($migration, $messages, [
-          'idlist' => implode(',', $gc_ids),
           'import_options' => $import_options,
           'client' => $client,
         ]);

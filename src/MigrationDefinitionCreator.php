@@ -272,6 +272,31 @@ class MigrationDefinitionCreator {
             'entity_reference_revisions'
           );
 
+          // Detect if the sub definition only uses a single component field,
+          // all fields must have a / and share the same prefix.
+          $singleComponent = TRUE;
+          $componentId = NULL;
+          foreach ($subDefinition['source']['fields'] as $fieldId) {
+            if (!str_contains($fieldId, '/')) {
+              $singleComponent = FALSE;
+              break;
+            }
+
+            // For the first item, just extract the prefix, all others are
+            // compared against that.
+            if (!$componentId) {
+              $componentId = substr($fieldId, 0, strpos($fieldId, '/'));
+            }
+            elseif (!str_starts_with($fieldId, $componentId . '/')) {
+              $singleComponent = FALSE;
+              break;
+            }
+          }
+
+          if ($singleComponent && $componentId) {
+            $subDefinition['source']['singleComponent'] = $componentId;
+          }
+
           $subDependencies[$subDefinition['id']] = $subDefinition;
 
           $key = implode('_', [
@@ -284,31 +309,21 @@ class MigrationDefinitionCreator {
         }
         $this->setReferenceDependencies($subDependencies);
 
-        $collected = [];
-
-        foreach ($subDependencies as $subDefinitionId => $subDefinition) {
-          $this->migrationDefinitionIds[] = $subDefinitionId;
-
-          $definitions[$definitionId]['migration_dependencies']['optional'][] = $subDefinitionId;
-          $definitions[$definitionId]['process']['collect_' . $subDefinitionId] = [
-            'plugin' => 'migration_lookup',
-            'migration' => $subDefinitionId,
-            'source' => 'id',
-          ];
-
-          $collected[] = '@collect_' . $subDefinitionId;
-        }
-
-        if (!empty($collected)) {
-          $definitions[$definitionId]['process']['get_collected_' . $element] = [
-            'plugin' => 'get',
-            'source' => $collected,
-          ];
+        // Create a single lookup definition for all sub dependencies, this
+        // will flatten it automatically into a single list and the custom
+        // lookup plugin supports both repeatable and on-repeatable references.
+        if ($subDependencies) {
+          $this->migrationDefinitionIds = array_merge($this->migrationDefinitionIds, array_keys($subDependencies));
+          $definitions[$definitionId]['migration_dependencies']['optional'] = array_merge($definitions[$definitionId]['migration_dependencies']['optional'] ?? [], array_keys($subDependencies));
 
           $definitions[$definitionId]['process'][$element] = [
             [
+              'plugin' => 'gathercontent_migrate_lookup_multiple',
+              'migration' => array_keys($subDependencies),
+              'source' => 'id',
+            ],
+            [
               'plugin' => 'gather_content_reference_revision',
-              'source' => '@get_collected_' . $element,
             ],
             [
               'plugin' => 'sub_process',

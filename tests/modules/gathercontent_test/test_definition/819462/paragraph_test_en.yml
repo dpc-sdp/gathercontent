@@ -1,0 +1,28 @@
+uuid: 6ee1ff61-31d7-41ea-b8d3-61a1e1f381f7
+langcode: en
+status: true
+dependencies: { }
+id: 86701_819462_paragraph_paragraph_test_type_en
+class: null
+field_plugin_method: null
+cck_plugin_method: null
+migration_tags: { }
+migration_group: null
+label: "Andor's project_simple test template_node_en"
+source:
+  plugin: gathercontent_migration
+  projectId: 86701
+  templateId: 819462
+  templateName: 'simple test template'
+  fields: [ 1503414343907, 1503414365587, el1503047653432, el1503047665992, el1503047680564 ]
+  metatagFields: { }
+process:
+  type: { plugin: default_value, default_value: paragraph_test_type }
+  field_paragraph_checkbox_test: { plugin: sub_process, source: 1503414343907, process: { target_id: { plugin: gather_content_taxonomy, bundle: checkbox_test_taxonomy, source: gc_id } } }
+  field_paragraph_radio_test: { plugin: sub_process, source: 1503414365587, process: { target_id: { plugin: gather_content_taxonomy, bundle: radio_test_taxonomy, source: gc_id } } }
+  field_paragraph_big_text_test: { plugin: gather_content_get, source: el1503047653432 }
+  field_paragraph_image_test: { plugin: gather_content_file, source: el1503047665992, uri_scheme: 'public://', file_dir: '[date:custom:Y]-[date:custom:m]', language: en }
+  field_paragraph_long_text_test: { plugin: gather_content_get, source: el1503047680564 }
+destination:
+  plugin: 'entity_reference_revisions:paragraph'
+migration_dependencies: { }

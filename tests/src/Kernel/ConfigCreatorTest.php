@@ -21,6 +21,8 @@ class ConfigCreatorTest extends GcMigrateTestBase {
     '819462' => [
       'migrate_plus.migration.86701_819462_node_simple_test_type_en' => 'test1.1.yml',
       'migrate_plus.migration.86701_819462_node_simple_test_type_hu' => 'test1.2.yml',
+      'migrate_plus.migration.86701_819462_paragraph_paragraph_test_type_en' => 'paragraph_test_en.yml',
+      'migrate_plus.migration.86701_819462_paragraph_paragraph_test_type_hu' => 'paragraph_test_hu.yml',
     ],
   ];
 
@@ -55,6 +57,11 @@ class ConfigCreatorTest extends GcMigrateTestBase {
 
       foreach ($testFiles as $configName => $testFile) {
         $configCreatedByService = $configFactory->getEditable($configName);
+        if (!file_exists(__DIR__ . "/../../modules/gathercontent_test/test_definition/$templateId/" . $testFile)) {
+          $config = \Drupal::configFactory()->get($configName);
+
+          file_put_contents(__DIR__ . "/../../modules/gathercontent_test/test_definition/$templateId/" . $testFile, Yaml::dump($config->get()));
+        }
         $testYml = file_get_contents(__DIR__ . "/../../modules/gathercontent_test/test_definition/$templateId/" . $testFile);
         if (!$testYml) {
           continue;

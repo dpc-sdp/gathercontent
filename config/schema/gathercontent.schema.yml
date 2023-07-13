@@ -47,6 +47,16 @@ migrate_plus.destination.gc_entity:
     translations:
       type: boolean
 
+migrate_plus.process.gathercontent_migration_lookup_multiple:
+  type: migrate_process
+  label: 'Migration Lookup Multiple'
+  mapping:
+    migration:
+      type: sequence
+      sequence:
+        type: string
+        label: 'Migration ID'
+
 migrate_plus.process.gather_content_media:
   type: migrate_process
   label: 'media'

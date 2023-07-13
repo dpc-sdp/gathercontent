@@ -3,6 +3,7 @@
 namespace Drupal\gathercontent;
 
 use Drupal\gathercontent\Import\MenuCreator;
+use Drupal\gathercontent\Plugin\migrate\source\GatherContentMigrateSource;
 use Drupal\migrate\Event\MigrateImportEvent;
 use Drupal\migrate_tools\MigrateExecutable as MigrateExecutableBase;
 use Drupal\migrate\MigrateMessageInterface;
@@ -120,8 +121,13 @@ class MigrateExecutable extends MigrateExecutableBase {
     $sourceConfiguration = $migration->getSourceConfiguration();
     $pluginDefinition = $migration->getPluginDefinition();
 
-    foreach ($this->idlist as $item) {
-      $rows[] = $event->getMigration()->getIdMap()->getRowBySource($item);
+    $source = $migration->getSourcePlugin();
+    if (!$source instanceof GatherContentMigrateSource) {
+      return;
+    }
+
+    foreach (array_keys($source->getItems()) as $id) {
+      $rows[] = $event->getMigration()->getIdMap()->getRowBySource(['id' => $id]);
     }
 
     if (empty($rows)) {

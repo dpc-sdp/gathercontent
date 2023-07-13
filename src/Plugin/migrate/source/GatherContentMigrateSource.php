@@ -65,6 +65,16 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
   protected $trackChanges = TRUE;
 
   /**
+   * List of GatherContent IDs to import.
+   *
+   * If set, the collection lookups will be skipped and only those items will
+   * be loaded.
+   *
+   * @var array
+   */
+  protected array $ids;
+
+  /**
    * {@inheritdoc}
    */
   public function __construct(
@@ -170,35 +180,108 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
    * @return array
    *   All items.
    */
-  protected function getItems() {
-    if ($this->items === NULL) {
-      $this->items = $this->client->itemsGet(
-        $this->projectId,
-        ['template_id' => $this->templateId]
-      );
+  public function getItems() {
+    if ($this->items !== NULL) {
+      return $this->items;
+    }
+
+    $ids = $this->getItemIds();
+
+    foreach ($ids as $id) {
+      $collectedMetaTags = [];
+      $gcItem = $this->client->itemGet($id);
+      if (empty($gcItem)) {
+        continue;
+      }
+
+      $item = get_object_vars($gcItem);
+      $item['item_title'] = $gcItem->name;
+
+      foreach ($gcItem->content as $fieldId => $field) {
+        $value = $this->getFieldValue($field);
+
+        // Check if the field is for meta tags.
+        if (array_key_exists($fieldId, $this->metatagFields)) {
+          $collectedMetaTags[$this->metatagFields[$fieldId]] = $value;
+          continue;
+        }
+
+        $item[$fieldId] = $value;
+      }
+
+      if (!empty($collectedMetaTags)) {
+        $value = $this->prepareMetatags($collectedMetaTags);
+        $item['meta_tags'] = $value;
+      }
+
+      // In single component mode, define an item for each entry in the
+      // specified component.
+      if (!empty($this->configuration['singleComponent'])) {
+        if (!empty($item[$this->configuration['singleComponent']][0])) {
+          foreach ($item[$this->configuration['singleComponent']] as $component_delta => $component_value) {
+            $component_item = $item;
+            $component_item[$this->configuration['singleComponent']] = $component_value;
+            $component_item['id'] = $id . ':' . $component_delta;
+
+            $this->items[$component_item['id']] = $component_item;
+          }
+
+          // Do not add the item again.
+          continue;
+        }
+      }
+
+      $this->items[$id] = $item;
+    }
+
+    return $this->items;
+  }
+
+  /**
+   * Limit the source to the given IDs.
+   *
+   * @param array $ids
+   */
+  public function setItemIds(array $ids): void {
+    $this->ids = $ids;
+  }
+
+  /**
+   * Either returns the set item ids or returns all for this project/template.
+   *
+   * @return array
+   *   List of IDS.
+   */
+  public function getItemIds(): array {
+    if (isset($this->ids)) {
+      return $this->ids;
+    }
+    $current_page = 0;
+    $this->ids = [];
+    do {
+      $response = $this->client->itemsGet($this->projectId, [
+        'template_id' => $this->templateId,
+        'page' => ($current_page + 1),
+      ]);
 
       // The first response will reveal the total number of pages. If there
       // is more than one page, continue until total pages has been reached.
-      if (!empty($this->items['data'])) {
-        /** @var \GatherContent\DataTypes\Pagination $pagination */
-        $pagination = $this->items['pagination'];
-        $total_pages = $pagination->totalPages;
-        $current_page = $pagination->currentPage;
-        while ($current_page <= $total_pages) {
-          $query = [
-            'template_id' => $this->templateId,
-            'page' => ($current_page + 1),
-          ];
-          $next_items = $this->client->itemsGet($this->projectId, $query);
-          if (!empty($next_items['data'])) {
-            $this->items['data'] = array_merge($this->items['data'], $next_items['data']);
-          }
-          $current_page++;
-        }
+      if (empty($response['data'])) {
+        break;
+      }
+
+      /** @var \GatherContent\DataTypes\Pagination $pagination */
+      $pagination = $response['pagination'];
+      $total_pages = $pagination->totalPages;
+      $current_page = $pagination->currentPage;
+
+      foreach ($response['data'] as $key => $item) {
+        $this->ids[] = $item->id;
       }
     }
+    while ($current_page < $total_pages);
 
-    return $this->convertItemsToArray($this->items['data']);
+    return $this->ids;
   }
 
   /**
@@ -259,47 +342,19 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
     $ret = parent::prepareRow($row);
 
     if ($ret) {
-      $collectedMetaTags = [];
-      $gcId = $row->getSourceProperty('id');
-      $gcItem = $this->client->itemGet($gcId);
-
-      if (empty($gcItem)) {
-        return FALSE;
-      }
-
-      foreach ($gcItem->content as $fieldId => $field) {
-        $value = $this->getFieldValue($field);
-
-        // Check if the field is for meta tags.
-        if (array_key_exists($fieldId, $this->metatagFields)) {
-          $collectedMetaTags[$this->metatagFields[$fieldId]] = $value;
-          continue;
-        }
-
-        /* @todo This section should be moved to getFieldValue() */
-        if (is_array($field)) {
+      foreach ($row->getSource() as $fieldid => $field) {
+        if (in_array($fieldid, $this->fields) && is_array($field)) {
           foreach ($field as $subObject) {
             if ($subObject instanceof ElementSimpleFile) {
-              /* Entity with image needs to update as the alt_text property of
-               * the image may have been updated/changed in GatherContent.
-               */
-              if (in_array($fieldId, $this->fields)) {
-                $idMap = $row->getIdMap();
-                $idMap['source_row_status'] = MigrateIdMapInterface::STATUS_NEEDS_UPDATE;
-                $row->setIdMap($idMap);
-              }
+              // Entity with image needs to update as the alt_text property of
+              // the image may have been updated/changed in GatherContent.
+              $idMap = $row->getIdMap();
+              $idMap['source_row_status'] = MigrateIdMapInterface::STATUS_NEEDS_UPDATE;
+              $row->setIdMap($idMap);
+              break 2;
             }
           }
         }
-
-        $row->setSourceProperty($fieldId, $value);
-      }
-
-      $row->setSourceProperty('item_title', $gcItem->name);
-
-      if (!empty($collectedMetaTags)) {
-        $value = $this->prepareMetatags($collectedMetaTags);
-        $row->setSourceProperty('meta_tags', $value);
       }
     }
 
@@ -345,7 +400,14 @@ class GatherContentMigrateSource extends SourcePluginBase implements ContainerFa
         $value[$key] = $item;
       }
       elseif ($item instanceof ElementSimpleText) {
-        $value[$key] = ['value' => $item->getValue()];
+        // Lists of texts are keyed in an extra value, other texts
+        // for example in a component) are not.
+        if (is_int($key)) {
+          $value[$key] = ['value' => $item->getValue()];
+        }
+        else {
+          $value[$key] = $item->getValue();
+        }
       }
       elseif (!is_array($item)) {
         $value[$key] = $item->getValue();

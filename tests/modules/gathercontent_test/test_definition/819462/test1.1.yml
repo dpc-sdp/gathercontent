@@ -62,18 +62,14 @@ process:
   field_long_text_test:
     plugin: gather_content_get
     source: el1502871217145
-  collect_86701_819462_paragraph_paragraph_test_type_en:
-    plugin: migration_lookup
-    migration: 86701_819462_paragraph_paragraph_test_type_en
-    source: id
-  get_collected_field_paragraph_field_test:
-    plugin: get
-    source:
-      - '@collect_86701_819462_paragraph_paragraph_test_type_en'
   field_paragraph_field_test:
     -
+      plugin: gathercontent_migrate_lookup_multiple
+      migration:
+        - 86701_819462_paragraph_paragraph_test_type_en
+      source: id
+    -
       plugin: gather_content_reference_revision
-      source: '@get_collected_field_paragraph_field_test'
     -
       plugin: sub_process
       process:

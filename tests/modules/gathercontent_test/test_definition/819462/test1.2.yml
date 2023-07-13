@@ -44,18 +44,14 @@ process:
   langcode:
     plugin: default_value
     default_value: hu
-  collect_86701_819462_paragraph_paragraph_test_type_hu:
-    plugin: migration_lookup
-    migration: 86701_819462_paragraph_paragraph_test_type_hu
-    source: id
-  get_collected_field_paragraph_field_test:
-    plugin: get
-    source:
-      - '@collect_86701_819462_paragraph_paragraph_test_type_hu'
   field_paragraph_field_test:
     -
+      plugin: gathercontent_migrate_lookup_multiple
+      migration:
+        - 86701_819462_paragraph_paragraph_test_type_hu
+      source: id
+    -
       plugin: gather_content_reference_revision
-      source: '@get_collected_field_paragraph_field_test'
     -
       plugin: sub_process
       process:
