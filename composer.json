@@ -4,6 +4,6 @@
   "description": "GatherContent for Drupal",
   "license": "GPL-2.0+",
   "require": {
-    "dpc-sdp/gathercontent-client": "update-d10-compatibility-issues"
+    "dpc-sdp/gathercontent-client": "dev-update-d10-compatibility-issues"
   }
 }
